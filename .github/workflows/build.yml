@@ -28,8 +28,9 @@ jobs:
         with:
           gradle-version: 8.6
 
-      - name: Change directory to app
-        run: cd app && gradle assembleDebug
+      - name: Build with full logs
+  run: cd app && gradle assembleDebug --stacktrace --info --warning-mode all --no-daemon
+
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
