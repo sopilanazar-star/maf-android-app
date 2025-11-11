@@ -19,7 +19,10 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
         debug {
             isDebuggable = true
@@ -30,11 +33,25 @@ android {
         viewBinding = true
     }
 
+    // ✅ Вирівнюємо цілі Java/Kotlin на 17
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+}
+
+// (не обов’язково, але корисно для надійності)
+kotlin {
+    jvmToolchain(17)
 }
 
 dependencies {
