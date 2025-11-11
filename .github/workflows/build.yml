@@ -18,15 +18,23 @@ jobs:
 
       - uses: android-actions/setup-android@v3
 
-      - run: |
+      - name: Accept licenses & install SDK tools
+        run: |
           yes | sdkmanager --licenses
           sdkmanager "platforms;android-34" "platform-tools" "build-tools;34.0.0"
 
-      - run: chmod +x gradlew
+      # Встановлюємо Gradle 8.6 і додаємо його в PATH
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v3
+        with:
+          gradle-version: 8.6
 
-      - run: ./gradlew assembleDebug
+      # Збірка без wrapper'а
+      - name: Build Debug APK
+        run: gradle :app:assembleDebug
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: maf-app-debug
           path: app/build/outputs/apk/debug/app-debug.apk
