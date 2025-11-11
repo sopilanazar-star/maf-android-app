@@ -1,4 +1,3 @@
-\
 package ua.lviv.maf
 
 import android.annotation.SuppressLint
