@@ -17,6 +17,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MAFFootball">
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -45,7 +46,6 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <meta-data android:name="preloaded_fonts" android:resource="@array/preloaded_fonts" />
         <meta-data android:name="android.webkit.WebView.EnableSafeBrowsing" android:value="true"/>
         <meta-data android:name="android.service.autofill" android:resource="@xml/autofill_config" />
         <meta-data android:name="androidx.core.splashscreen.SplashScreen" android:value="true" />
