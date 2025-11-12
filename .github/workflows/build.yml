@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -33,8 +34,13 @@ jobs:
           cd app
           gradle assembleDebug --stacktrace --info --warning-mode all --no-daemon
 
+      # 🔽 ПЕРЕЙМЕНУВАННЯ APK на maf.apk
+      - name: Rename APK
+        run: mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/maf.apk
+
+      # 🔼 ЗАВАНТАЖЕННЯ ГОТОВОГО APK
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: maf-app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: maf-app
+          path: app/build/outputs/apk/debug/maf.apk
