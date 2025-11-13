@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.animation.LinearInterpolator
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -16,30 +17,26 @@ class IntroActivity : AppCompatActivity() {
 
         val ball = findViewById<ImageView>(R.id.ball)
         val titleText = findViewById<TextView>(R.id.titleText)
-        val bySopila = findViewById<TextView>(R.id.bySopila)
 
-        // Коли layout уже намалюється - запускаємо анімацію
         ball.post {
             val screenWidth = resources.displayMetrics.widthPixels.toFloat()
 
-            // Стартова позиція м'яча (трохи за екраном зліва)
-            ball.translationX = -ball.width.toFloat() * 1.5f
+            // Старт і стоп положення
+            val startX = -ball.width * 2f
+            val stopX = screenWidth - ball.width * 1.3f
 
-            // Кінець - трохи перед правим краєм
-            val endX = screenWidth - ball.width.toFloat() * 0.5f
+            // Початкова позиція
+            ball.translationX = startX
 
-            // Анімація: рівномірно котиться ~1.5 сек
+            // Анімація котіння
             ball.animate()
-                .translationX(endX)
+                .translationX(stopX)
+                .rotationBy(1080f)  // 3 оберти
+                .setInterpolator(LinearInterpolator())
                 .setDuration(1500)
                 .withEndAction {
-                    // Після зупинки м'яча показуємо текст
+                    // Поява тексту
                     titleText.animate()
-                        .alpha(1f)
-                        .setDuration(700)
-                        .start()
-
-                    bySopila.animate()
                         .alpha(1f)
                         .setDuration(700)
                         .start()
@@ -47,7 +44,7 @@ class IntroActivity : AppCompatActivity() {
                 .start()
         }
 
-        // Через ~3 секунди відкриваємо головну активність з сайтом
+        // Перехід у головний екран
         Handler(Looper.getMainLooper()).postDelayed({
             startActivity(Intent(this, MainActivity::class.java))
             finish()
