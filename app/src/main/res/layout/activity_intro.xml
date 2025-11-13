@@ -14,38 +14,38 @@
     <!-- М'яч -->
     <ImageView
         android:id="@+id/ball"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
+        android:layout_width="110dp"
+        android:layout_height="110dp"
         android:layout_gravity="center_vertical"
-        android:translationX="-200dp"
+        android:translationX="-250dp"
         android:src="@drawable/ball_maf" />
 
-    <!-- Основний текст -->
+    <!-- Текст МАФ -->
     <TextView
         android:id="@+id/titleText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="МИКОЛАЇВСЬКА АСОЦІАЦІЯ ФУТБОЛУ"
-        android:textSize="24sp"
+        android:textSize="28sp"
         android:textStyle="bold"
         android:textColor="#FFFFFF"
         android:gravity="center"
         android:shadowColor="#000000"
-        android:shadowRadius="6"
+        android:shadowRadius="7"
         android:layout_gravity="bottom"
-        android:layout_marginBottom="80dp"
+        android:layout_marginBottom="90dp"
         android:alpha="0" />
 
-    <!-- Підпис by Sopila -->
+    <!-- Постійний напис by Sopila -->
     <TextView
         android:id="@+id/bySopila"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="by Sopila"
-        android:textSize="14sp"
+        android:textSize="17sp"
         android:textColor="#001F4E"
         android:layout_gravity="bottom|end"
-        android:layout_margin="16dp"
-        android:alpha="0" />
+        android:layout_margin="22dp"
+        android:alpha="1" />
 
 </FrameLayout>
