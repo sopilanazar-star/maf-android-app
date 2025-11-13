@@ -1,15 +1,15 @@
-plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-}
-
 android {
     namespace = "ua.lviv.maf"
     compileSdk = 34
 
     defaultConfig {
-    versionCode = 4      // +1 від попереднього
-    versionName = "1.0.3"
+        applicationId = "ua.lviv.maf"
+        minSdk = 24
+        targetSdk = 34
+        versionCode = 4
+        versionName = "1.0.3"
+    }
+    ...
 }
 
     buildTypes {
