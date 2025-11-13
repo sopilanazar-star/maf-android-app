@@ -8,13 +8,9 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "ua.lviv.maf"
-        minSdk = 24
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
-        vectorDrawables.useSupportLibrary = true
-    }
+    versionCode = 4      // +1 від попереднього
+    versionName = "1.0.3"
+}
 
     buildTypes {
         release {
