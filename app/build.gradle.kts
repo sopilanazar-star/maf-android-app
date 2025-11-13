@@ -1,16 +1,20 @@
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+}
+
 android {
     namespace = "ua.lviv.maf"
     compileSdk = 34
 
     defaultConfig {
         applicationId = "ua.lviv.maf"
-        minSdk = 24
+        minSdk = 24        // мінімальна версія Android
         targetSdk = 34
-        versionCode = 4
-        versionName = "1.0.3"
+        versionCode = 1
+        versionName = "1.0.0"
+        vectorDrawables.useSupportLibrary = true
     }
-    ...
-}
 
     buildTypes {
         release {
@@ -29,7 +33,7 @@ android {
         viewBinding = true
     }
 
-    // ✅ Вирівнюємо цілі Java/Kotlin на 17
+    // Java/Kotlin 17
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -45,9 +49,16 @@ android {
     }
 }
 
-// (не обов’язково, але корисно для надійності)
+// Kotlin toolchain 17
 kotlin {
     jvmToolchain(17)
+}
+
+// Підстраховка для viewbinding, щоб не було конфліктів
+configurations.all {
+    resolutionStrategy {
+        force("androidx.databinding:viewbinding:8.4.0")
+    }
 }
 
 dependencies {
