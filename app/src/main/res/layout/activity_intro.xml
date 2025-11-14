@@ -3,12 +3,12 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Фон стадіону -->
     <ImageView
-        android:id="@+id/bgView"
+        android:id="@+id/stadiumBg"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:src="@drawable/stadium_maf"
-        android:scaleType="centerCrop" />
+        android:src="@drawable/stadium_maf_bg"
+        android:scaleType="centerCrop"
+        android:adjustViewBounds="true" />
 
 </FrameLayout>
