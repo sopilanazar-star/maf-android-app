@@ -1,12 +1,12 @@
 package ua.lviv.maf
 
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
+import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.content.Intent
 import android.os.Bundle
-import android.view.animation.AccelerateDecelerateInterpolator
-import android.widget.ImageView
+import android.os.Handler
+import android.os.Looper
+import android.view.animation.LinearInterpolator
 import androidx.appcompat.app.AppCompatActivity
 
 class IntroActivity : AppCompatActivity() {
@@ -15,48 +15,49 @@ class IntroActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_intro)
 
-        val ball = findViewById<ImageView>(R.id.ballView)
-
-        // стартова позиція – м'яч трохи за краєм зліва
-        val screenWidth = resources.displayMetrics.widthPixels.toFloat()
-        ball.translationX = -screenWidth / 2f
-        ball.rotation = -20f
-
-        // анімація руху
-        val move = ObjectAnimator.ofFloat(
-            ball,
-            "translationX",
-            ball.translationX,
-            0f
-        ).apply {
-            duration = 1500          // ~1.5 c
-            interpolator = AccelerateDecelerateInterpolator()
-        }
-
-        // анімація обертання
-        val rotate = ObjectAnimator.ofFloat(
-            ball,
-            "rotation",
-            -20f,
-            720f                        // 2 повних обороти
-        ).apply {
-            duration = 1500
-            interpolator = AccelerateDecelerateInterpolator()
-        }
-
-        // після закінчення руху – відкриваємо основний екран
-        move.addListener(object : AnimatorListenerAdapter() {
-            override fun onAnimationEnd(animation: Animator) {
-                startMain()
-            }
-        })
-
-        move.start()
-        rotate.start()
+        startBallAnimation()
     }
 
-    private fun startMain() {
-        startActivity(Intent(this, MainActivity::class.java))
-        finish()
+    private fun startBallAnimation() {
+        val ball = findViewById<ImageView>(R.id.ballView)
+
+        // стартуємо трохи за лівим краєм
+        ball.translationX = -300f
+
+        val screenWidth = resources.displayMetrics.widthPixels.toFloat()
+
+        // рух м’яча зліва → вправо
+        val moveAnim = ObjectAnimator.ofFloat(
+            ball,
+            "translationX",
+            -300f,
+            screenWidth + 300f
+        ).apply {
+            duration = 1500      // ~1,5 сек
+            interpolator = LinearInterpolator()
+        }
+
+        // обертання м’яча
+        val rotateAnim = ObjectAnimator.ofFloat(
+            ball,
+            "rotation",
+            0f,
+            1440f           // 4 повних оберти
+        ).apply {
+            duration = 1500
+            interpolator = LinearInterpolator()
+        }
+
+        // запускаємо рух + обертання одночасно
+        AnimatorSet().apply {
+            playTogether(moveAnim, rotateAnim)
+            start()
+        }
+
+        // після інтро відкриваємо основний екран
+        Handler(Looper.getMainLooper()).postDelayed({
+            startActivity(Intent(this, MainActivity::class.java))
+            finish()
+        }, 1600)
     }
 }
