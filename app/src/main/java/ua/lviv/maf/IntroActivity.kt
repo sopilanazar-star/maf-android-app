@@ -12,10 +12,10 @@ class IntroActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_intro)
 
-        // Простий таймер на 2.5 секунди, потім відкриваємо головну активність
+        // Чекаємо 2 сек — і далі в WebView
         Handler(Looper.getMainLooper()).postDelayed({
             startActivity(Intent(this, MainActivity::class.java))
             finish()
-        }, 2500)
+        }, 2000)
     }
 }
