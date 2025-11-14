@@ -2,43 +2,62 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="ua.lviv.maf">
 
+    <!-- Дозволи -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-               <application
-    android:allowBackup="true"
-    android:dataExtractionRules="@xml/data_extraction_rules"
-    android:fullBackupContent="@xml/backup_rules"
-    android:icon="@mipmap/ic_maf_launcher"
-    android:label="МАФ"
-    android:roundIcon="@mipmap/ic_maf_launcher"
-    android:supportsRtl="true"
-    android:theme="@style/Theme.MAFFootball">
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_maf_launcher"
+        android:label="МАФ"
+        android:roundIcon="@mipmap/ic_maf_launcher"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MAFFootball">
 
-    <!-- ТІЛЬКИ MainActivity як LAUNCHER -->
-    <activity
-        android:name=".MainActivity"
-        android:exported="true"
-        android:screenOrientation="sensorLandscape"
-        android:configChanges="orientation|screenSize|keyboardHidden|uiMode">
-        <intent-filter>
-            <action android:name="android.intent.action.MAIN" />
-            <category android:name="android.intent.category.LAUNCHER" />
-        </intent-filter>
+        <!-- IntroActivity — ПЕРША активність -->
+        <activity
+            android:name=".IntroActivity"
+            android:exported="true"
+            android:screenOrientation="sensorLandscape">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
 
-        <intent-filter android:autoVerify="true">
-            <action android:name="android.intent.action.VIEW" />
-            <category android:name="android.intent.category.DEFAULT" />
-            <category android:name="android.intent.category.BROWSABLE" />
-            <data android:host="maf.lviv.ua" android:scheme="https" />
-        </intent-filter>
-    </activity>
+        <!-- MainActivity — відкривається після інтро -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode">
 
-    <!-- FileProvider і meta-data залишаєш як є -->
-    ...
-</application>
+            <!-- Відкриття maf.lviv.ua через лінки -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="maf.lviv.ua" />
+            </intent-filter>
+
+        </activity>
+
+        <!-- FileProvider якщо використовується -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="ua.lviv.maf.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+    </application>
 
 </manifest>
