@@ -9,56 +9,63 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
-        android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_maf_launcher"
-        android:label="МАФ"
-        android:roundIcon="@mipmap/ic_maf_launcher"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.MAFFootball.Splash">
+    android:allowBackup="true"
+    android:dataExtractionRules="@xml/data_extraction_rules"
+    android:fullBackupContent="@xml/backup_rules"
+    android:icon="@mipmap/ic_maf_launcher"
+    android:label="МАФ"
+    android:roundIcon="@mipmap/ic_maf_launcher"
+    android:supportsRtl="true"
+    android:theme="@style/Theme.MAFFootball">
 
-        <!-- 💠 Splash → IntroActivity -->
-        <activity
-            android:name=".IntroActivity"
-            android:exported="true"
-            android:screenOrientation="sensorLandscape">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+    <!-- ЗАСТАВКА З М'ЯЧЕМ -->
+    <activity
+        android:name=".IntroActivity"
+        android:exported="true"
+        android:screenOrientation="sensorLandscape"
+        android:theme="@style/Theme.MAFFootball">
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+    </activity>
 
-        <!-- 🌐 Основна WebView-активність -->
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:screenOrientation="sensorLandscape"
-            android:configChanges="keyboardHidden|orientation|screenSize|uiMode">
+    <!-- Основний WebView-додаток -->
+    <activity
+        android:name=".MainActivity"
+        android:exported="true"
+        android:screenOrientation="sensorLandscape"
+        android:configChanges="orientation|screenSize|keyboardHidden|uiMode">
 
-            <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:host="maf.lviv.ua" android:scheme="https" />
-            </intent-filter>
+        <!-- Щоб посилання https://maf.lviv.ua відкривали додаток -->
+        <intent-filter android:autoVerify="true">
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:host="maf.lviv.ua" android:scheme="https" />
+        </intent-filter>
+    </activity>
 
-        </activity>
+    <provider
+        android:name="androidx.core.content.FileProvider"
+        android:authorities="ua.lviv.maf.fileprovider"
+        android:exported="false"
+        android:grantUriPermissions="true">
+        <meta-data
+            android:name="android.support.FILE_PROVIDER_PATHS"
+            android:resource="@xml/file_paths" />
+    </provider>
 
-        <!-- File provider -->
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="ua.lviv.maf.fileprovider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
-        </provider>
+    <meta-data
+        android:name="android.webkit.WebView.EnableSafeBrowsing"
+        android:value="true" />
+    <meta-data
+        android:name="android.service.autofill"
+        android:resource="@xml/autofill_config" />
+    <meta-data
+        android:name="androidx.core.splashscreen.SplashScreen"
+        android:value="true" />
+</application>
 
-        <meta-data android:name="android.webkit.WebView.EnableSafeBrowsing" android:value="true"/>
-        <meta-data android:name="android.service.autofill" android:resource="@xml/autofill_config" />
-
-    </application>
 
 </manifest>
