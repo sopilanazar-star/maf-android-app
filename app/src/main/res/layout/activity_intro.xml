@@ -2,8 +2,16 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/intro_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/stadium_maf">
+    android:layout_height="match_parent">
+
+    <!-- Фон: розмитий стадіон -->
+    <ImageView
+        android:id="@+id/bgStadium"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:src="@drawable/stadium_maf"
+        android:scaleType="centerCrop"
+        android:contentDescription="@null" />
 
     <!-- Логотип МАФ по центру -->
     <ImageView
@@ -12,6 +20,18 @@
         android:layout_height="220dp"
         android:layout_gravity="center"
         android:src="@drawable/ic_maf_foreground"
-        android:scaleType="fitCenter" />
+        android:contentDescription="@null" />
+
+    <!-- Текст під логотипом (поки без анімацій) -->
+    <TextView
+        android:id="@+id/titleView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="32dp"
+        android:text="МИКОЛАЇВСЬКА АСОЦІАЦІЯ ФУТБОЛУ"
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        android:textStyle="bold" />
 
 </FrameLayout>
