@@ -13,7 +13,7 @@
         android:src="@drawable/stadium_maf"
         android:scaleType="centerCrop" />
 
-    <!-- Логотип МАФ по центру (залишаємо, щоб IntroActivity.kt не ламався) -->
+    <!-- Логотип МАФ по центру -->
     <ImageView
         android:id="@+id/logoView"
         android:layout_width="220dp"
@@ -23,12 +23,12 @@
         android:contentDescription="@string/app_name"
         android:scaleType="fitCenter" />
 
-    <!-- Текст поки заводимо, але можемо не використовувати -->
+    <!-- Поки без тексту, але ID лишаємо -->
     <TextView
         android:id="@+id/titleView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text=""          <!-- Поки без тексту -->
+        android:text=""
         android:textColor="@android:color/white"
         android:textSize="24sp"
         android:textStyle="bold"
