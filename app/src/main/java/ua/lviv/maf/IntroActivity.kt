@@ -4,40 +4,67 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.animation.AccelerateDecelerateInterpolator
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
 class IntroActivity : AppCompatActivity() {
 
-    private lateinit var titleView: TextView
-
-    // Повний текст, який друкуємо по букві
-    private val fullText = "МИКОЛАЇВСЬКА АСОЦІАЦІЯ ФУТБОЛУ"
-    private var index = 0
+    private val handler = Handler(Looper.getMainLooper())
+    private val fullTitle = "МИКОЛАЇВСЬКА АСОЦІАЦІЯ ФУТБОЛУ"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_intro)
 
-        titleView = findViewById(R.id.titleView)
+        val logoView = findViewById<ImageView>(R.id.logoView)
+        val titleView = findViewById<TextView>(R.id.titleView)
 
-        // Запускаємо анімацію "друку" тексту
-        typeNextChar()
+        // Стартові значення логотипа (трохи менший і прозорий)
+        logoView.scaleX = 0.7f
+        logoView.scaleY = 0.7f
+        logoView.alpha = 0f
 
-        // Через ~3.5 секунди переходимо на головний екран
-        Handler(Looper.getMainLooper()).postDelayed({
-            startActivity(Intent(this, MainActivity::class.java))
-            finish()
-        }, 3500)
+        // Плавне появлення + збільшення герба
+        logoView.animate()
+            .alpha(1f)
+            .scaleX(1f)
+            .scaleY(1f)
+            .setDuration(700)
+            .setInterpolator(AccelerateDecelerateInterpolator())
+            .withEndAction {
+                startTyping(titleView)
+            }
+            .start()
     }
 
-    private fun typeNextChar() {
-        if (index > fullText.length) return
+    private fun startTyping(titleView: TextView) {
+        titleView.text = ""
+        val delayPerChar = 70L   // мс на одну букву
 
-        titleView.text = fullText.substring(0, index)
-        index++
+        // Друкуємо фразу по буквах
+        for (i in fullTitle.indices) {
+            handler.postDelayed({
+                titleView.text = fullTitle.substring(0, i + 1)
+            }, delayPerChar * i)
+        }
 
-        // Швидкість набору: 70 мс на символ
-        titleView.postDelayed({ typeNextChar() }, 70)
+        // Після завершення друку – переходимо в основний екран
+        val totalDuration = delayPerChar * fullTitle.length + 600L
+        handler.postDelayed({
+            openMain()
+        }, totalDuration)
+    }
+
+    private fun openMain() {
+        startActivity(Intent(this, MainActivity::class.java))
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        finish()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        handler.removeCallbacksAndMessages(null)
     }
 }
