@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Фон стадіону -->
+    <!-- Стадіон -->
     <ImageView
         android:id="@+id/bgStadium"
         android:layout_width="match_parent"
@@ -14,10 +14,10 @@
     <!-- М'яч -->
     <ImageView
         android:id="@+id/ball"
-        android:layout_width="110dp"
-        android:layout_height="110dp"
+        android:layout_width="115dp"
+        android:layout_height="115dp"
         android:layout_gravity="center_vertical"
-        android:translationX="-250dp"
+        android:translationX="-260dp"
         android:src="@drawable/ball_maf" />
 
     <!-- Текст МАФ -->
@@ -26,26 +26,25 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="МИКОЛАЇВСЬКА АСОЦІАЦІЯ ФУТБОЛУ"
-        android:textSize="28sp"
+        android:textSize="30sp"
         android:textStyle="bold"
         android:textColor="#FFFFFF"
-        android:gravity="center"
         android:shadowColor="#000000"
         android:shadowRadius="7"
+        android:gravity="center"
         android:layout_gravity="bottom"
-        android:layout_marginBottom="90dp"
-        android:alpha="0" />
+        android:layout_marginBottom="80dp"
+        android:alpha="0"/>
 
-    <!-- Постійний напис by Sopila -->
+    <!-- Постійний підпис -->
     <TextView
         android:id="@+id/bySopila"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="by Sopila"
-        android:textSize="17sp"
         android:textColor="#001F4E"
+        android:textSize="17sp"
         android:layout_gravity="bottom|end"
-        android:layout_margin="22dp"
-        android:alpha="1" />
+        android:layout_margin="20dp" />
 
 </FrameLayout>
