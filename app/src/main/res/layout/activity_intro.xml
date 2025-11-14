@@ -3,28 +3,12 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Фон: розмитий стадіон -->
+    <!-- Фон стадіону -->
     <ImageView
         android:id="@+id/bgView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:src="@drawable/stadium_maf"
         android:scaleType="centerCrop" />
-
-    <!-- ЛОГО МАФ ПО ЦЕНТРУ -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center"
-        android:orientation="vertical">
-
-        <ImageView
-            android:id="@+id/logoView"
-            android:layout_width="200dp"
-            android:layout_height="200dp"
-            android:src="@drawable/ic_maf_foreground"
-            android:contentDescription="Логотип МАФ" />
-
-    </LinearLayout>
 
 </FrameLayout>
