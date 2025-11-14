@@ -18,7 +18,7 @@
     android:supportsRtl="true"
     android:theme="@style/Theme.MAFFootball">
 
-    <!-- ЗАСТАВКА З М'ЯЧЕМ -->
+    <!-- ЗАСТАВКА З Логотипом -->
     <activity
     android:name=".MainActivity"
     android:exported="true"
