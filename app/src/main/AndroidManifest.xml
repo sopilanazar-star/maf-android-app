@@ -8,59 +8,57 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <application
-        android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_maf_launcher"
-        android:label="МАФ"
-        android:roundIcon="@mipmap/ic_maf_launcher"
-        android:supportsRtl="true"
+               <application
+    android:allowBackup="true"
+    android:dataExtractionRules="@xml/data_extraction_rules"
+    android:fullBackupContent="@xml/backup_rules"
+    android:icon="@mipmap/ic_maf_launcher"
+    android:label="МАФ"
+    android:roundIcon="@mipmap/ic_maf_launcher"
+    android:supportsRtl="true"
+    android:theme="@style/Theme.MAFFootball">
+
+    <!-- IntroActivity – перша активність (логотип) -->
+    <activity
+        android:name=".IntroActivity"
+        android:exported="true"
+        android:screenOrientation="sensorLandscape"
         android:theme="@style/Theme.MAFFootball">
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+    </activity>
 
-        <!-- Intro з логотипом МАФ -->
-        <activity
-            android:name=".IntroActivity"
-            android:exported="true"
-            android:screenOrientation="sensorLandscape"
-            android:theme="@style/Theme.MAFFootball">
-            <!-- Саме IntroActivity є стартовою -->
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+    <!-- MainActivity – відкриття сайту -->
+    <activity
+        android:name=".MainActivity"
+        android:exported="false"
+        android:screenOrientation="sensorLandscape"
+        android:configChanges="orientation|screenSize|keyboardHidden|uiMode">
+        <intent-filter android:autoVerify="true">
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:host="maf.lviv.ua" android:scheme="https" />
+        </intent-filter>
+    </activity>
 
-        <!-- Основний веб-додаток -->
-        <activity
-            android:name=".MainActivity"
-            android:exported="false"
-            android:screenOrientation="sensorLandscape"
-            android:configChanges="orientation|screenSize|keyboardHidden|uiMode">
+    <!-- File provider -->
+    <provider
+        android:name="androidx.core.content.FileProvider"
+        android:authorities="ua.lviv.maf.fileprovider"
+        android:exported="false"
+        android:grantUriPermissions="true">
+        <meta-data
+            android:name="android.support.FILE_PROVIDER_PATHS"
+            android:resource="@xml/file_paths" />
+    </provider>
 
-            <!-- deep-link на maf.lviv.ua -->
-            <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:host="maf.lviv.ua"
-                    android:scheme="https" />
-            </intent-filter>
-        </activity>
+    <meta-data android:name="android.webkit.WebView.EnableSafeBrowsing" android:value="true"/>
+    <meta-data android:name="android.service.autofill" android:resource="@xml/autofill_config" />
+    <meta-data android:name="androidx.core.splashscreen.SplashScreen" android:value="true" />
 
-        <!-- FileProvider для завантажень -->
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="ua.lviv.maf.fileprovider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
-        </provider>
-
-        <!-- НІЯКИХ інших <meta-data> тут не лишаємо -->
-    </application>
+</application> 
 
 </manifest>
