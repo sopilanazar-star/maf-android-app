@@ -10,7 +10,6 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
 class IntroActivity : AppCompatActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_intro)
@@ -20,22 +19,15 @@ class IntroActivity : AppCompatActivity() {
 
         ball.post {
             val screenWidth = resources.displayMetrics.widthPixels.toFloat()
+            ball.translationX = -ball.width * 2f
+            val stopX = screenWidth - ball.width * 1.4f
 
-            // Старт і стоп положення
-            val startX = -ball.width * 2f
-            val stopX = screenWidth - ball.width * 1.3f
-
-            // Початкова позиція
-            ball.translationX = startX
-
-            // Анімація котіння
             ball.animate()
                 .translationX(stopX)
-                .rotationBy(1080f)  // 3 оберти
-                .setInterpolator(LinearInterpolator())
+                .rotationBy(1080f)
                 .setDuration(1500)
+                .setInterpolator(LinearInterpolator())
                 .withEndAction {
-                    // Поява тексту
                     titleText.animate()
                         .alpha(1f)
                         .setDuration(700)
@@ -44,7 +36,6 @@ class IntroActivity : AppCompatActivity() {
                 .start()
         }
 
-        // Перехід у головний екран
         Handler(Looper.getMainLooper()).postDelayed({
             startActivity(Intent(this, MainActivity::class.java))
             finish()
