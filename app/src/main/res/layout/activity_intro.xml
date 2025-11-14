@@ -3,9 +3,17 @@
     android:id="@+id/intro_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/stadium_maf">
+    android:background="#000000">
 
-    <!-- Логотип МАФ по центру -->
+    <!-- Фон-стадіон на весь екран -->
+    <ImageView
+        android:id="@+id/bgImage"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:src="@drawable/stadium_maf"
+        android:scaleType="centerCrop" />
+
+    <!-- Логотип МАФ по центру (залишаємо, щоб IntroActivity.kt не ламався) -->
     <ImageView
         android:id="@+id/logoView"
         android:layout_width="220dp"
@@ -15,20 +23,16 @@
         android:contentDescription="@string/app_name"
         android:scaleType="fitCenter" />
 
-    <!-- Текст, який ми друкуємо по буквах -->
+    <!-- Текст поки заводимо, але можемо не використовувати -->
     <TextView
         android:id="@+id/titleView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text=""
+        android:text=""          <!-- Поки без тексту -->
         android:textColor="@android:color/white"
         android:textSize="24sp"
         android:textStyle="bold"
         android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="32dp"
-        android:shadowColor="#80000000"
-        android:shadowDx="0"
-        android:shadowDy="2"
-        android:shadowRadius="4" />
+        android:layout_marginBottom="32dp" />
 
 </FrameLayout>
