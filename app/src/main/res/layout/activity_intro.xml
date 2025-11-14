@@ -1,50 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/intro_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@drawable/stadium_maf">
 
-    <!-- Стадіон -->
+    <!-- М'яч (реальна картинка) -->
     <ImageView
-        android:id="@+id/bgStadium"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="centerCrop"
-        android:src="@drawable/stadium_maf" />
+        android:id="@+id/ballView"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:src="@drawable/ball_maf"
+        android:layout_gravity="center_vertical|start"
+        android:scaleType="fitCenter" />
 
-    <!-- М'яч -->
-    <ImageView
-        android:id="@+id/ball"
-        android:layout_width="115dp"
-        android:layout_height="115dp"
-        android:layout_gravity="center_vertical"
-        android:translationX="-260dp"
-        android:src="@drawable/ball_maf" />
-
-    <!-- Текст МАФ -->
+    <!-- Основний напис -->
     <TextView
-        android:id="@+id/titleText"
-        android:layout_width="match_parent"
+        android:id="@+id/titleView"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="МИКОЛАЇВСЬКА АСОЦІАЦІЯ ФУТБОЛУ"
-        android:textSize="30sp"
-        android:textStyle="bold"
         android:textColor="#FFFFFF"
-        android:shadowColor="#000000"
-        android:shadowRadius="7"
-        android:gravity="center"
-        android:layout_gravity="bottom"
-        android:layout_marginBottom="80dp"
-        android:alpha="0"/>
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="40dp" />
 
-    <!-- Постійний підпис -->
+    <!-- Постійний напис by Sopila -->
     <TextView
-        android:id="@+id/bySopila"
+        android:id="@+id/byView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="by Sopila"
-        android:textColor="#001F4E"
-        android:textSize="17sp"
+        android:textColor="#0A1D4F"
+        android:textSize="12sp"
         android:layout_gravity="bottom|end"
-        android:layout_margin="20dp" />
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="12dp" />
 
 </FrameLayout>
