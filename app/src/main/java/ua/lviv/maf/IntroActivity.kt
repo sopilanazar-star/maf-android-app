@@ -10,12 +10,13 @@ class IntroActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // показуємо наш layout зі стадіоном
         setContentView(R.layout.activity_intro)
 
-        // Чекаємо 2 сек — і далі в WebView
+        // через 2 секунди відкриваємо основну активність з WebView
         Handler(Looper.getMainLooper()).postDelayed({
             startActivity(Intent(this, MainActivity::class.java))
-            finish()
-        }, 2000)
+            finish()  // щоб по "Назад" не повертатися на інтро
+        }, 2000L)
     }
 }
