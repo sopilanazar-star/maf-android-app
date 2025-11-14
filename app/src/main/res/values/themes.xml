@@ -1,18 +1,20 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Тема СКРІНУ ЗАПУСКУ -->
-    <style name="Theme.MAFFootball.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/white</item>
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_maf_launcher</item>
-        <item name="windowSplashScreenAnimationDuration">500</item>
-        <item name="postSplashScreenTheme">@style/Theme.MAFFootball</item>
-    </style>
-
     <!-- Основна тема додатка -->
     <style name="Theme.MAFFootball" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- твої кольори -->
         <item name="colorPrimary">@color/maf_green</item>
         <item name="colorPrimaryVariant">@color/maf_dark</item>
         <item name="colorOnPrimary">@color/white</item>
+        <item name="android:statusBarColor">@color/maf_dark</item>
+
+        <!-- НАЛАШТУВАННЯ СИСТЕМНОГО SPLASH -->
+        <!-- фон заставки -->
+        <item name="android:windowSplashScreenBackground">@color/maf_green</item>
+        <!-- іконка / логотип на заставці -->
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_maf_launcher</item>
+        <!-- тривалість анімації (0.5 секунди) -->
+        <item name="android:windowSplashScreenAnimationDuration">500</item>
     </style>
 
 </resources>
