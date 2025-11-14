@@ -1,45 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/intro_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/stadium_maf">
 
-    <!-- Лого МАФ по центру -->
     <ImageView
         android:id="@+id/logoView"
-        android:layout_width="220dp"
-        android:layout_height="220dp"
+        android:layout_width="260dp"
+        android:layout_height="260dp"
+        android:layout_gravity="center_horizontal|center_vertical"
         android:src="@drawable/ic_maf_foreground"
-        android:layout_gravity="center"
-        android:contentDescription="@string/app_name"
-        android:scaleType="fitCenter" />
+        android:contentDescription="logo" />
 
-    <!-- Текст, який друкується по букві -->
     <TextView
         android:id="@+id/titleView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="40dp"
-        android:textColor="@android:color/white"
-        android:textSize="22sp"
+        android:text=""
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
         android:textStyle="bold"
-        android:shadowColor="#80000000"
-        android:shadowRadius="6"
-        android:shadowDx="0"
-        android:shadowDy="2" />
-
-    <!-- Підпис by Sopila -->
-    <TextView
-        android:id="@+id/byView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="14dp"
-        android:text="by Sopila"
-        android:textColor="@android:color/white"
-        android:textSize="12sp"
-        android:alpha="0.8" />
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="60dp"/>
 
 </FrameLayout>
