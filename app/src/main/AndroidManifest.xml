@@ -19,38 +19,40 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MAFFootball">
 
-        <!-- IntroActivity — ПЕРША активність -->
+        <!-- Інтро зі стадіоном: перша активність, що запускається -->
         <activity
             android:name=".IntroActivity"
             android:exported="true"
-            android:screenOrientation="sensorLandscape">
+            android:screenOrientation="sensorLandscape"
+            android:theme="@style/Theme.MAFFootball">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <!-- MainActivity — відкривається після інтро -->
+        <!-- Основна активність з WebView -->
         <activity
             android:name=".MainActivity"
             android:exported="false"
             android:screenOrientation="sensorLandscape"
             android:configChanges="orientation|screenSize|keyboardHidden|uiMode">
 
-            <!-- Відкриття maf.lviv.ua через лінки -->
+            <!-- Deep-link на maf.lviv.ua -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="maf.lviv.ua" />
+                <data
+                    android:scheme="https"
+                    android:host="maf.lviv.ua" />
             </intent-filter>
-
         </activity>
 
-        <!-- FileProvider якщо використовується -->
+        <!-- FileProvider для шарингу файлів (як було в тебе) -->
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="ua.lviv.maf.fileprovider"
+            android:authorities="${applicationId}.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
