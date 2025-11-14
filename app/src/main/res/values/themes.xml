@@ -1,9 +1,11 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="Theme.MAFFootball" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="android:statusBarColor">@color/maf_dark</item>
-        <item name="android:navigationBarColor">@color/maf_dark</item>
-        <item name="colorPrimary">@color/maf_green</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
-        <item name="android:windowSplashScreenBackground">@color/maf_dark</item>
+<resources>
+
+    <style name="Theme.MAFFootball" parent="Theme.MaterialComponents.DayNight.NoActionBar"/>
+
+    <style name="Theme.MAFFootball.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#FFFFFF</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_maf_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.MAFFootball</item>
     </style>
+
 </resources>
