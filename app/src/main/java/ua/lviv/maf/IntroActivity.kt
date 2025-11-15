@@ -18,18 +18,18 @@ class IntroActivity : AppCompatActivity() {
         val circularText: CircularTextView = findViewById(R.id.circularText)
         val logoMaf: ImageView = findViewById(R.id.logoMaf)
 
-        // Тексти для верхньої і нижньої дуги — як на емблемі
+        // Написи, як на емблемі
         circularText.setTopText("МИКОЛАЇВСЬКА")
         circularText.setBottomText("АСОЦІАЦІЯ ФУТБОЛУ")
 
-        // Коли герб уже проміряний, задаємо радіус і стартуємо анімацію букв
+        // Після того як герб проміряють – задаємо радіус дуги і запускаємо анімацію букв
         logoMaf.post {
-            val r = logoMaf.width / 2f + 40f   // відступ від герба
+            val r = logoMaf.width / 2f + 60f   // відступ дуги від герба
             circularText.setRadiusPx(r)
-            circularText.startLetterByLetterAnimation(3000L)
+            circularText.startLetterByLetterAnimation(5000L)
         }
 
-        // Легка пульсація герба (можеш прибрати, якщо не подобається)
+        // Легка "пульсація" герба
         val scaleUpX = ObjectAnimator.ofFloat(logoMaf, "scaleX", 1f, 1.06f)
         val scaleUpY = ObjectAnimator.ofFloat(logoMaf, "scaleY", 1f, 1.06f)
         scaleUpX.duration = 900L
@@ -43,7 +43,7 @@ class IntroActivity : AppCompatActivity() {
         logoSet.playTogether(scaleUpX, scaleUpY)
         logoSet.start()
 
-        // Через 5 сек переходимо в головний екран
+        // Через 5 сек переходимо в MainActivity
         Handler(Looper.getMainLooper()).postDelayed({
             startActivity(Intent(this, MainActivity::class.java))
             finish()
