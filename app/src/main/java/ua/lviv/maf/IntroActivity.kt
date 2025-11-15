@@ -43,10 +43,10 @@ class IntroActivity : AppCompatActivity() {
         logoSet.playTogether(scaleUpX, scaleUpY)
         logoSet.start()
 
-        // Через 3.5 сек переходимо в головний екран
+        // Через 5 сек переходимо в головний екран
         Handler(Looper.getMainLooper()).postDelayed({
             startActivity(Intent(this, MainActivity::class.java))
             finish()
-        }, 3500L)
+        }, 5000L)
     }
 }
