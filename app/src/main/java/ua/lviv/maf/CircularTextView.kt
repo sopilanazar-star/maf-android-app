@@ -147,16 +147,16 @@ class CircularTextView @JvmOverloads constructor(
         }
 
         // === НИЖНЯ ДУГА: "АСОЦІАЦІЯ ФУТБОЛУ" ===
-        // Кути 20°..160° (під гербом)
+        // ТЕПЕР ПРАВИЛЬНО: кути 160°..20° (зліва направо, під гербом)
         if (visibleBottom > 0 && bottomLen > 0) {
-            val bottomStart = 20f
-            val bottomEnd = 160f
-            val bottomSpan = bottomEnd - bottomStart
+            val bottomStart = 160f   // ліва нижня сторона
+            val bottomEnd = 20f      // права нижня сторона
+            val bottomSpan = bottomEnd - bottomStart // буде від'ємний, але це ок
 
             for (j in 0 until visibleBottom) {
                 val ch = bottomText[j].toString()
                 val frac = if (bottomLen == 1) 0.5f else j.toFloat() / (bottomLen - 1).toFloat()
-                val angleDeg = bottomStart + bottomSpan * frac
+                val angleDeg = bottomStart + bottomSpan * frac  // 160 -> 20
                 val angleRad = Math.toRadians(angleDeg.toDouble())
 
                 val x = cx + usedRadius * cos(angleRad)
