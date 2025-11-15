@@ -4,36 +4,28 @@
     android:layout_height="match_parent"
     android:background="@drawable/stadium_maf">
 
-    <!-- 🎯 ГЕРБ ПО ЦЕНТРУ -->
+    <!-- 🎯 Логотип МАФ по центру -->
     <ImageView
-        android:id="@+id/centerLogo"
+        android:id="@+id/logoView"
         android:layout_width="220dp"
         android:layout_height="220dp"
-        android:src="@drawable/maf_logo"
+        android:src="@drawable/ic_maf_foreground"
         android:layout_centerInParent="true"
-        android:alpha="0" />   <!-- він з'явиться плавно -->
+        android:scaleX="0.9"
+        android:scaleY="0.9"
+        android:rotationY="0" />
 
-    <!-- ⚽ М'яч для анімації -->
-    <ImageView
-        android:id="@+id/ballView"
-        android:layout_width="120dp"
-        android:layout_height="120dp"
-        android:src="@drawable/ball_maf"
-        android:layout_centerVertical="true"
-        android:translationX="-400dp" />
-
-    <!-- ✨ Текст, який з'явиться після м'яча -->
+    <!-- ✨ Напис під логотипом (буде заповнюватися побуквенно) -->
     <TextView
         android:id="@+id/mafText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="МИКОЛАЇВСЬКА АСОЦІАЦІЯ ФУТБОЛУ"
-        android:textColor="#FFFFFF"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:alpha="0"
+        android:text=""
+        android:textColor="#004B8F"
+        android:textSize="26sp"
         android:layout_centerHorizontal="true"
-        android:layout_below="@id/centerLogo"
-        android:layout_marginTop="20dp"/>
+        android:layout_below="@id/logoView"
+        android:layout_marginTop="24dp"
+        android:fontFamily="@font/cinzel_black" />
 
 </RelativeLayout>
