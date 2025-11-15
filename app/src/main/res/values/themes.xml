@@ -1,26 +1,20 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Основна тема додатка для Android 12+ -->
+    <!-- Основна тема додатку -->
     <style name="Theme.MAFFootball" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- твої кольори -->
-        <item name="colorPrimary">@color/maf_green</item>
-        <item name="colorPrimaryVariant">@color/maf_dark</item>
-        <item name="colorOnPrimary">@color/white</item>
-        <item name="android:statusBarColor">@color/maf_dark</item>
 
-        <!-- НАЛАШТУВАННЯ СИСТЕМНОГО SPLASH ANDROID 12+ -->
+        <!-- Кольори статус-бара -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
 
-        <!-- фон заставки: замість зеленого кольору – картинка стадіону -->
-        <item name="android:windowSplashScreenBackground">@drawable/stadium_maf</item>
-
-        <!-- логотип на заставці: твоє лого МАФ -->
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_maf_foreground</item>
-
-        <!-- тривалість появи splash (0.4 с, можна змінити) -->
-        <item name="android:windowSplashScreenAnimationDuration">400</item>
-
-        <!-- без кольорового кружка під іконкою -->
+        <!-- Прибираємо splash Android 12 повністю -->
+        <item name="android:windowSplashScreenBackground">@android:color/black</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@null</item>
         <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+        <item name="android:windowSplashScreenAnimationDuration">0</item>
+
+        <!-- НІЯКИХ лого, НІЯКИХ фонів, НІЯКИХ зображень -->
+        <!-- Усе інтро ми показуємо самі через IntroActivity -->
     </style>
 
 </resources>
+
