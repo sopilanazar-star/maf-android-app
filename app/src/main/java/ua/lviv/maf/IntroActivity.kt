@@ -1,62 +1,88 @@
 package ua.lviv.maf
 
-import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
 class IntroActivity : AppCompatActivity() {
 
+    private val fullText = "МИКОЛАЇВСЬКА АСОЦІАЦІЯ ФУТБОЛУ"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_intro)
 
-        val ball = findViewById<ImageView>(R.id.ballView)
-        val text = findViewById<TextView>(R.id.mafText)
-        val logo = findViewById<ImageView>(R.id.centerLogo)
+        val logoView: ImageView = findViewById(R.id.logoView)
+        val mafText: TextView = findViewById(R.id.mafText)
 
-        // ---------- 1️⃣ М'яч котиться ----------
+        // 🔹 3D-пульсація логотипа
+        startLogoAnimation(logoView)
 
-        val move = ObjectAnimator.ofFloat(ball, "translationX", 0f, 900f).apply {
-            duration = 2000
-        }
+        // 🔹 Побуквенна поява тексту знизу
+        animateTextLetterByLetter(mafText, fullText, interval = 120L)
 
-        val rotate = ObjectAnimator.ofFloat(ball, "rotation", 0f, 1440f).apply {
-            duration = 2000
-        }
-
-        val scaleX = ObjectAnimator.ofFloat(ball, "scaleX", 1f, 1.5f).apply { duration = 2000 }
-        val scaleY = ObjectAnimator.ofFloat(ball, "scaleY", 1f, 1.5f).apply { duration = 2000 }
-
-        val ballAnim = AnimatorSet().apply {
-            playTogether(move, rotate, scaleX, scaleY)
-            start()
-        }
-
-        // ---------- 2️⃣ Поява герба ----------
-
-        val fadeLogo = ObjectAnimator.ofFloat(logo, "alpha", 0f, 1f).apply {
-            duration = 1200
-            startDelay = 1800
-        }
-        fadeLogo.start()
-
-        // ---------- 3️⃣ Поява тексту ----------
-
-        val fadeText = ObjectAnimator.ofFloat(text, "alpha", 0f, 1f).apply {
-            duration = 1200
-            startDelay = 2300
-        }
-        fadeText.start()
-
-        // ---------- 4️⃣ Перехід у основний додаток ----------
-
-        text.postDelayed({
+        // 🔹 Перехід у основний додаток після інтро (5 секунд)
+        Handler(Looper.getMainLooper()).postDelayed({
             startActivity(Intent(this, MainActivity::class.java))
             finish()
-        }, 3600)
+        }, 5000L)
+    }
+
+    // --- Пульсація та легкий 3D-нахил логотипа ---
+    private fun startLogoAnimation(logo: ImageView) {
+        // масштаб (пульсація)
+        val scaleX = ObjectAnimator.ofFloat(logo, "scaleX", 0.9f, 1.05f).apply {
+            duration = 800
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+            interpolator = AccelerateDecelerateInterpolator()
+        }
+
+        val scaleY = ObjectAnimator.ofFloat(logo, "scaleY", 0.9f, 1.05f).apply {
+            duration = 800
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+            interpolator = AccelerateDecelerateInterpolator()
+        }
+
+        // легкий 3D-нахил
+        val tilt = ObjectAnimator.ofFloat(logo, "rotationY", -6f, 6f).apply {
+            duration = 1600
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+            interpolator = AccelerateDecelerateInterpolator()
+        }
+
+        scaleX.start()
+        scaleY.start()
+        tilt.start()
+    }
+
+    // --- Побуквенна поява тексту ---
+    private fun animateTextLetterByLetter(
+        textView: TextView,
+        text: String,
+        interval: Long = 100L
+    ) {
+        val handler = Handler(Looper.getMainLooper())
+        var index = 0
+
+        val runnable = object : Runnable {
+            override fun run() {
+                if (index <= text.length) {
+                    textView.text = text.substring(0, index)
+                    index++
+                    handler.postDelayed(this, interval)
+                }
+            }
+        }
+
+        handler.post(runnable)
     }
 }
