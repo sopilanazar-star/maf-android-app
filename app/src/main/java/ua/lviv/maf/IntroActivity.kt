@@ -1,13 +1,11 @@
 package ua.lviv.maf
 
+import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
-import android.animation.ValueAnimator
 import android.content.Intent
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.ImageView
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
 class IntroActivity : AppCompatActivity() {
@@ -16,49 +14,49 @@ class IntroActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_intro)
 
-        val logo: ImageView = findViewById(R.id.logoMaf)
-        val circularText: CircularTextView = findViewById(R.id.circularText)
+        val ball = findViewById<ImageView>(R.id.ballView)
+        val text = findViewById<TextView>(R.id.mafText)
+        val logo = findViewById<ImageView>(R.id.centerLogo)
 
-        // ✅ ТУТ ВАЖЛИВО: ВИКЛИКАЄМО setTexts, А НЕ setText
-        circularText.setTexts(
-            top = "Миколаївська",
-            bottom = "асоціація футболу"
-        )
+        // ---------- 1️⃣ М'яч котиться ----------
 
-        // Анімація букв по колу
-        circularText.startLetterByLetterAnimation(duration = 3000L)
-
-        // Пульсація логотипу
-        val scaleX = ObjectAnimator.ofFloat(logo, "scaleX", 1f, 1.08f).apply {
-            duration = 800
-            repeatCount = ValueAnimator.INFINITE
-            repeatMode = ValueAnimator.REVERSE
-            interpolator = AccelerateDecelerateInterpolator()
+        val move = ObjectAnimator.ofFloat(ball, "translationX", 0f, 900f).apply {
+            duration = 2000
         }
 
-        val scaleY = ObjectAnimator.ofFloat(logo, "scaleY", 1f, 1.08f).apply {
-            duration = 800
-            repeatCount = ValueAnimator.INFINITE
-            repeatMode = ValueAnimator.REVERSE
-            interpolator = AccelerateDecelerateInterpolator()
+        val rotate = ObjectAnimator.ofFloat(ball, "rotation", 0f, 1440f).apply {
+            duration = 2000
         }
 
-        // Легкий 3D-нахил
-        val tilt = ObjectAnimator.ofFloat(logo, "rotationY", -4f, 4f).apply {
-            duration = 1600
-            repeatCount = ValueAnimator.INFINITE
-            repeatMode = ValueAnimator.REVERSE
-            interpolator = AccelerateDecelerateInterpolator()
+        val scaleX = ObjectAnimator.ofFloat(ball, "scaleX", 1f, 1.5f).apply { duration = 2000 }
+        val scaleY = ObjectAnimator.ofFloat(ball, "scaleY", 1f, 1.5f).apply { duration = 2000 }
+
+        val ballAnim = AnimatorSet().apply {
+            playTogether(move, rotate, scaleX, scaleY)
+            start()
         }
 
-        scaleX.start()
-        scaleY.start()
-        tilt.start()
+        // ---------- 2️⃣ Поява герба ----------
 
-        // Перехід у MainActivity після інтро
-        Handler(Looper.getMainLooper()).postDelayed({
+        val fadeLogo = ObjectAnimator.ofFloat(logo, "alpha", 0f, 1f).apply {
+            duration = 1200
+            startDelay = 1800
+        }
+        fadeLogo.start()
+
+        // ---------- 3️⃣ Поява тексту ----------
+
+        val fadeText = ObjectAnimator.ofFloat(text, "alpha", 0f, 1f).apply {
+            duration = 1200
+            startDelay = 2300
+        }
+        fadeText.start()
+
+        // ---------- 4️⃣ Перехід у основний додаток ----------
+
+        text.postDelayed({
             startActivity(Intent(this, MainActivity::class.java))
             finish()
-        }, 5000L)
+        }, 3600)
     }
 }
