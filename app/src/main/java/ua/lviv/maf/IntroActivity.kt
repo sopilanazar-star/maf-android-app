@@ -22,52 +22,49 @@ class IntroActivity : AppCompatActivity() {
         setContentView(R.layout.activity_intro)
 
         val logo: ImageView = findViewById(R.id.logoMaf)
-        val ball: ImageView = findViewById(R.id.ballView)
+        val ball: View = findViewById(R.id.ballView)
         val title: TextView = findViewById(R.id.titleText)
 
-        // --- ПУЛЬСАЦІЯ ЛОГОТИПУ ---
-        val scaleX = ObjectAnimator.ofFloat(logo, View.SCALE_X, 1f, 1.1f)
-        val scaleY = ObjectAnimator.ofFloat(logo, View.SCALE_Y, 1f, 1.1f)
-
-        scaleX.duration = 800
-        scaleY.duration = 800
-        scaleX.repeatMode = ValueAnimator.REVERSE
-        scaleY.repeatMode = ValueAnimator.REVERSE
-        scaleX.repeatCount = ValueAnimator.INFINITE
-        scaleY.repeatCount = ValueAnimator.INFINITE
-
+        // --- ПУЛЬСУЮЧИЙ ЛОГОТИП ПО ЦЕНТРУ ---
+        val scaleX = ObjectAnimator.ofFloat(logo, View.SCALE_X, 1f, 1.1f).apply {
+            duration = 800
+            repeatMode = ValueAnimator.REVERSE
+            repeatCount = ValueAnimator.INFINITE
+        }
+        val scaleY = ObjectAnimator.ofFloat(logo, View.SCALE_Y, 1f, 1.1f).apply {
+            duration = 800
+            repeatMode = ValueAnimator.REVERSE
+            repeatCount = ValueAnimator.INFINITE
+        }
         scaleX.start()
         scaleY.start()
 
-        // Текст, який буде показуватись за м'ячем
         val fullText = "Миколаївська асоціація футболу"
 
-        // --- АНІМАЦІЯ М'ЯЧА + НАПИСУ ---
-        // Чекаємо, поки розміри layout будуть відомі
+        // Чекаємо, поки порахується ширина контейнера
         ball.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
             override fun onGlobalLayout() {
                 ball.viewTreeObserver.removeOnGlobalLayoutListener(this)
 
                 val parent = ball.parent as View
                 val parentWidth = parent.width.toFloat()
+
                 val startX = -ball.width.toFloat()
                 val endX = parentWidth + ball.width.toFloat()
 
-                // Початкове положення м'яча — зліва за екраном
                 ball.translationX = startX
 
                 val duration = 3000L
 
-                // Анімація котіння м'яча
+                // Анімація м'яча
                 val ballAnim = ObjectAnimator.ofFloat(ball, View.TRANSLATION_X, startX, endX).apply {
                     this.duration = duration
                     interpolator = AccelerateDecelerateInterpolator()
                 }
 
-                // Анімація тексту "друкарською машинкою"
+                // Текст «друкарською машинкою»
                 title.text = ""
                 title.alpha = 1f
-
                 val charDelay = duration / fullText.length.coerceAtLeast(1)
 
                 fullText.forEachIndexed { index, _ ->
@@ -76,10 +73,9 @@ class IntroActivity : AppCompatActivity() {
                     }, index * charDelay)
                 }
 
-                // Запускаємо анімацію м'яча
                 ballAnim.start()
 
-                // Після завершення інтро — переходимо в MainActivity
+                // Після інтро — в MainActivity
                 handler.postDelayed({
                     startActivity(Intent(this@IntroActivity, MainActivity::class.java))
                     finish()
