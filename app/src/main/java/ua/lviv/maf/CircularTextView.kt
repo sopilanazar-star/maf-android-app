@@ -21,7 +21,7 @@ class CircularTextView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
-    // Текст зверху і знизу – як на емблемі
+    // Верхній і нижній написи
     private var topText: String = "МИКОЛАЇВСЬКА"
     private var bottomText: String = "АСОЦІАЦІЯ ФУТБОЛУ"
 
@@ -30,23 +30,29 @@ class CircularTextView @JvmOverloads constructor(
     // 0..1 – прогрес побуквенної появи
     private var progress: Float = 0f
 
-    // Радіус кола для букв (задаємо з IntroActivity під розмір герба)
+    // Радіус кола для букв (задати з IntroActivity під герб)
     private var radius: Float = 0f
 
-    // Градієнт для синіх букв
+    // Градієнт для тексту
     private var shader: LinearGradient? = null
 
     init {
-        // Розмір та стиль букв
+        // Базові налаштування пера
         paint.textSize = 52f
         paint.style = Paint.Style.FILL
-        paint.isFakeBoldText = true        // товсті букви
-        paint.letterSpacing = 0.18f        // розріджені, як на емблемі
+        paint.isFakeBoldText = true
+        paint.letterSpacing = 0.18f
 
-        // Підключаємо шрифт Montserrat ExtraBold із res/font/montserrat_extrabold.ttf
-        val tf = ResourcesCompat.getFont(context, R.font.montserrat_extrabold)
-        if (tf != null) {
-            paint.typeface = tf
+        // Спроба підключити Montserrat ExtraBold.
+        // Якщо щось піде не так – просто лишається системний шрифт, БЕЗ крашу.
+        try {
+            val tf = ResourcesCompat.getFont(context, R.font.montserrat_extrabold)
+            if (tf != null) {
+                paint.typeface = tf
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // ігноруємо – додаток не падає
         }
     }
 
@@ -66,7 +72,7 @@ class CircularTextView @JvmOverloads constructor(
         invalidate()
     }
 
-    /** Побуквенна анімація (стандартно 5 секунд) */
+    /** Побуквенна анімація (5 секунд) */
     fun startLetterByLetterAnimation(duration: Long = 5000L, onEnd: (() -> Unit)? = null) {
         val animator = ValueAnimator.ofFloat(0f, 1f)
         animator.duration = duration
@@ -80,6 +86,8 @@ class CircularTextView @JvmOverloads constructor(
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
+
+        if (w == 0 || h == 0) return
 
         // Вертикальний синій градієнт для тексту
         shader = LinearGradient(
@@ -119,7 +127,7 @@ class CircularTextView @JvmOverloads constructor(
         val visibleBottom = (visibleTotal - topLen).coerceAtLeast(0).coerceAtMost(bottomLen)
 
         // === ВЕРХНЯ ДУГА: "МИКОЛАЇВСЬКА" ===
-        // Кути приблизно 200°..340° (над гербом)
+        // Кути ~200°..340° (над гербом)
         if (visibleTop > 0 && topLen > 0) {
             val topStart = 200f
             val topEnd = 340f
@@ -147,16 +155,16 @@ class CircularTextView @JvmOverloads constructor(
         }
 
         // === НИЖНЯ ДУГА: "АСОЦІАЦІЯ ФУТБОЛУ" ===
-        // ТЕПЕР ПРАВИЛЬНО: кути 160°..20° (зліва направо, під гербом)
+        // 160° → 20° (зліва направо під гербом)
         if (visibleBottom > 0 && bottomLen > 0) {
             val bottomStart = 160f   // ліва нижня сторона
             val bottomEnd = 20f      // права нижня сторона
-            val bottomSpan = bottomEnd - bottomStart // буде від'ємний, але це ок
+            val bottomSpan = bottomEnd - bottomStart
 
             for (j in 0 until visibleBottom) {
                 val ch = bottomText[j].toString()
                 val frac = if (bottomLen == 1) 0.5f else j.toFloat() / (bottomLen - 1).toFloat()
-                val angleDeg = bottomStart + bottomSpan * frac  // 160 -> 20
+                val angleDeg = bottomStart + bottomSpan * frac
                 val angleRad = Math.toRadians(angleDeg.toDouble())
 
                 val x = cx + usedRadius * cos(angleRad)
