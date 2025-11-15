@@ -29,15 +29,15 @@
 
     <!-- Логотип МАФ по центру -->
     <ImageView
-        android:id="@+id/logoMaf"
-        android:layout_width="160dp"
-        android:layout_height="160dp"
-        android:src="@drawable/maf_logo"
-        android:scaleType="fitCenter"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+    android:id="@+id/logoMaf"
+    android:layout_width="160dp"
+    android:layout_height="160dp"
+    android:src="@drawable/ic_maf_foreground"
+    android:scaleType="fitCenter"
+    app:layout_constraintTop_toTopOf="parent"
+    app:layout_constraintBottom_toBottomOf="parent"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- Кастомний текст по колу навколо логотипу -->
     <your.package.name.CircularTextView
