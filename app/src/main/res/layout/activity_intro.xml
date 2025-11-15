@@ -21,7 +21,7 @@
         android:id="@+id/logoMaf"
         android:layout_width="220dp"
         android:layout_height="220dp"
-        android:src="@drawable/ic_maf_foreground"
+        android:src="@drawable/maf_logo_center"
         android:background="@android:color/transparent"
         android:scaleType="fitCenter"
         app:layout_constraintTop_toTopOf="parent"
