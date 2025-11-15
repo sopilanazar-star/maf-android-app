@@ -17,18 +17,38 @@ class CircularTextView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
-    private var text: String = "Миколаївська асоціація футболу"
+    // Верхня і нижня дуги, як на емблемі
+    private var topText: String = "МИКОЛАЇВСЬКА"
+    private var bottomText: String = "АСОЦІАЦІЯ ФУТБОЛУ"
+
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private var progress: Float = 0f   // 0..1 – скільки букв вже видно
+
+    // 0..1 – скільки букв уже показано
+    private var progress: Float = 0f
+
+    // радіус кола (задамо з IntroActivity під розмір герба)
+    private var radius: Float = 0f
 
     init {
         paint.color = 0xFFFFFFFF.toInt()
-        paint.textSize = 40f   // можна збільшити/зменшити
+        paint.textSize = 40f
         paint.style = Paint.Style.FILL
+        paint.letterSpacing = 0.15f   // розріджені букви, як на лого
     }
 
-    fun setText(value: String) {
-        text = value
+    fun setTopText(value: String) {
+        topText = value
+        invalidate()
+    }
+
+    fun setBottomText(value: String) {
+        bottomText = value
+        invalidate()
+    }
+
+    /** Встановити радіус кола в пікселях (трохи більший за герб) */
+    fun setRadiusPx(r: Float) {
+        radius = r
         invalidate()
     }
 
@@ -39,56 +59,84 @@ class CircularTextView @JvmOverloads constructor(
             progress = it.animatedValue as Float
             invalidate()
         }
-        animator.doOnEnd {
-            onEnd?.invoke()
-        }
+        animator.doOnEnd { onEnd?.invoke() }
         animator.start()
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        if (text.isEmpty()) return
+        val totalChars = topText.length + bottomText.length
+        if (totalChars == 0) return
 
-        val width = width.toFloat()
-        val height = height.toFloat()
-        val centerX = width / 2f
-        val centerY = height / 2f
+        val w = width.toFloat()
+        val h = height.toFloat()
+        val cx = w / 2f
+        val cy = h / 2f
 
-        // Радіус кола для букв (трохи більший за логотип 160dp)
-        val radius = min(width, height) / 3f
+        val usedRadius = if (radius > 0f) radius else min(w, h) / 3f
 
-        val chars = text.toCharArray()
-        val count = chars.size
+        val visibleTotal = (totalChars * progress).toInt().coerceAtMost(totalChars)
+        if (visibleTotal <= 0) return
 
-        // Скільки букв показувати, виходячи з progress
-        val visibleCount = (count * progress).toInt().coerceAtMost(count)
+        val topLen = topText.length
+        val bottomLen = bottomText.length
 
-        if (visibleCount <= 0) return
+        val visibleTop = visibleTotal.coerceAtMost(topLen)
+        val visibleBottom = (visibleTotal - topLen).coerceAtLeast(0).coerceAtMost(bottomLen)
 
-        // Розподіляємо букви по колу
-        val startAngleDeg = -90f  // починаємо зверху
-        val angleStep = 360f / count.toFloat()
+        // Верхня дуга: МИКОЛАЇВСЬКА (приблизно від -160° до -20°)
+        if (visibleTop > 0 && topLen > 0) {
+            val topStart = -160f
+            val topEnd = -20f
+            val topSpan = topEnd - topStart
 
-        for (i in 0 until visibleCount) {
-            val ch = chars[i].toString()
+            for (i in 0 until visibleTop) {
+                val ch = topText[i].toString()
+                val frac = if (topLen == 1) 0.5f else i.toFloat() / (topLen - 1).toFloat()
+                val angleDeg = topStart + topSpan * frac
+                val angleRad = Math.toRadians(angleDeg.toDouble())
 
-            val angleDeg = startAngleDeg + i * angleStep
-            val angleRad = Math.toRadians(angleDeg.toDouble())
+                val x = cx + usedRadius * cos(angleRad)
+                val y = cy + usedRadius * sin(angleRad)
 
-            val x = centerX + radius * cos(angleRad)
-            val y = centerY + radius * sin(angleRad)
+                val textWidth = paint.measureText(ch)
+                val textHeight = paint.descent() - paint.ascent()
 
-            // Невелике коригування, щоб буква центрувалась
-            val textWidth = paint.measureText(ch)
-            val textHeight = paint.descent() - paint.ascent()
+                canvas.drawText(
+                    ch,
+                    (x - textWidth / 2f).toFloat(),
+                    (y + textHeight / 4f).toFloat(),
+                    paint
+                )
+            }
+        }
 
-            canvas.drawText(
-                ch,
-                (x - textWidth / 2f).toFloat(),
-                (y + textHeight / 4f).toFloat(),
-                paint
-            )
+        // Нижня дуга: АСОЦІАЦІЯ ФУТБОЛУ (приблизно від 200° до 340°)
+        if (visibleBottom > 0 && bottomLen > 0) {
+            val bottomStart = 200f
+            val bottomEnd = 340f
+            val bottomSpan = bottomEnd - bottomStart
+
+            for (j in 0 until visibleBottom) {
+                val ch = bottomText[j].toString()
+                val frac = if (bottomLen == 1) 0.5f else j.toFloat() / (bottomLen - 1).toFloat()
+                val angleDeg = bottomStart + bottomSpan * frac
+                val angleRad = Math.toRadians(angleDeg.toDouble())
+
+                val x = cx + usedRadius * cos(angleRad)
+                val y = cy + usedRadius * sin(angleRad)
+
+                val textWidth = paint.measureText(ch)
+                val textHeight = paint.descent() - paint.ascent()
+
+                canvas.drawText(
+                    ch,
+                    (x - textWidth / 2f).toFloat(),
+                    (y + textHeight / 4f).toFloat(),
+                    paint
+                )
+            }
         }
     }
 }
