@@ -1,10 +1,13 @@
 package ua.lviv.maf
 
 import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.View
+import android.view.ViewTreeObserver
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.ImageView
 import android.widget.TextView
@@ -12,77 +15,76 @@ import androidx.appcompat.app.AppCompatActivity
 
 class IntroActivity : AppCompatActivity() {
 
-    private val fullText = "МИКОЛАЇВСЬКА АСОЦІАЦІЯ ФУТБОЛУ"
+    private val handler = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_intro)
 
-        val logoView: ImageView = findViewById(R.id.logoView)
-        val mafText: TextView = findViewById(R.id.mafText)
+        val logo: ImageView = findViewById(R.id.logoMaf)
+        val ball: ImageView = findViewById(R.id.ballView)
+        val title: TextView = findViewById(R.id.titleText)
 
-        // 🔹 3D-пульсація логотипа
-        startLogoAnimation(logoView)
+        // --- ПУЛЬСАЦІЯ ЛОГОТИПУ ---
+        val scaleX = ObjectAnimator.ofFloat(logo, View.SCALE_X, 1f, 1.1f)
+        val scaleY = ObjectAnimator.ofFloat(logo, View.SCALE_Y, 1f, 1.1f)
 
-        // 🔹 Побуквенна поява тексту знизу
-        animateTextLetterByLetter(mafText, fullText, interval = 120L)
-
-        // 🔹 Перехід у основний додаток після інтро (5 секунд)
-        Handler(Looper.getMainLooper()).postDelayed({
-            startActivity(Intent(this, MainActivity::class.java))
-            finish()
-        }, 5000L)
-    }
-
-    // --- Пульсація та легкий 3D-нахил логотипа ---
-    private fun startLogoAnimation(logo: ImageView) {
-        // масштаб (пульсація)
-        val scaleX = ObjectAnimator.ofFloat(logo, "scaleX", 0.9f, 1.05f).apply {
-            duration = 800
-            repeatCount = ObjectAnimator.INFINITE
-            repeatMode = ObjectAnimator.REVERSE
-            interpolator = AccelerateDecelerateInterpolator()
-        }
-
-        val scaleY = ObjectAnimator.ofFloat(logo, "scaleY", 0.9f, 1.05f).apply {
-            duration = 800
-            repeatCount = ObjectAnimator.INFINITE
-            repeatMode = ObjectAnimator.REVERSE
-            interpolator = AccelerateDecelerateInterpolator()
-        }
-
-        // легкий 3D-нахил
-        val tilt = ObjectAnimator.ofFloat(logo, "rotationY", -6f, 6f).apply {
-            duration = 1600
-            repeatCount = ObjectAnimator.INFINITE
-            repeatMode = ObjectAnimator.REVERSE
-            interpolator = AccelerateDecelerateInterpolator()
-        }
+        scaleX.duration = 800
+        scaleY.duration = 800
+        scaleX.repeatMode = ValueAnimator.REVERSE
+        scaleY.repeatMode = ValueAnimator.REVERSE
+        scaleX.repeatCount = ValueAnimator.INFINITE
+        scaleY.repeatCount = ValueAnimator.INFINITE
 
         scaleX.start()
         scaleY.start()
-        tilt.start()
-    }
 
-    // --- Побуквенна поява тексту ---
-    private fun animateTextLetterByLetter(
-        textView: TextView,
-        text: String,
-        interval: Long = 100L
-    ) {
-        val handler = Handler(Looper.getMainLooper())
-        var index = 0
+        // Текст, який буде показуватись за м'ячем
+        val fullText = "Миколаївська асоціація футболу"
 
-        val runnable = object : Runnable {
-            override fun run() {
-                if (index <= text.length) {
-                    textView.text = text.substring(0, index)
-                    index++
-                    handler.postDelayed(this, interval)
+        // --- АНІМАЦІЯ М'ЯЧА + НАПИСУ ---
+        // Чекаємо, поки розміри layout будуть відомі
+        ball.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                ball.viewTreeObserver.removeOnGlobalLayoutListener(this)
+
+                val parent = ball.parent as View
+                val parentWidth = parent.width.toFloat()
+                val startX = -ball.width.toFloat()
+                val endX = parentWidth + ball.width.toFloat()
+
+                // Початкове положення м'яча — зліва за екраном
+                ball.translationX = startX
+
+                val duration = 3000L
+
+                // Анімація котіння м'яча
+                val ballAnim = ObjectAnimator.ofFloat(ball, View.TRANSLATION_X, startX, endX).apply {
+                    this.duration = duration
+                    interpolator = AccelerateDecelerateInterpolator()
                 }
-            }
-        }
 
-        handler.post(runnable)
+                // Анімація тексту "друкарською машинкою"
+                title.text = ""
+                title.alpha = 1f
+
+                val charDelay = duration / fullText.length.coerceAtLeast(1)
+
+                fullText.forEachIndexed { index, _ ->
+                    handler.postDelayed({
+                        title.text = fullText.substring(0, index + 1)
+                    }, index * charDelay)
+                }
+
+                // Запускаємо анімацію м'яча
+                ballAnim.start()
+
+                // Після завершення інтро — переходимо в MainActivity
+                handler.postDelayed({
+                    startActivity(Intent(this@IntroActivity, MainActivity::class.java))
+                    finish()
+                }, duration + 500)
+            }
+        })
     }
 }
