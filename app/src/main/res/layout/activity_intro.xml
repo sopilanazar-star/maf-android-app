@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- ФОН СТАДІОНУ ЧЕРЕЗ ImageView З centerCrop -->
+    <!-- ФОН СТАДІОНУ -->
     <ImageView
         android:id="@+id/bgStadium"
         android:layout_width="0dp"
@@ -16,12 +16,12 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- ЛОГО ПО ЦЕНТРУ -->
+    <!-- ЛОГО МАФ ПО ЦЕНТРУ -->
     <ImageView
         android:id="@+id/logoMaf"
         android:layout_width="220dp"
         android:layout_height="220dp"
-        android:src="@drawable/maf_logo"
+        android:src="@drawable/ic_maf_foreground"
         android:background="@android:color/transparent"
         android:scaleType="fitCenter"
         app:layout_constraintTop_toTopOf="parent"
@@ -29,7 +29,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- ТЕКСТ ЗНИЗУ -->
+    <!-- ТЕКСТ ЗНИЗУ ПІД ЛОГО -->
     <TextView
         android:id="@+id/titleText"
         android:layout_width="wrap_content"
@@ -44,13 +44,11 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- М'ЯЧ ЗНИЗУ -->
-    <ImageView
+    <!-- М'ЯЧ, ЯКИЙ МИ МАЛЮЄМО САМІ -->
+    <ua.lviv.maf.BallView
         android:id="@+id/ballView"
-        android:layout_width="64dp"
-        android:layout_height="64dp"
-        android:src="@drawable/ball"
-        android:background="@android:color/transparent"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         app:layout_constraintBottom_toTopOf="@id/titleText"
         android:layout_marginBottom="8dp"
         app:layout_constraintStart_toStartOf="parent" />
