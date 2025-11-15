@@ -34,7 +34,7 @@
         <!-- Основна активність з WebView -->
         <activity
             android:name=".MainActivity"
-            android:exported="false"
+            android:exported="true"
             android:screenOrientation="sensorLandscape"
             android:configChanges="orientation|screenSize|keyboardHidden|uiMode">
 
@@ -49,7 +49,7 @@
             </intent-filter>
         </activity>
 
-        <!-- FileProvider для шарингу файлів (як було в тебе) -->
+        <!-- FileProvider для шарингу файлів -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
