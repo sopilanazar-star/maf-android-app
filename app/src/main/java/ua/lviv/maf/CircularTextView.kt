@@ -60,82 +60,67 @@ class CircularTextView @JvmOverloads constructor(
     }
 
     override fun onDraw(canvas: Canvas) {
-        super.onDraw(canvas)
+    super.onDraw(canvas)
 
-        val widthF = width.toFloat()
-        val heightF = height.toFloat()
-        val centerX = widthF / 2f
-        val centerY = heightF / 2f
+    val widthF = width.toFloat()
+    val heightF = height.toFloat()
+    val centerX = widthF / 2f
+    val centerY = heightF / 2f
 
-        // Радіус дуг (трохи більший за герб)
-        val radius = min(widthF, heightF) / 2.35f
+    // Дуже точний радіус, як у твоїй емблемі
+    val radius = min(widthF, heightF) / 2.1f
 
-        val topChars = topText.toCharArray()
-        val bottomChars = bottomText.toCharArray()
-        val totalCount = topChars.size + bottomChars.size
-        if (totalCount == 0) return
+    val topChars = topText.toCharArray()
+    val bottomChars = bottomText.toCharArray()
 
-        val visibleTotal = (totalCount * progress).toInt().coerceAtMost(totalCount)
-        val visibleTop = visibleTotal.coerceAtMost(topChars.size)
-        val visibleBottom = (visibleTotal - topChars.size)
-            .coerceAtLeast(0)
-            .coerceAtMost(bottomChars.size)
+    val totalCount = topChars.size + bottomChars.size
+    val visibleTotal = (totalCount * progress).toInt().coerceAtMost(totalCount)
 
-        // ===== ВЕРХНЯ ДУГА: "Миколаївська" =====
-        if (visibleTop > 0) {
-            val count = topChars.size
-            val span = 200f              // ширина дуги (градусів)
-            val centerAngle = -90f       // центр зверху
-            val startAngle = centerAngle - span / 2f  // зліва зверху
-            val step = if (count > 1) span / (count - 1) else 0f
+    val visibleTop = visibleTotal.coerceAtMost(topChars.size)
+    val visibleBottom = (visibleTotal - topChars.size)
+        .coerceAtLeast(0)
+        .coerceAtMost(bottomChars.size)
 
-            for (i in 0 until visibleTop) {
-                val ch = topChars[i].toString()
-                val angleDeg = startAngle + i * step
-                val angleRad = Math.toRadians(angleDeg.toDouble())
+    // ===== ВЕРХНЯ ДУГА =====
+    if (visibleTop > 0) {
+        val span = 165f               // точна ширина дуги
+        val centerAngle = -90f
+        val startAngle = centerAngle - span / 2f
+        val step = span / (topChars.size - 1)
 
-                val x = centerX + radius * cos(angleRad)
-                val y = centerY + radius * sin(angleRad)
+        for (i in 0 until visibleTop) {
+            val ch = topChars[i].toString()
+            val angle = Math.toRadians((startAngle + i * step).toDouble())
 
-                val textWidth = paint.measureText(ch)
-                val textHeight = paint.descent() - paint.ascent()
+            val x = centerX + radius * cos(angle)
+            val y = centerY + radius * sin(angle)
 
-                canvas.drawText(
-                    ch,
-                    (x - textWidth / 2f).toFloat(),
-                    (y + textHeight / 4f).toFloat(),
-                    paint
-                )
-            }
-        }
+            val w = paint.measureText(ch)
+            val h = paint.descent() - paint.ascent()
 
-        // ===== НИЖНЯ ДУГА: "асоціація футболу" =====
-        if (visibleBottom > 0) {
-            val count = bottomChars.size
-            val span = 200f              // така ж ширина дуги
-            val centerAngle = 90f        // центр знизу
-            // Починаємо ЗЛІВА знизу → читаємо вправо
-            val startAngle = centerAngle + span / 2f  // ~190° (зліва знизу)
-            val step = if (count > 1) -span / (count - 1) else 0f
-
-            for (i in 0 until visibleBottom) {
-                val ch = bottomChars[i].toString()
-                val angleDeg = startAngle + i * step
-                val angleRad = Math.toRadians(angleDeg.toDouble())
-
-                val x = centerX + radius * cos(angleRad)
-                val y = centerY + radius * sin(angleRad)
-
-                val textWidth = paint.measureText(ch)
-                val textHeight = paint.descent() - paint.ascent()
-
-                canvas.drawText(
-                    ch,
-                    (x - textWidth / 2f).toFloat(),
-                    (y + textHeight / 4f).toFloat(),
-                    paint
-                )
-            }
+            canvas.drawText(ch, x.toFloat() - w / 2f, y.toFloat() + h / 4f, paint)
         }
     }
+
+    // ===== НИЖНЯ ДУГА =====
+    if (visibleBottom > 0) {
+        val span = 170f               // точна ширина дуги
+        val centerAngle = 90f
+        val startAngle = centerAngle + span / 2f
+        val step = -span / (bottomChars.size - 1)
+
+        for (i in 0 until visibleBottom) {
+            val ch = bottomChars[i].toString()
+            val angle = Math.toRadians((startAngle + i * step).toDouble())
+
+            val x = centerX + radius * cos(angle)
+            val y = centerY + radius * sin(angle)
+
+            val w = paint.measureText(ch)
+            val h = paint.descent() - paint.ascent()
+
+            canvas.drawText(ch, x.toFloat() - w / 2f, y.toFloat() + h / 4f, paint)
+        }
+    }
+}
 }
