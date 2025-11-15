@@ -1,16 +1,15 @@
 package ua.lviv.maf
 
 import android.animation.ObjectAnimator
+import android.animation.PropertyValuesHolder
 import android.animation.ValueAnimator
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
-import android.view.ViewTreeObserver
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.ImageView
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
 class IntroActivity : AppCompatActivity() {
@@ -18,69 +17,55 @@ class IntroActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // важливо: щоб не мигав білий фон
+        setTheme(R.style.Theme_MAFFootball)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_intro)
 
         val logo: ImageView = findViewById(R.id.logoMaf)
-        val ball: View = findViewById(R.id.ballView)
-        val title: TextView = findViewById(R.id.titleText)
+        val dot1: View = findViewById(R.id.dot1)
+        val dot2: View = findViewById(R.id.dot2)
+        val dot3: View = findViewById(R.id.dot3)
 
-        // --- ПУЛЬСУЮЧИЙ ЛОГОТИП ПО ЦЕНТРУ ---
-        val scaleX = ObjectAnimator.ofFloat(logo, View.SCALE_X, 1f, 1.1f).apply {
-            duration = 800
-            repeatMode = ValueAnimator.REVERSE
+        startLogoAnimation(logo)
+        startDotsAnimation(dot1, dot2, dot3)
+
+        // 5 секунд інтро, потім перехід у MainActivity
+        handler.postDelayed({
+            startActivity(Intent(this, MainActivity::class.java))
+            // прибираємо стандартну анімацію, щоб не було білого миготіння
+            overridePendingTransition(0, 0)
+            finish()
+        }, 5000L)
+    }
+
+    private fun startLogoAnimation(logo: ImageView) {
+        // пульсація + легке похитування (ефект 3D/живого логотипа)
+        val scaleX = PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 1.08f)
+        val scaleY = PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 1.08f)
+        val rotation = PropertyValuesHolder.ofFloat(View.ROTATION, -3f, 3f)
+
+        ObjectAnimator.ofPropertyValuesHolder(logo, scaleX, scaleY, rotation).apply {
+            duration = 900
             repeatCount = ValueAnimator.INFINITE
-        }
-        val scaleY = ObjectAnimator.ofFloat(logo, View.SCALE_Y, 1f, 1.1f).apply {
-            duration = 800
             repeatMode = ValueAnimator.REVERSE
-            repeatCount = ValueAnimator.INFINITE
+            interpolator = AccelerateDecelerateInterpolator()
+            start()
         }
-        scaleX.start()
-        scaleY.start()
+    }
 
-        val fullText = "Миколаївська асоціація футболу"
+    private fun startDotsAnimation(dot1: View, dot2: View, dot3: View) {
+        val dots = listOf(dot1, dot2, dot3)
 
-        // Чекаємо, поки порахується ширина контейнера
-        ball.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
-            override fun onGlobalLayout() {
-                ball.viewTreeObserver.removeOnGlobalLayoutListener(this)
-
-                val parent = ball.parent as View
-                val parentWidth = parent.width.toFloat()
-
-                val startX = -ball.width.toFloat()
-                val endX = parentWidth + ball.width.toFloat()
-
-                ball.translationX = startX
-
-                val duration = 3000L
-
-                // Анімація м'яча
-                val ballAnim = ObjectAnimator.ofFloat(ball, View.TRANSLATION_X, startX, endX).apply {
-                    this.duration = duration
-                    interpolator = AccelerateDecelerateInterpolator()
-                }
-
-                // Текст «друкарською машинкою»
-                title.text = ""
-                title.alpha = 1f
-                val charDelay = duration / fullText.length.coerceAtLeast(1)
-
-                fullText.forEachIndexed { index, _ ->
-                    handler.postDelayed({
-                        title.text = fullText.substring(0, index + 1)
-                    }, index * charDelay)
-                }
-
-                ballAnim.start()
-
-                // Після інтро — в MainActivity
-                handler.postDelayed({
-                    startActivity(Intent(this@IntroActivity, MainActivity::class.java))
-                    finish()
-                }, duration + 500)
+        dots.forEachIndexed { index, view ->
+            ObjectAnimator.ofFloat(view, View.ALPHA, 0.3f, 1f).apply {
+                duration = 500
+                repeatCount = ValueAnimator.INFINITE
+                repeatMode = ValueAnimator.REVERSE
+                startDelay = index * 150L   // хвиля зліва направо
+                interpolator = AccelerateDecelerateInterpolator()
+                start()
             }
-        })
+        }
     }
 }
