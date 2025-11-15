@@ -3,14 +3,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/stadium_maf">
-
-    <!-- Легка затемнююча плівка -->
-    <View
-        android:id="@+id/dimView"
+    
+    <!-- ФОН СТАДІОНУ ЧЕРЕЗ ImageView З centerCrop -->
+    <ImageView
+        android:id="@+id/bgStadium"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="#66000000"
+        android:src="@drawable/stadium_maf"
+        android:scaleType="centerCrop"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
