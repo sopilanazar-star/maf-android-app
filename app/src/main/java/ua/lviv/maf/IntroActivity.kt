@@ -12,10 +12,20 @@ class IntroActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_intro)
 
-        // 2 секунди показуємо стадіон, потім відкриваємо сайт
+        val circularText: CircularTextView = findViewById(R.id.circularText)
+
+        // Текст навколо логотипу
+        circularText.setText("Миколаївська асоціація футболу")
+
+        // Запускаємо побуквенну анімацію (3 секунди)
+        circularText.startLetterByLetterAnimation(duration = 3000L) {
+            // після завершення анімації можна щось ще зробити, якщо треба
+        }
+
+        // Через трохи довше ніж анімація – відкриваємо головний екран
         Handler(Looper.getMainLooper()).postDelayed({
             startActivity(Intent(this, MainActivity::class.java))
             finish()
-        }, 2000L)
+        }, 3500L)
     }
 }
