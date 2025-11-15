@@ -19,24 +19,22 @@ class CircularTextView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
-    // Текст по колу
+    // Верхній і нижній написи
     private var topText: String = "Миколаївська"
     private var bottomText: String = "асоціація футболу"
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-
-    // 0..1 – прогрес анімації
-    private var progress: Float = 0f
+    private var progress: Float = 0f  // 0..1
 
     init {
-        // колір букв
-        paint.color = Color.WHITE
+        // 🔹 ТЕМНО-СИНІЙ, як на логотипі
+        paint.color = Color.parseColor("#004B8F")
 
-        // розмір шрифту (sp)
+        // 🔹 Розмір шрифту (sp)
         paint.textSize = 18f * resources.displayMetrics.scaledDensity
         paint.style = Paint.Style.FILL
 
-        // шрифт MONTSERRAT
+        // 🔹 Шрифт MONTSERRAT EXTRABOLD
         val typeface = ResourcesCompat.getFont(context, R.font.montserrat_extrabold)
         if (typeface != null) {
             paint.typeface = typeface
@@ -49,7 +47,7 @@ class CircularTextView @JvmOverloads constructor(
         invalidate()
     }
 
-    fun startLetterByLetterAnimation(duration: Long = 3000L, onEnd: (() -> Unit)? = null) {
+    fun startLetterByLetterAnimation(duration: Long = 5000L, onEnd: (() -> Unit)? = null) {
         val animator = ValueAnimator.ofFloat(0f, 1f).apply {
             this.duration = duration
             addUpdateListener {
@@ -69,30 +67,26 @@ class CircularTextView @JvmOverloads constructor(
         val centerX = widthF / 2f
         val centerY = heightF / 2f
 
-        // радіус (трохи більший за логотип)
-        val radius = min(widthF, heightF) / 2.4f
+        // Радіус дуг (трохи більший за герб)
+        val radius = min(widthF, heightF) / 2.35f
 
         val topChars = topText.toCharArray()
         val bottomChars = bottomText.toCharArray()
-
         val totalCount = topChars.size + bottomChars.size
         if (totalCount == 0) return
 
         val visibleTotal = (totalCount * progress).toInt().coerceAtMost(totalCount)
-
-        // скільки букв уже на верхній дузі
         val visibleTop = visibleTotal.coerceAtMost(topChars.size)
-        // скільки букв пішло на нижню
-        val visibleBottom = (visibleTotal - topChars.size).coerceAtLeast(0)
+        val visibleBottom = (visibleTotal - topChars.size)
+            .coerceAtLeast(0)
             .coerceAtMost(bottomChars.size)
 
-        // === ВЕРХНЯ ДУГА: "Миколаївська" ===
+        // ===== ВЕРХНЯ ДУГА: "Миколаївська" =====
         if (visibleTop > 0) {
             val count = topChars.size
-            // ширина дуги (в градусах)
-            val span = 160f
-            // стартовий кут (зліва зверху)
-            val startAngle = -90f - span / 2f
+            val span = 200f              // ширина дуги (градусів)
+            val centerAngle = -90f       // центр зверху
+            val startAngle = centerAngle - span / 2f  // зліва зверху
             val step = if (count > 1) span / (count - 1) else 0f
 
             for (i in 0 until visibleTop) {
@@ -115,13 +109,13 @@ class CircularTextView @JvmOverloads constructor(
             }
         }
 
-        // === НИЖНЯ ДУГА: "асоціація футболу" ===
+        // ===== НИЖНЯ ДУГА: "асоціація футболу" =====
         if (visibleBottom > 0) {
             val count = bottomChars.size
-            val span = 160f
-            // починаємо зліва знизу (кут ~180°)
-            val startAngle = 180f - span / 2f
-            // рухаємось вправо → кут зменшується
+            val span = 200f              // така ж ширина дуги
+            val centerAngle = 90f        // центр знизу
+            // Починаємо ЗЛІВА знизу → читаємо вправо
+            val startAngle = centerAngle + span / 2f  // ~190° (зліва знизу)
             val step = if (count > 1) -span / (count - 1) else 0f
 
             for (i in 0 until visibleBottom) {
