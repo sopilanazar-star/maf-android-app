@@ -1,42 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/stadium_maf">
 
-    <!-- Легка затемнююча плівка поверх стадіону -->
-    <View
-        android:id="@+id/dimView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:background="#66000000"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <!-- Герб МАФ по центру -->
+    <!-- 🎯 ГЕРБ ПО ЦЕНТРУ -->
     <ImageView
-        android:id="@+id/logoMaf"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
-        android:src="@drawable/maf_logo_center"
-        android:background="@android:color/transparent"
-        android:scaleType="fitCenter"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        android:id="@+id/centerLogo"
+        android:layout_width="220dp"
+        android:layout_height="220dp"
+        android:src="@drawable/maf_logo"
+        android:layout_centerInParent="true"
+        android:alpha="0" />   <!-- він з'явиться плавно -->
 
-    <!-- Текст по колу навколо герба -->
-    <ua.lviv.maf.CircularTextView
-        android:id="@+id/circularText"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+    <!-- ⚽ М'яч для анімації -->
+    <ImageView
+        android:id="@+id/ballView"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:src="@drawable/ball_maf"
+        android:layout_centerVertical="true"
+        android:translationX="-400dp" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <!-- ✨ Текст, який з'явиться після м'яча -->
+    <TextView
+        android:id="@+id/mafText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="МИКОЛАЇВСЬКА АСОЦІАЦІЯ ФУТБОЛУ"
+        android:textColor="#FFFFFF"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:alpha="0"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/centerLogo"
+        android:layout_marginTop="20dp"/>
+
+</RelativeLayout>
