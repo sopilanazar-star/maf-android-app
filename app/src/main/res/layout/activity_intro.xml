@@ -16,7 +16,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- ЛОГО МАФ ПО ЦЕНТРУ -->
+    <!-- ЛОГОТИП МАФ ПО ЦЕНТРУ -->
     <ImageView
         android:id="@+id/logoMaf"
         android:layout_width="220dp"
@@ -29,28 +29,42 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- ТЕКСТ ЗНИЗУ ПІД ЛОГО -->
-    <TextView
-        android:id="@+id/titleText"
+    <!-- ТРИ КРУЖЕЧКИ ЗАВАНТАЖЕННЯ ПІД ЛОГОМ -->
+    <LinearLayout
+        android:id="@+id/dotsContainer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text=""
-        android:textColor="@android:color/white"
-        android:textSize="20sp"
-        android:fontFamily="@font/montserrat_extrabold"
-        android:alpha="0"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@id/logoMaf"
         app:layout_constraintBottom_toBottomOf="parent"
-        android:layout_marginBottom="32dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="32dp"
+        android:layout_marginBottom="48dp">
 
-    <!-- М'ЯЧ, ЯКИЙ МИ МАЛЮЄМО САМІ -->
-    <ua.lviv.maf.BallView
-        android:id="@+id/ballView"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        app:layout_constraintBottom_toTopOf="@id/titleText"
-        android:layout_marginBottom="8dp"
-        app:layout_constraintStart_toStartOf="parent" />
+        <View
+            android:id="@+id/dot1"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:background="@drawable/loading_dot"
+            android:alpha="0.3"
+            android:layout_margin="6dp" />
+
+        <View
+            android:id="@+id/dot2"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:background="@drawable/loading_dot"
+            android:alpha="0.3"
+            android:layout_margin="6dp" />
+
+        <View
+            android:id="@+id/dot3"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:background="@drawable/loading_dot"
+            android:alpha="0.3"
+            android:layout_margin="6dp" />
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
