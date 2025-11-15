@@ -1,31 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/stadium_maf">
 
-    <!-- 🎯 Логотип МАФ по центру -->
+    <!-- Легка затемнююча плівка -->
+    <View
+        android:id="@+id/dimView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#66000000"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- ЛОГО МАФ ПО ЦЕНТРУ, ПУЛЬСУЄ -->
     <ImageView
-        android:id="@+id/logoView"
+        android:id="@+id/logoMaf"
         android:layout_width="220dp"
         android:layout_height="220dp"
         android:src="@drawable/ic_maf_foreground"
-        android:layout_centerInParent="true"
-        android:scaleX="0.9"
-        android:scaleY="0.9"
-        android:rotationY="0" />
+        android:background="@android:color/transparent"
+        android:scaleType="fitCenter"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- ✨ Напис під логотипом (буде заповнюватися побуквенно) -->
+    <!-- ТЕКСТ ЗНИЗУ ПІД ЛОГОТИПОМ -->
     <TextView
-        android:id="@+id/mafText"
+        android:id="@+id/titleText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text=""
-        android:textColor="#004B8F"
-        android:textSize="26sp"
-        android:layout_centerHorizontal="true"
-        android:layout_below="@id/logoView"
-        android:layout_marginTop="24dp"
-        android:fontFamily="@font/cinzel_black" />
+        android:textColor="@android:color/white"
+        android:textSize="20sp"
+        android:fontFamily="@font/montserrat_extrabold"
+        android:alpha="0"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginBottom="32dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-</RelativeLayout>
+    <!-- М'ЯЧ, ЯКИЙ КОТИТЬСЯ ЗЛІВА НАПРАВО -->
+    <ImageView
+        android:id="@+id/ballView"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:src="@drawable/ball"
+        android:background="@android:color/transparent"
+        android:translationX="0dp"
+        app:layout_constraintBottom_toTopOf="@id/titleText"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
