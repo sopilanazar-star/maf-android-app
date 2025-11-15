@@ -1,4 +1,4 @@
-package your.package.name   // ← заміни на свій package
+package ua.lviv.maf
 
 import android.animation.ValueAnimator
 import android.content.Context
