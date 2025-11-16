@@ -1,6 +1,7 @@
 package ua.lviv.maf
 
 import android.annotation.SuppressLint
+import android.graphics.Color
 import android.os.Bundle
 import android.view.View
 import android.webkit.WebView
@@ -17,17 +18,19 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        // === FULLSCREEN + ховаємо статусбар і навігацію ===
+        // Fullscreen + ховаємо статусбар і навігацію
         window.decorView.systemUiVisibility =
             View.SYSTEM_UI_FLAG_FULLSCREEN or
             View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
             View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
             View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
             View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-        // ==================================================
 
         val webView = WebView(this)
         setContentView(webView)
+
+        // Чорний фон, щоб не було білого миготіння
+        webView.setBackgroundColor(Color.BLACK)
 
         with(webView.settings) {
             javaScriptEnabled = true
@@ -37,6 +40,8 @@ class MainActivity : ComponentActivity() {
         }
 
         webView.webViewClient = WebViewClient()
-        webView.loadUrl("https://maf.lviv.ua")
+
+        // 🔥 Замість прямого заходу на сайт – спочатку локальний лоадер
+        webView.loadUrl("file:///android_asset/loader.html")
     }
 }
