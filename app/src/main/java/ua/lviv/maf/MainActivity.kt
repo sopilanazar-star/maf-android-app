@@ -29,8 +29,11 @@ class MainActivity : ComponentActivity() {
         val webView = WebView(this)
         setContentView(webView)
 
-        // Чорний фон, щоб не було білого миготіння
+        // Чорний фон, щоб не було білих миготінь
         webView.setBackgroundColor(Color.BLACK)
+
+        // Спочатку ховаємо WebView (буде невидимий)
+        webView.alpha = 0f
 
         with(webView.settings) {
             javaScriptEnabled = true
@@ -39,9 +42,16 @@ class MainActivity : ComponentActivity() {
             loadsImagesAutomatically = true
         }
 
-        webView.webViewClient = WebViewClient()
+        // Показуємо WebView лише тоді, коли сторінка реально намальована
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageCommitVisible(view: WebView?, url: String?) {
+                super.onPageCommitVisible(view, url)
+                // Плавно показуємо сайт без білого спалаху
+                webView.animate().alpha(1f).setDuration(200).start()
+            }
+        }
 
-        // 🔥 Замість прямого заходу на сайт – спочатку локальний лоадер
-        webView.loadUrl("file:///android_asset/loader.html")
+        // 🔙 Повертаємо пряме завантаження сайту (без loader.html)
+        webView.loadUrl("https://maf.lviv.ua")
     }
 }
