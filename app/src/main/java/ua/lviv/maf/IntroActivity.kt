@@ -19,14 +19,17 @@ class IntroActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         // Щоб не було білого миготіння перед інтро
         setTheme(R.style.Theme_MAFFootball)
-// Fullscreen + ховаємо статусбар і навігацію
-window.decorView.systemUiVisibility =
-    View.SYSTEM_UI_FLAG_FULLSCREEN or
-    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
-    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
-    View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+
         super.onCreate(savedInstanceState)
+
+        // Fullscreen + ховаємо статусбар і навігацію
+        window.decorView.systemUiVisibility =
+            View.SYSTEM_UI_FLAG_FULLSCREEN or
+            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+
         setContentView(R.layout.activity_intro)
 
         val logo: ImageView = findViewById(R.id.logo)
