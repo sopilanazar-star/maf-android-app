@@ -12,7 +12,7 @@ android {
     minSdk = 24
     targetSdk = 34
 
-    versionCode = 3          // було 1
+    versionCode = 2          // було 1
     versionName = "1.1.0"    // було "1.0.0"
 }
 
