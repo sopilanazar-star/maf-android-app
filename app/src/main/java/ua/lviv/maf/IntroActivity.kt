@@ -11,14 +11,10 @@ import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
-import android.media.MediaPlayer   // ⬅️ ДОДАЙ ЦЕЙ ІМПОРТ
 
 class IntroActivity : AppCompatActivity() {
 
     private val handler = Handler(Looper.getMainLooper())
-
-    // ⬅️ ДОДАЙ ЦЕ ПОЛЕ ПІСЛЯ handler
-    private var introSound: MediaPlayer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Щоб не було білого миготіння перед інтро
@@ -40,22 +36,11 @@ class IntroActivity : AppCompatActivity() {
         val dot2: View = findViewById(R.id.dot2)
         val dot3: View = findViewById(R.id.dot3)
 
-        // ⬅️ ТУТ СТАРТУЄМО ЗВУК
-        introSound = MediaPlayer.create(this, R.raw.maf_intro_sound).apply {
-            isLooping = false   // якщо хочеш, можна true
-            start()
-        }
-
         startLogoAnimation(logo)
         startDotsAnimation(dot1, dot2, dot3)
 
         // 5 секунд інтро – потім вхід у додаток без білого екрану
         handler.postDelayed({
-            // ⬅️ ПЕРЕД ПЕРЕХОДОМ ЗУПИНЯЄМО ЗВУК
-            introSound?.stop()
-            introSound?.release()
-            introSound = null
-
             startActivity(Intent(this, MainActivity::class.java))
             overridePendingTransition(0, 0)
             finish()
@@ -90,12 +75,5 @@ class IntroActivity : AppCompatActivity() {
                 start()
             }
         }
-    }
-
-    // ⬅️ НА ВСЯК ВИПАДОК ЗВІЛЬНЯЄМО РЕСУРС, ЯКЩО АКТИВНІСТЬ ВБ’Є СИСТЕМА
-    override fun onDestroy() {
-        introSound?.release()
-        introSound = null
-        super.onDestroy()
     }
 }
