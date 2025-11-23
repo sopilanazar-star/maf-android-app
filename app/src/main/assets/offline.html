@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8" />
+    <title>МАФ – немає підключення</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        body {
+            margin: 0;
+            padding: 24px;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                Roboto, Helvetica, Arial, sans-serif;
+            background: #007c3d;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        .card {
+            background: #ffffff;
+            color: #222222;
+            border-radius: 20px;
+            padding: 28px 24px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.25);
+            animation: fadein 0.4s ease-out;
+        }
+
+        @keyframes fadein {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo {
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #007c3d;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 10px 0 8px;
+            font-size: 20px;
+            color: #007c3d;
+            font-weight: 700;
+        }
+
+        p {
+            margin: 6px 0;
+            font-size: 15px;
+            line-height: 1.45;
+        }
+
+        .btn {
+            margin-top: 18px;
+            padding: 12px 20px;
+            border-radius: 999px;
+            border: none;
+            background: #007c3d;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .btn:active {
+            opacity: 0.8;
+        }
+
+        small {
+            display: block;
+            margin-top: 14px;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #666666;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="logo">Миколаївська асоціація футболу</div>
+
+        <h1>Немає підключення</h1>
+        <p>
+            Додаток не може отримати дані з <strong>maf.lviv.ua</strong>.
+        </p>
+        <p>
+            Перевірте підключення до інтернету та спробуйте ще раз.
+        </p>
+
+        <button class="btn" onclick="location.reload()">Спробувати знову</button>
+
+        <small>
+            Офлайн-режим: робота додатку обмежена.
+        </small>
+    </div>
+</body>
+</html>
