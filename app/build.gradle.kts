@@ -8,14 +8,13 @@ android {
     compileSdk = 34
 
     defaultConfig {
-    applicationId = "ua.lviv.maf"
-    minSdk = 24
-    targetSdk = 34
+        applicationId = "ua.lviv.maf"
+        minSdk = 24
+        targetSdk = 34
 
-    versionCode = 2          // було 1
-    versionName = "1.1.0"    // було "1.0.0"
-}
-
+        versionCode = 20        // внутрішня версія
+        versionName = "2.0"     // версія для користувача
+    }
 
     buildTypes {
         release {
@@ -34,7 +33,6 @@ android {
         viewBinding = true
     }
 
-    // Java/Kotlin 17
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -50,12 +48,10 @@ android {
     }
 }
 
-// Kotlin toolchain 17
 kotlin {
     jvmToolchain(17)
 }
 
-// Підстраховка для viewbinding, щоб не було конфліктів
 configurations.all {
     resolutionStrategy {
         force("androidx.databinding:viewbinding:8.4.0")
