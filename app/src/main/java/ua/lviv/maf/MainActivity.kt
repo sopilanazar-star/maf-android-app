@@ -1,16 +1,27 @@
 package ua.lviv.maf
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.graphics.Color
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
-import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 
 class MainActivity : ComponentActivity() {
+
+    private lateinit var webView: WebView
+
+    private val START_URL = "https://maf.lviv.ua"
+    private val OFFLINE_URL = "file:///android_asset/offline.html"
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -21,12 +32,12 @@ class MainActivity : ComponentActivity() {
         // Fullscreen + ховаємо статусбар і навігацію
         window.decorView.systemUiVisibility =
             View.SYSTEM_UI_FLAG_FULLSCREEN or
-            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
-            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
-            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+                    View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
 
-        val webView = WebView(this)
+        webView = WebView(this)
         setContentView(webView)
 
         // Чорний фон, щоб не було білих миготінь
@@ -35,21 +46,113 @@ class MainActivity : ComponentActivity() {
         // Спочатку ховаємо WebView (буде невидимий)
         webView.alpha = 0f
 
-        with(webView.settings) {
+        val settings = webView.settings
+        with(settings) {
             javaScriptEnabled = true
             domStorageEnabled = true
             databaseEnabled = true
             loadsImagesAutomatically = true
-        }
+            setSupportZoom(true)
+            builtInZoomControls = true
+            displayZoomControls = false
 
-        // Показуємо WebView лише тоді, коли сторінка реально намальована
-        webView.webViewClient = object : WebViewClient() {
-            override fun onPageCommitVisible(view: WebView?, url: String?) {
-                super.onPageCommitVisible(view, url)
-                // Плавно показуємо сайт без білого спалаху
-                webView.animate().alpha(1f).setDuration(200).start()
+            // Кеш: з мережею – нормальний режим, без мережі – тягнемо з кешу
+            cacheMode = if (isNetworkAvailable()) {
+                WebSettings.LOAD_DEFAULT
+            } else {
+                WebSettings.LOAD_CACHE_ELSE_NETWORK
             }
         }
+
+        webView.webViewClient = object : WebViewClient() {
+
+            override fun shouldOverrideUrlLoading(
+                view: WebView?,
+                request: WebResourceRequest?
+            ): Boolean {
+                val url = request?.url.toString()
+                view?.loadUrl(url)
+                return true
+            }
+
+            @Suppress("DEPRECATION")
+            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                if (url != null) view?.loadUrl(url)
+                return true
+            }
+
+            // Показуємо WebView лише тоді, коли сторінка реально намальована
+            override fun onPageCommitVisible(view: WebView?, url: String?) {
+                super.onPageCommitVisible(view, url)
+                webView.animate().alpha(1f).setDuration(200).start()
+            }
+
+            // Старий API для помилок завантаження (до 23)
+            @Suppress("DEPRECATION")
+            override fun onReceivedError(
+                view: WebView?,
+                errorCode: Int,
+                description: String?,
+                failingUrl: String?
+            ) {
+                super.onReceivedError(view, errorCode, description, failingUrl)
+                showOfflinePage()
+            }
+
+            // Новий API для помилок (23+)
+            override fun onReceivedError(
+                view: WebView?,
+                request: WebResourceRequest?,
+                error: WebResourceError?
+            ) {
+                super.onReceivedError(view, request, error)
+                // Реагуємо тільки на помилку головного фрейму (а не дрібних ресурсів)
+                if (request?.isForMainFrame == true) {
+                    showOfflinePage()
+                }
+            }
+        }
+
+        // Стартове завантаження
+        if (isNetworkAvailable()) {
+            webView.loadUrl(START_URL)
+        } else {
+            showOfflinePage()
+        }
+    }
+
+    private fun showOfflinePage() {
+        webView.loadUrl(OFFLINE_URL)
+    }
+
+    // Перевірка наявності інтернету
+    private fun isNetworkAvailable(): Boolean {
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val network = cm.activeNetwork ?: return false
+            val caps = cm.getNetworkCapabilities(network) ?: return false
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                    caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                    caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+        } else {
+            @Suppress("DEPRECATION")
+            val activeNetworkInfo = cm.activeNetworkInfo
+            @Suppress("DEPRECATION")
+            activeNetworkInfo != null && activeNetworkInfo.isConnected
+        }
+    }
+
+    override fun onBackPressed() {
+        // Якщо є куди повернутись у WebView – ходимо по історії всередині
+        if (this::webView.isInitialized && webView.canGoBack()) {
+            webView.goBack()
+        } else {
+            super.onBackPressed()
+        }
+    }
+}
+
 
         // 🔙 Повертаємо пряме завантаження сайту (без loader.html)
         webView.loadUrl("https://maf.lviv.ua")
