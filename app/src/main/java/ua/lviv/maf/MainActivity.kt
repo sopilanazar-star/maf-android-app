@@ -13,10 +13,10 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
 
@@ -25,7 +25,7 @@ class MainActivity : ComponentActivity() {
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Показуємо Splash до готовності першого кадру
+        // SplashScreen API
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
@@ -81,13 +81,13 @@ class MainActivity : ComponentActivity() {
                 return true
             }
 
-            // Показуємо WebView лише тоді, коли сторінка реально намальована
+            // Плавне показування контенту без білого спалаху
             override fun onPageCommitVisible(view: WebView?, url: String?) {
                 super.onPageCommitVisible(view, url)
                 webView.animate().alpha(1f).setDuration(200).start()
             }
 
-            // Старий API для помилок завантаження (до 23)
+            // Старий API помилок (до 23)
             @Suppress("DEPRECATION")
             override fun onReceivedError(
                 view: WebView?,
@@ -99,14 +99,13 @@ class MainActivity : ComponentActivity() {
                 showOfflinePage()
             }
 
-            // Новий API для помилок (23+)
+            // Новий API помилок (23+)
             override fun onReceivedError(
                 view: WebView?,
                 request: WebResourceRequest?,
                 error: WebResourceError?
             ) {
                 super.onReceivedError(view, request, error)
-                // Реагуємо тільки на помилку головного фрейму (а не дрібних ресурсів)
                 if (request?.isForMainFrame == true) {
                     showOfflinePage()
                 }
@@ -125,7 +124,6 @@ class MainActivity : ComponentActivity() {
         webView.loadUrl(OFFLINE_URL)
     }
 
-    // Перевірка наявності інтернету
     private fun isNetworkAvailable(): Boolean {
         val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
@@ -141,20 +139,5 @@ class MainActivity : ComponentActivity() {
             @Suppress("DEPRECATION")
             activeNetworkInfo != null && activeNetworkInfo.isConnected
         }
-    }
-
-    override fun onBackPressed() {
-        // Якщо є куди повернутись у WebView – ходимо по історії всередині
-        if (this::webView.isInitialized && webView.canGoBack()) {
-            webView.goBack()
-        } else {
-            super.onBackPressed()
-        }
-    }
-}
-
-
-        // 🔙 Повертаємо пряме завантаження сайту (без loader.html)
-        webView.loadUrl("https://maf.lviv.ua")
     }
 }
