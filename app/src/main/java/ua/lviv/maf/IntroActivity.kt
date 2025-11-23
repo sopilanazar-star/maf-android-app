@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity
 class IntroActivity : AppCompatActivity() {
 
     private val handler = Handler(Looper.getMainLooper())
+    private var introFinished = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Щоб не було білого миготіння перед інтро
@@ -23,10 +24,10 @@ class IntroActivity : AppCompatActivity() {
         // Fullscreen + ховаємо статусбар і навігацію
         window.decorView.systemUiVisibility =
             View.SYSTEM_UI_FLAG_FULLSCREEN or
-            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
-            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
-            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+                    View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_intro)
@@ -41,10 +42,16 @@ class IntroActivity : AppCompatActivity() {
 
         // 5 секунд інтро – потім вхід у додаток без білого екрану
         handler.postDelayed({
-            startActivity(Intent(this, MainActivity::class.java))
-            overridePendingTransition(0, 0)
-            finish()
+            goToMain()
         }, 5000L)
+    }
+
+    private fun goToMain() {
+        if (introFinished) return
+        introFinished = true
+        startActivity(Intent(this, MainActivity::class.java))
+        overridePendingTransition(0, 0)
+        finish()
     }
 
     private fun startLogoAnimation(logo: ImageView) {
@@ -75,5 +82,11 @@ class IntroActivity : AppCompatActivity() {
                 start()
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Щоб не було витоків і подвійних переходів
+        handler.removeCallbacksAndMessages(null)
     }
 }
