@@ -31,7 +31,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Основна активність: повний автоповорот -->
+        <!-- Основна активність: повний автоповорот + deep link -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
