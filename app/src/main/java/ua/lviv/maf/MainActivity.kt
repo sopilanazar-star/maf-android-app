@@ -16,6 +16,9 @@ import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 
+// ✅ ЄДИНИЙ новий import
+import ua.lviv.maf.WebAppInterface
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
@@ -43,12 +46,19 @@ class MainActivity : AppCompatActivity() {
         // Чорний фон, щоб не було білих миготінь
         webView.setBackgroundColor(Color.BLACK)
 
-        // Спочатку ховаємо WebView (буде невидимий)
+        // Спочатку ховаємо WebView
         webView.alpha = 0f
 
         val settings = webView.settings
         with(settings) {
             javaScriptEnabled = true
+
+            // ✅ ЄДИНА ПРАВКА — підключення JS → Android
+            webView.addJavascriptInterface(
+                WebAppInterface(this@MainActivity),
+                "Android"
+            )
+
             domStorageEnabled = true
             databaseEnabled = true
             loadsImagesAutomatically = true
@@ -56,7 +66,7 @@ class MainActivity : AppCompatActivity() {
             builtInZoomControls = true
             displayZoomControls = false
 
-            // Кеш: з мережею – нормальний режим, без мережі – тягнемо з кешу
+            // Кеш
             cacheMode = if (isNetworkAvailable()) {
                 WebSettings.LOAD_DEFAULT
             } else {
@@ -81,13 +91,11 @@ class MainActivity : AppCompatActivity() {
                 return true
             }
 
-            // Плавне показування контенту без білого спалаху
             override fun onPageCommitVisible(view: WebView?, url: String?) {
                 super.onPageCommitVisible(view, url)
                 webView.animate().alpha(1f).setDuration(200).start()
             }
 
-            // Старий API помилок (до 23)
             @Suppress("DEPRECATION")
             override fun onReceivedError(
                 view: WebView?,
@@ -99,7 +107,6 @@ class MainActivity : AppCompatActivity() {
                 showOfflinePage()
             }
 
-            // Новий API помилок (23+)
             override fun onReceivedError(
                 view: WebView?,
                 request: WebResourceRequest?,
