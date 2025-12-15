@@ -1,23 +1,21 @@
-package ua.maf.lviv   // ⚠️ ЗАМІНИ на свій пакет
+package ua.lviv.maf
 
 import android.content.Context
-import android.util.Log
-import android.webkit.JavascriptInterface
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
+import android.webkit.JavascriptInterface
 import androidx.core.app.NotificationCompat
 
 class WebAppInterface(private val context: Context) {
 
     @JavascriptInterface
     fun notifyGoal(message: String) {
-        Log.d("MAF_WEBVIEW", "GOAL: $message")
         showNotification("⚽ ГОЛ!", message)
     }
 
     private fun showNotification(title: String, text: String) {
-        val channelId = "maf_live_channel"
+        val channelId = "maf_live_goals"
 
         val manager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -36,6 +34,7 @@ class WebAppInterface(private val context: Context) {
             .setContentTitle(title)
             .setContentText(text)
             .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
 
         manager.notify(System.currentTimeMillis().toInt(), notification)
