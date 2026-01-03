@@ -2,9 +2,11 @@ package ua.lviv.maf
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.graphics.Color
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -16,7 +18,6 @@ import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 
-// Імпорт вашого інтерфейсу
 import ua.lviv.maf.WebAppInterface
 
 class MainActivity : AppCompatActivity() {
@@ -28,11 +29,9 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
-        // SplashScreen API
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        // Fullscreen + ховаємо статусбар і навігацію
         window.decorView.systemUiVisibility =
             View.SYSTEM_UI_FLAG_FULLSCREEN or
                     View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
@@ -43,22 +42,14 @@ class MainActivity : AppCompatActivity() {
         webView = WebView(this)
         setContentView(webView)
 
-        // Чорний фон, щоб не було білих миготінь
         webView.setBackgroundColor(Color.BLACK)
-
-        // Спочатку ховаємо WebView для плавної появи
         webView.alpha = 0f
 
         val settings = webView.settings
         with(settings) {
             javaScriptEnabled = true
-
-            // Підключення JS -> Android
-            webView.addJavascriptInterface(
-                WebAppInterface(this@MainActivity),
-                "Android"
-            )
-
+            webView.addJavascriptInterface(WebAppInterface(this@MainActivity), "Android")
+            
             domStorageEnabled = true
             databaseEnabled = true
             loadsImagesAutomatically = true
@@ -66,7 +57,6 @@ class MainActivity : AppCompatActivity() {
             builtInZoomControls = true
             displayZoomControls = false
 
-            // Кешування
             cacheMode = if (isNetworkAvailable()) {
                 WebSettings.LOAD_DEFAULT
             } else {
@@ -76,18 +66,39 @@ class MainActivity : AppCompatActivity() {
 
         webView.webViewClient = object : WebViewClient() {
 
-            override fun shouldOverrideUrlLoading(
-                view: WebView?,
-                request: WebResourceRequest?
-            ): Boolean {
+            // Основний обробник посилань
+            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                 val url = request?.url.toString()
-                view?.loadUrl(url)
-                return true
+                return handleUrl(url)
             }
 
             @Suppress("DEPRECATION")
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-                if (url != null) view?.loadUrl(url)
+                return if (url != null) handleUrl(url) else false
+            }
+
+            // Логіка фільтрації посилань (PDF, Месенджери, Сайти)
+            private fun handleUrl(url: String): Boolean {
+                // 1. Якщо це PDF
+                if (url.lowercase().endsWith(".pdf")) {
+                    val googleDocsUrl = "https://docs.google.com/viewer?embedded=true&url=$url"
+                    webView.loadUrl(googleDocsUrl)
+                    return true
+                }
+
+                // 2. Якщо це зовнішні сервіси (телефон, месенджери, пошта)
+                if (url.startsWith("tel:") || url.startsWith("mailto:") || url.startsWith("intent:") || url.startsWith("tg:") || url.startsWith("viber:")) {
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        startActivity(intent)
+                        return true
+                    } catch (e: Exception) {
+                        return false
+                    }
+                }
+
+                // 3. Звичайний перехід по сайту
+                webView.loadUrl(url)
                 return true
             }
 
@@ -96,30 +107,12 @@ class MainActivity : AppCompatActivity() {
                 webView.animate().alpha(1f).setDuration(200).start()
             }
 
-            @Suppress("DEPRECATION")
-            override fun onReceivedError(
-                view: WebView?,
-                errorCode: Int,
-                description: String?,
-                failingUrl: String?
-            ) {
-                super.onReceivedError(view, errorCode, description, failingUrl)
-                showOfflinePage()
-            }
-
-            override fun onReceivedError(
-                view: WebView?,
-                request: WebResourceRequest?,
-                error: WebResourceError?
-            ) {
+            override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
                 super.onReceivedError(view, request, error)
-                if (request?.isForMainFrame == true) {
-                    showOfflinePage()
-                }
+                if (request?.isForMainFrame == true) showOfflinePage()
             }
         }
 
-        // Стартове завантаження
         if (isNetworkAvailable()) {
             webView.loadUrl(START_URL)
         } else {
@@ -127,11 +120,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * ПРАВКА: Обробка кнопки "Назад".
-     * Якщо браузер може повернутися назад — повертаємось.
-     * Якщо ми на головній — закриваємо додаток.
-     */
+    // Кнопка назад тепер працює і для PDF (бо це крок в історії)
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         if (::webView.isInitialized && webView.canGoBack()) {
@@ -147,7 +136,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun isNetworkAvailable(): Boolean {
         val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val network = cm.activeNetwork ?: return false
             val caps = cm.getNetworkCapabilities(network) ?: return false
@@ -156,9 +144,8 @@ class MainActivity : AppCompatActivity() {
                     caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
         } else {
             @Suppress("DEPRECATION")
-            val activeNetworkInfo = cm.activeNetworkInfo
-            @Suppress("DEPRECATION")
-            activeNetworkInfo != null && activeNetworkInfo.isConnected
+            val info = cm.activeNetworkInfo
+            info != null && info.isConnected
         }
     }
 }
