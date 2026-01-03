@@ -12,8 +12,9 @@ android {
         minSdk = 24
         targetSdk = 34
 
-        versionCode = 20        // внутрішня версія
-        versionName = "2.0"     // версія для користувача
+        // Оновлені версії
+        versionCode = 21        // Внутрішній номер збірки
+        versionName = "2.1"     // Версія, яку бачить користувач
     }
 
     buildTypes {
