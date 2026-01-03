@@ -16,7 +16,7 @@ import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 
-// ✅ ЄДИНИЙ новий import
+// Імпорт вашого інтерфейсу
 import ua.lviv.maf.WebAppInterface
 
 class MainActivity : AppCompatActivity() {
@@ -46,14 +46,14 @@ class MainActivity : AppCompatActivity() {
         // Чорний фон, щоб не було білих миготінь
         webView.setBackgroundColor(Color.BLACK)
 
-        // Спочатку ховаємо WebView
+        // Спочатку ховаємо WebView для плавної появи
         webView.alpha = 0f
 
         val settings = webView.settings
         with(settings) {
             javaScriptEnabled = true
 
-            // ✅ ЄДИНА ПРАВКА — підключення JS → Android
+            // Підключення JS -> Android
             webView.addJavascriptInterface(
                 WebAppInterface(this@MainActivity),
                 "Android"
@@ -66,7 +66,7 @@ class MainActivity : AppCompatActivity() {
             builtInZoomControls = true
             displayZoomControls = false
 
-            // Кеш
+            // Кешування
             cacheMode = if (isNetworkAvailable()) {
                 WebSettings.LOAD_DEFAULT
             } else {
@@ -124,6 +124,20 @@ class MainActivity : AppCompatActivity() {
             webView.loadUrl(START_URL)
         } else {
             showOfflinePage()
+        }
+    }
+
+    /**
+     * ПРАВКА: Обробка кнопки "Назад".
+     * Якщо браузер може повернутися назад — повертаємось.
+     * Якщо ми на головній — закриваємо додаток.
+     */
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        if (::webView.isInitialized && webView.canGoBack()) {
+            webView.goBack()
+        } else {
+            super.onBackPressed()
         }
     }
 
