@@ -12,38 +12,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: set up JDK 17
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: gradle
+          distribution: temurin
+          java-version: 17
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+      - uses: android-actions/setup-android@v3
 
-      - name: Build with Gradle
-        run: ./gradlew assembleDebug --stacktrace --info
+      - name: Accept licenses & install SDK tools
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platforms;android-34" "platform-tools" "build-tools;34.0.0"
 
-      # ПЕРЕЙМЕНУВАННЯ APK
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v3
+        with:
+          gradle-version: 8.6
+
+      - name: Build with full logs
+        run: |
+          cd app
+          gradle assembleDebug --stacktrace --info --warning-mode all --no-daemon
+
+      # 🔽 ПЕРЕЙМЕНУВАННЯ APK на maf.apk
       - name: Rename APK
         run: mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/maf.apk
 
-      # ЗАВАНТАЖЕННЯ ЯК АРТЕФАКТ (буде доступно в Actions)
-      - name: Upload APK Artifact
+      # 🔼 ЗАВАНТАЖЕННЯ ГОТОВОГО APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: maf-app-v2.1
+          name: maf-app
           path: app/build/outputs/apk/debug/maf.apk
-
-      # АВТОМАТИЧНЕ СТВОРЕННЯ РЕЛІЗУ (опціонально, але дуже зручно)
-      - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v2
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        with:
-          tag_name: v${{ github.run_number }}
-          name: Release v2.1 (Build ${{ github.run_number }})
-          files: app/build/outputs/apk/debug/maf.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
