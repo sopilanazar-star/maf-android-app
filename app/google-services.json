@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "151896757802",
+    "project_id": "maf-android-app",
+    "storage_bucket": "maf-android-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:151896757802:android:ac37a6d46e576bd8809553",
+        "android_client_info": {
+          "package_name": "ua.lviv.maf"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGtSZHe8PTqPs_tBtMFG9ylmzpz5snGsU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
