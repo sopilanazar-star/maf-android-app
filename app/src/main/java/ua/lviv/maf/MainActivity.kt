@@ -30,7 +30,7 @@ class MainActivity : AppCompatActivity() {
     private val START_URL = "https://maf.lviv.ua"
     private val OFFLINE_URL = "file:///android_asset/offline.html"
     
-    // Пряме RAW посилання на ваш файл конфігурації
+    // Пряме RAW посилання на файл версії
     private val VERSION_JSON_URL = "https://raw.githubusercontent.com/sopilanazar-star/maf-android-app/main/version.json"
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -38,7 +38,7 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        // Активуємо повний екран без годинника та кнопок
+        // Активуємо повний екран
         setFullScreen()
 
         webView = WebView(this)
@@ -68,20 +68,26 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 
-                // --- ВИДАЛЯЄМО ЗАЙВУ СТАТТЮ ---
-                view?.loadUrl("""
-                    javascript:(function() { 
-                        var articles = document.getElementsByTagName('article');
-                        for (var i = 0; i < articles.length; i++) {
-                            if (articles[i].innerText.includes('Додаток МАФ на ваш смартфон')) {
-                                articles[i].style.display = 'none';
-                            }
-                        }
-                    })()
-                """.trimIndent())
+                // РОЗУМНЕ ВИДАЛЕННЯ СТАТТІ ПРО ДОДАТОК
+                // Шукаємо блок з класом .maf-article, який містить текст про додаток
+                webView.postDelayed({
+                    view?.evaluateJavascript("""
+                        (function() {
+                            var articles = document.querySelectorAll('.maf-article');
+                            articles.forEach(function(article) {
+                                var title = article.querySelector('.maf-title');
+                                if (title && title.innerText.includes('Додаток МАФ')) {
+                                    article.remove();
+                                }
+                            });
+                        })();
+                    """.trimIndent(), null)
+                }, 600)
 
+                // Плавна поява сторінки
                 webView.animate().alpha(1f).setDuration(500).start()
                 
+                // Перевірка оновлень
                 if (isNetworkAvailable()) {
                     checkUpdate()
                 }
@@ -162,7 +168,6 @@ class MainActivity : AppCompatActivity() {
                         val newVersionCode = json.getInt("new_version_code")
                         val downloadUrl = json.getString("download_url")
 
-                        // Порівнюємо версію сервера з версією в build.gradle.kts
                         if (newVersionCode > BuildConfig.VERSION_CODE) {
                             runOnUiThread {
                                 showUpdateDialog(downloadUrl)
@@ -177,7 +182,7 @@ class MainActivity : AppCompatActivity() {
     private fun showUpdateDialog(downloadUrl: String) {
         AlertDialog.Builder(this)
             .setTitle("Доступне оновлення")
-            .setMessage("Доступна нова версія додатка з покращеним інтерфейсом. Оновити?")
+            .setMessage("Вийшла нова версія додатка МАФ. Бажаєте оновитися зараз?")
             .setCancelable(false)
             .setPositiveButton("Оновити") { _, _ ->
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl))
@@ -205,10 +210,11 @@ class MainActivity : AppCompatActivity() {
     private fun showExitDialog() {
         AlertDialog.Builder(this)
             .setTitle("Вихід")
-            .setMessage("Бажаєте вийти з додатка МАФ?")
+            .setMessage("Бажаєте вийти з додатка?")
             .setPositiveButton("Так") { _, _ -> finish() }
             .setNegativeButton("Ні", null)
             .show()
     }
 }
+
 
