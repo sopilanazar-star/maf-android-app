@@ -24,17 +24,18 @@ jobs:
       - name: Decode Keystore
         run: |
           echo "${{ secrets.SIGNING_KEY_BASE64 }}" | base64 --decode > maf-release.jks
-          # Копіюємо ключ у всі можливі папки для надійності
           cp maf-release.jks app/maf-release.jks || true
 
-      # ВИПРАВЛЕННЯ: Знаходимо файл gradlew і даємо йому права на запуск
-      - name: Grant execute permission for gradlew
-        run: find . -name "gradlew" -exec chmod +x {} +
-
-      # ВИПРАВЛЕННЯ: Запуск збірки з автоматичним пошуком шляху до Gradle
+      # ВИПРАВЛЕННЯ: Автоматично качаємо відсутній двигун Gradle і запускаємо збірку
       - name: Build Release APK
         run: |
+          # 1. Створюємо папку та качаємо jar-файл, якого не вистачає
+          mkdir -p gradle/wrapper
+          curl -L https://github.com/gradle/gradle/raw/v8.6.0/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+          
+          # 2. Знаходимо файл gradlew, даємо права і запускаємо
           GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
+          chmod +x $GRADLEW_PATH
           $GRADLEW_PATH assembleRelease --stacktrace
         env:
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
