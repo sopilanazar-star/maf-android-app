@@ -20,14 +20,17 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
-      # ЦЕЙ КРОК СТВОРЮЄ ФАЙЛ КЛЮЧА З ВАШОГО СЕКРЕТУ
+      # Створюємо файл ключа з вашого секрету
       - name: Decode Keystore
         run: |
           echo "${{ secrets.SIGNING_KEY_BASE64 }}" | base64 --decode > app/maf-release.jks
 
+      # ВИПРАВЛЕННЯ ПОМИЛКИ: Знаходимо і даємо права на gradlew, де б він не був
       - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+        run: |
+          find . -name "gradlew" -exec chmod +x {} +
 
+      # Запуск збірки через обгортку Gradle
       - name: Build Release APK
         run: ./gradlew assembleRelease --stacktrace
         env:
@@ -35,12 +38,14 @@ jobs:
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
 
-      # ПЕРЕЙМЕНУВАННЯ ТА ЗАВАНТАЖЕННЯ
-      - name: Rename APK
-        run: mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/maf.apk
+      # Пошук готового APK (щоб шлях завжди був правильним)
+      - name: Prepare APK for upload
+        run: |
+          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          cp "$APK_PATH" maf.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: maf-app-release
-          path: app/build/outputs/apk/release/maf.apk
+          path: maf.apk
