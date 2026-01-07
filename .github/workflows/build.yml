@@ -20,28 +20,31 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
-      # Створюємо файл ключа з вашого секрету
+      # Створюємо файл ключа з вашого секрету SIGNING_KEY_BASE64
       - name: Decode Keystore
         run: |
-          echo "${{ secrets.SIGNING_KEY_BASE64 }}" | base64 --decode > app/maf-release.jks
+          echo "${{ secrets.SIGNING_KEY_BASE64 }}" | base64 --decode > maf-release.jks
+          # Копіюємо ключ у всі можливі папки для надійності
+          cp maf-release.jks app/maf-release.jks || true
 
-      # ВИПРАВЛЕННЯ ПОМИЛКИ: Знаходимо і даємо права на gradlew, де б він не був
+      # ВИПРАВЛЕННЯ: Знаходимо файл gradlew і даємо йому права на запуск
       - name: Grant execute permission for gradlew
-        run: |
-          find . -name "gradlew" -exec chmod +x {} +
+        run: find . -name "gradlew" -exec chmod +x {} +
 
-      # Запуск збірки через обгортку Gradle
+      # ВИПРАВЛЕННЯ: Запуск збірки з автоматичним пошуком шляху до Gradle
       - name: Build Release APK
-        run: ./gradlew assembleRelease --stacktrace
+        run: |
+          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
+          $GRADLEW_PATH assembleRelease --stacktrace
         env:
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
 
-      # Пошук готового APK (щоб шлях завжди був правильним)
+      # Пошук готового APK та підготовка до завантаження
       - name: Prepare APK for upload
         run: |
-          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          APK_PATH=$(find . -name "*-release.apk" | head -n 1)
           cp "$APK_PATH" maf.apk
 
       - name: Upload APK
