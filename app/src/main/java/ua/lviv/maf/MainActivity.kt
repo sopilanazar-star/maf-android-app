@@ -18,33 +18,36 @@ import android.webkit.WebViewClient
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import okhttp3.*
+import org.json.JSONObject
+import java.io.IOException
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
     private val START_URL = "https://maf.lviv.ua"
     private val OFFLINE_URL = "file:///android_asset/offline.html"
+    
+    // Пряме RAW посилання на ваш файл конфігурації
+    private val VERSION_JSON_URL = "https://raw.githubusercontent.com/sopilanazar-star/maf-android-app/main/version.json"
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        // Прибираємо повний екран тут, щоб бачити статус-бар під час вводу паролів
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
 
         webView = WebView(this)
         setContentView(webView)
 
-        // ВИПРАВЛЕННЯ: Міняємо чорний фон на білий, щоб не було "чорного квадрата"
         webView.setBackgroundColor(Color.WHITE)
-        webView.alpha = 0f // Починаємо прозорим для плавного входу
+        webView.alpha = 0f 
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
 
         val settings = webView.settings
         with(settings) {
             javaScriptEnabled = true
-            // Підключаємо інтерфейс для взаємодії з сайтом
             webView.addJavascriptInterface(WebAppInterface(this@MainActivity), "Android")
             
             domStorageEnabled = true
@@ -54,18 +57,19 @@ class MainActivity : AppCompatActivity() {
             builtInZoomControls = true
             displayZoomControls = false
             
-            // ОПТИМІЗАЦІЯ ОФЛАЙНУ: Використовуємо кеш, якщо немає мережі
             cacheMode = if (isNetworkAvailable()) WebSettings.LOAD_DEFAULT else WebSettings.LOAD_CACHE_ELSE_NETWORK
-            
-            // Дозволяємо змішаний контент (https + http)
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
         }
 
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                // Коли сторінка повністю готова — плавно показуємо її
                 webView.animate().alpha(1f).setDuration(500).start()
+                
+                // Перевіряємо наявність оновлень, коли основна сторінка завантажилась
+                if (isNetworkAvailable()) {
+                    checkUpdate()
+                }
             }
 
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
@@ -74,12 +78,10 @@ class MainActivity : AppCompatActivity() {
             }
 
             private fun handleUrl(url: String): Boolean {
-                // PDF через Google Viewer
                 if (url.lowercase().endsWith(".pdf")) {
                     webView.loadUrl("https://docs.google.com/viewer?embedded=true&url=$url")
                     return true
                 }
-                // Зовнішні посилання та месенджери
                 if (url.startsWith("tel:") || url.startsWith("mailto:") || url.startsWith("tg:") || url.startsWith("viber:") || url.startsWith("whatsapp:")) {
                     try {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
@@ -88,14 +90,12 @@ class MainActivity : AppCompatActivity() {
                     } catch (e: Exception) { return false }
                 }
                 
-                // Якщо посилання веде на зовнішній сайт — відкриваємо в браузері, 
-                // якщо на maf.lviv.ua — всередині додатка
                 if (!url.contains("maf.lviv.ua")) {
                     startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                     return true
                 }
 
-                return false // Дозволяємо WebView самому вантажити посилання
+                return false 
             }
 
             override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
@@ -105,13 +105,51 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Запуск
-        if (isNetworkAvailable()) {
-            webView.loadUrl(START_URL)
-        } else {
-            // Спроба взяти з кешу або показати офлайн сторінку
-            webView.loadUrl(START_URL) 
-        }
+        webView.loadUrl(START_URL)
+    }
+
+    // --- ФУНКЦІЯ ПЕРЕВІРКИ ОНОВЛЕНЬ ---
+    private fun checkUpdate() {
+        val client = OkHttpClient()
+        val request = Request.Builder().url(VERSION_JSON_URL).build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                e.printStackTrace()
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                response.body?.string()?.let { jsonString ->
+                    try {
+                        val json = JSONObject(jsonString)
+                        val newVersionCode = json.getInt("new_version_code")
+                        val downloadUrl = json.getString("download_url")
+
+                        // Порівнюємо з versionCode з вашого build.gradle.kts
+                        if (newVersionCode > BuildConfig.VERSION_CODE) {
+                            runOnUiThread {
+                                showUpdateDialog(downloadUrl)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        })
+    }
+
+    private fun showUpdateDialog(downloadUrl: String) {
+        AlertDialog.Builder(this)
+            .setTitle("Доступне оновлення")
+            .setMessage("Ми випустили нову версію МАФ з новими можливостями. Бажаєте оновитися?")
+            .setCancelable(false) // Користувач має прийняти рішення
+            .setPositiveButton("Оновити") { _, _ ->
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl))
+                startActivity(intent)
+            }
+            .setNegativeButton("Пізніше", null)
+            .show()
     }
 
     private fun isNetworkAvailable(): Boolean {
