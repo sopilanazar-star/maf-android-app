@@ -13,18 +13,16 @@ android {
         minSdk = 24
         targetSdk = 34
 
-        // ВАЖЛИВО: Для наступного оновлення змініть на 22 та "2.2"
+        // ВАЖЛИВО: Зараз встановлено 21. Для наступного оновлення змініть на 22.
         versionCode = 21        
         versionName = "2.1"     
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // ДОДАЄМО НАЛАШТУВАННЯ ПІДПИСУ (Signing Config)
-    // Це вирішить проблему "Додаток не встановлено" при оновленні
     signingConfigs {
         create("release") {
-            // Ці дані ми заповнимо після створення вами .jks ключа
+            // Використовуємо змінні середовища з GitHub Actions
             storeFile = file("maf-release.jks") 
             storePassword = System.getenv("SIGNING_STORE_PASSWORD")
             keyAlias = System.getenv("SIGNING_KEY_ALIAS")
@@ -35,7 +33,6 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
-            // Підключаємо наш підпис до release збірки
             signingConfig = signingConfigs.getByName("release") 
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -44,13 +41,14 @@ android {
         }
         debug {
             isDebuggable = true
-            // Щоб debug версія могла оновлювати release, вони мають мати однаковий підпис
             signingConfig = signingConfigs.getByName("release")
         }
     }
 
     buildFeatures {
         viewBinding = true
+        // Додаємо buildConfig, щоб MainActivity бачила версію додатка
+        buildConfig = true
     }
 
     compileOptions {
@@ -69,14 +67,15 @@ android {
 }
 
 dependencies {
+    // Бібліотека для запитів до мережі (необхідна для перевірки version.json)
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
     // Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-analytics-ktx")
-    
-    // ДОДАЄМО: Firebase Remote Config (для автооновлень)
     implementation("com.google.firebase:firebase-config-ktx")
     
-    // ДОДАЄМО: Google AdMob (для реклами та пасивного доходу)
+    // Google AdMob
     implementation("com.google.android.gms:play-services-ads:23.0.0")
 
     // Існуючі залежності
