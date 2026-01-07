@@ -164,7 +164,7 @@ class MainActivity : AppCompatActivity() {
     private fun showUpdateDialog(downloadUrl: String) {
         AlertDialog.Builder(this)
             .setTitle("Доступне оновлення")
-            .setMessage("Ми випустили нову версію МАФ з новими можливостями та повноекранним режимом. Бажаєте оновитися?")
+            .setMessage("Доступна нова версія додатка. Бажаєте оновитися?")
             .setCancelable(false)
             .setPositiveButton("Оновити") { _, _ ->
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl))
