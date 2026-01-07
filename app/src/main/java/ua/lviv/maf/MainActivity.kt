@@ -10,6 +10,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.view.WindowInsets
+import android.view.WindowInsetsController
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
@@ -28,7 +30,6 @@ class MainActivity : AppCompatActivity() {
     private val START_URL = "https://maf.lviv.ua"
     private val OFFLINE_URL = "file:///android_asset/offline.html"
     
-    // Пряме RAW посилання на ваш файл конфігурації
     private val VERSION_JSON_URL = "https://raw.githubusercontent.com/sopilanazar-star/maf-android-app/main/version.json"
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -36,7 +37,8 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
+        // --- НОВИЙ БЛОК: ПОВНИЙ ЕКРАН (IMMERSIVE MODE) ---
+        setFullScreen()
 
         webView = WebView(this)
         setContentView(webView)
@@ -66,7 +68,6 @@ class MainActivity : AppCompatActivity() {
                 super.onPageFinished(view, url)
                 webView.animate().alpha(1f).setDuration(500).start()
                 
-                // Перевіряємо наявність оновлень, коли основна сторінка завантажилась
                 if (isNetworkAvailable()) {
                     checkUpdate()
                 }
@@ -108,15 +109,39 @@ class MainActivity : AppCompatActivity() {
         webView.loadUrl(START_URL)
     }
 
-    // --- ФУНКЦІЯ ПЕРЕВІРКИ ОНОВЛЕНЬ ---
+    // Метод для налаштування повного екрана
+    private fun setFullScreen() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.setDecorFitsSystemWindows(false)
+            window.insetsController?.let { controller ->
+                controller.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
+                controller.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_FULLSCREEN
+                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION)
+        }
+    }
+
+    // Викликаємо повний екран знову при поверненні в додаток
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            setFullScreen()
+        }
+    }
+
     private fun checkUpdate() {
         val client = OkHttpClient()
         val request = Request.Builder().url(VERSION_JSON_URL).build()
 
         client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                e.printStackTrace()
-            }
+            override fun onFailure(call: Call, e: IOException) { e.printStackTrace() }
 
             override fun onResponse(call: Call, response: Response) {
                 response.body?.string()?.let { jsonString ->
@@ -125,15 +150,12 @@ class MainActivity : AppCompatActivity() {
                         val newVersionCode = json.getInt("new_version_code")
                         val downloadUrl = json.getString("download_url")
 
-                        // Порівнюємо з versionCode з вашого build.gradle.kts
                         if (newVersionCode > BuildConfig.VERSION_CODE) {
                             runOnUiThread {
                                 showUpdateDialog(downloadUrl)
                             }
                         }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
+                    } catch (e: Exception) { e.printStackTrace() }
                 }
             }
         })
@@ -142,8 +164,8 @@ class MainActivity : AppCompatActivity() {
     private fun showUpdateDialog(downloadUrl: String) {
         AlertDialog.Builder(this)
             .setTitle("Доступне оновлення")
-            .setMessage("Ми випустили нову версію МАФ з новими можливостями. Бажаєте оновитися?")
-            .setCancelable(false) // Користувач має прийняти рішення
+            .setMessage("Ми випустили нову версію МАФ з новими можливостями та повноекранним режимом. Бажаєте оновитися?")
+            .setCancelable(false)
             .setPositiveButton("Оновити") { _, _ ->
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl))
                 startActivity(intent)
