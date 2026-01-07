@@ -13,9 +13,9 @@ android {
         minSdk = 24
         targetSdk = 34
 
-        // ВАЖЛИВО: Зараз встановлено 21. Для наступного оновлення змініть на 22.
-        versionCode = 21        
-        versionName = "2.1"     
+        // ВАЖЛИВО: Зараз встановлено 22. Для наступного оновлення змініть на 23.
+        versionCode = 22        
+        versionName = "2.2"     
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
