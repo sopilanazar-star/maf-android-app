@@ -24,30 +24,33 @@ jobs:
       - name: Decode Keystore
         run: |
           echo "${{ secrets.SIGNING_KEY_BASE64 }}" | base64 --decode > maf-release.jks
+          # Про всяк випадок копіюємо в корінь та в папку app
           cp maf-release.jks app/maf-release.jks || true
 
-      # ВИПРАВЛЕННЯ: Автоматично качаємо відсутній двигун Gradle і запускаємо збірку
+      # КРОК ПЕРЕМОГИ: Генеруємо чистий Gradle Wrapper та запускаємо збірку
       - name: Build Release APK
         run: |
-          # 1. Створюємо папку та качаємо jar-файл, якого не вистачає
-          mkdir -p gradle/wrapper
-          curl -L https://github.com/gradle/gradle/raw/v8.6.0/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+          # 1. Самі створюємо всі файли (gradlew, jar), щоб не було помилок маніфесту
+          gradle wrapper --gradle-version 8.6
           
-          # 2. Знаходимо файл gradlew, даємо права і запускаємо
-          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
-          chmod +x $GRADLEW_PATH
-          $GRADLEW_PATH assembleRelease --stacktrace
+          # 2. Даємо права на запуск створеного файлу
+          chmod +x gradlew
+          
+          # 3. Запускаємо збірку Release APK
+          ./gradlew assembleRelease --stacktrace
         env:
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
 
-      # Пошук готового APK та підготовка до завантаження
+      # Пошук готового APK та підготовка його до видачі
       - name: Prepare APK for upload
         run: |
+          # Шукаємо файл у папці build і копіюємо його в корінь як maf.apk
           APK_PATH=$(find . -name "*-release.apk" | head -n 1)
           cp "$APK_PATH" maf.apk
 
+      # Завантаження файлу на GitHub, щоб ви могли його скачати
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
