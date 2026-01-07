@@ -1,7 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("com.google.gms.google-services") // ПЛАГІН FIREBASE
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -13,14 +13,30 @@ android {
         minSdk = 24
         targetSdk = 34
 
-        // Оновлені версії
-        versionCode = 21        // Внутрішній номер збірки
-        versionName = "2.1"     // Версія, яку бачить користувач
+        // ВАЖЛИВО: Для наступного оновлення змініть на 22 та "2.2"
+        versionCode = 21        
+        versionName = "2.1"     
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // ДОДАЄМО НАЛАШТУВАННЯ ПІДПИСУ (Signing Config)
+    // Це вирішить проблему "Додаток не встановлено" при оновленні
+    signingConfigs {
+        create("release") {
+            // Ці дані ми заповнимо після створення вами .jks ключа
+            storeFile = file("maf-release.jks") 
+            storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+            keyAlias = System.getenv("SIGNING_KEY_ALIAS")
+            keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = true
+            // Підключаємо наш підпис до release збірки
+            signingConfig = signingConfigs.getByName("release") 
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -28,6 +44,8 @@ android {
         }
         debug {
             isDebuggable = true
+            // Щоб debug версія могла оновлювати release, вони мають мати однаковий підпис
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
@@ -50,22 +68,18 @@ android {
     }
 }
 
-kotlin {
-    jvmToolchain(17)
-}
-
-configurations.all {
-    resolutionStrategy {
-        force("androidx.databinding:viewbinding:8.4.0")
-    }
-}
-
 dependencies {
-    // Firebase BoM (Bill of Materials) для автоматичного керування версіями
+    // Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
-    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-analytics-ktx")
+    
+    // ДОДАЄМО: Firebase Remote Config (для автооновлень)
+    implementation("com.google.firebase:firebase-config-ktx")
+    
+    // ДОДАЄМО: Google AdMob (для реклами та пасивного доходу)
+    implementation("com.google.android.gms:play-services-ads:23.0.0")
 
-    // Ваші існуючі залежності
+    // Існуючі залежності
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
