@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="ua.lviv.maf">
 
     <uses-permission android:name="android.permission.INTERNET" />
@@ -17,7 +18,14 @@
         android:roundIcon="@mipmap/ic_maf_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.MAFFootball"
-        android:usesCleartextTraffic="true"> <meta-data
+        android:usesCleartextTraffic="true">
+
+        <property
+            android:name="android.adservices.AD_SERVICES_CONFIG"
+            android:resource="@xml/gma_ad_services_config"
+            tools:replace="android:resource" />
+
+        <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-3940256099942544~3347511713"/>
 
@@ -25,7 +33,8 @@
             android:name=".IntroActivity"
             android:exported="true"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.MAFFootball"> <intent-filter>
+            android:theme="@style/Theme.MAFFootball">
+            <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
@@ -36,7 +45,9 @@
             android:exported="true"
             android:screenOrientation="fullSensor"
             android:configChanges="orientation|screenSize|keyboardHidden|uiMode"
-            android:windowSoftInputMode="adjustResize"> <intent-filter android:autoVerify="true">
+            android:windowSoftInputMode="adjustResize">
+            
+            <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
