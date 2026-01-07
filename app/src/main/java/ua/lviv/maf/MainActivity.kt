@@ -19,8 +19,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 
-import ua.lviv.maf.WebAppInterface
-
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
@@ -32,35 +30,42 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        window.decorView.systemUiVisibility =
-            View.SYSTEM_UI_FLAG_FULLSCREEN or
-                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+        // Прибираємо повний екран тут, щоб бачити статус-бар під час вводу паролів
+        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
 
         webView = WebView(this)
         setContentView(webView)
 
-        webView.setBackgroundColor(Color.BLACK)
-        webView.alpha = 0f 
+        // ВИПРАВЛЕННЯ: Міняємо чорний фон на білий, щоб не було "чорного квадрата"
+        webView.setBackgroundColor(Color.WHITE)
+        webView.alpha = 0f // Починаємо прозорим для плавного входу
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
 
         val settings = webView.settings
         with(settings) {
             javaScriptEnabled = true
+            // Підключаємо інтерфейс для взаємодії з сайтом
             webView.addJavascriptInterface(WebAppInterface(this@MainActivity), "Android")
+            
             domStorageEnabled = true
             databaseEnabled = true
             loadsImagesAutomatically = true
             setSupportZoom(true)
             builtInZoomControls = true
             displayZoomControls = false
-            cacheMode = WebSettings.LOAD_DEFAULT
+            
+            // ОПТИМІЗАЦІЯ ОФЛАЙНУ: Використовуємо кеш, якщо немає мережі
+            cacheMode = if (isNetworkAvailable()) WebSettings.LOAD_DEFAULT else WebSettings.LOAD_CACHE_ELSE_NETWORK
+            
+            // Дозволяємо змішаний контент (https + http)
+            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
         }
 
         webView.webViewClient = object : WebViewClient() {
-            override fun onPageCommitVisible(view: WebView?, url: String?) {
-                super.onPageCommitVisible(view, url)
-                webView.animate().alpha(1f).setDuration(400).start()
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                // Коли сторінка повністю готова — плавно показуємо її
+                webView.animate().alpha(1f).setDuration(500).start()
             }
 
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
@@ -69,35 +74,55 @@ class MainActivity : AppCompatActivity() {
             }
 
             private fun handleUrl(url: String): Boolean {
+                // PDF через Google Viewer
                 if (url.lowercase().endsWith(".pdf")) {
                     webView.loadUrl("https://docs.google.com/viewer?embedded=true&url=$url")
                     return true
                 }
-                if (url.startsWith("tel:") || url.startsWith("mailto:") || url.startsWith("tg:") || url.startsWith("viber:")) {
+                // Зовнішні посилання та месенджери
+                if (url.startsWith("tel:") || url.startsWith("mailto:") || url.startsWith("tg:") || url.startsWith("viber:") || url.startsWith("whatsapp:")) {
                     try {
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        startActivity(intent)
                         return true
                     } catch (e: Exception) { return false }
                 }
-                webView.loadUrl(url)
-                return true
+                
+                // Якщо посилання веде на зовнішній сайт — відкриваємо в браузері, 
+                // якщо на maf.lviv.ua — всередині додатка
+                if (!url.contains("maf.lviv.ua")) {
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                    return true
+                }
+
+                return false // Дозволяємо WebView самому вантажити посилання
             }
 
             override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
-                if (request?.isForMainFrame == true) webView.loadUrl(OFFLINE_URL)
+                if (request?.isForMainFrame == true) {
+                    webView.loadUrl(OFFLINE_URL)
+                }
             }
         }
 
+        // Запуск
         if (isNetworkAvailable()) {
             webView.loadUrl(START_URL)
         } else {
-            webView.loadUrl(OFFLINE_URL)
+            // Спроба взяти з кешу або показати офлайн сторінку
+            webView.loadUrl(START_URL) 
         }
     }
 
-    @Deprecated("Deprecated in Java")
+    private fun isNetworkAvailable(): Boolean {
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) cm.activeNetwork else null
+        val caps = cm.getNetworkCapabilities(network)
+        return caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) ?: false
+    }
+
     override fun onBackPressed() {
-        if (::webView.isInitialized && webView.canGoBack()) {
+        if (webView.canGoBack()) {
             webView.goBack()
         } else {
             showExitDialog()
@@ -107,16 +132,9 @@ class MainActivity : AppCompatActivity() {
     private fun showExitDialog() {
         AlertDialog.Builder(this)
             .setTitle("Вихід")
-            .setMessage("Бажаєте вийти з додатка?")
+            .setMessage("Бажаєте вийти з додатка МАФ?")
             .setPositiveButton("Так") { _, _ -> finish() }
-            .setNegativeButton("Ні") { dialog, _ -> dialog.dismiss() }
+            .setNegativeButton("Ні", null)
             .show()
-    }
-
-    private fun isNetworkAvailable(): Boolean {
-        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val network = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) cm.activeNetwork else null
-        val caps = if (network != null) cm.getNetworkCapabilities(network) else null
-        return caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) ?: false
     }
 }
