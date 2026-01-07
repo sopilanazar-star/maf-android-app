@@ -60,21 +60,25 @@ class MainActivity : AppCompatActivity() {
         }
 
         webView.webViewClient = object : WebViewClient() {
-            // 1. Приховуємо статтю в момент початку завантаження (CSS ін'єкція)
+            // КРОК 1: Приховуємо статтю миттєво при кожному завантаженні та переході назад
             override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                 super.onPageStarted(view, url, favicon)
-                val hideCss = "javascript:(function() { " +
-                        "var style = document.createElement('style');" +
-                        "style.innerHTML = '.maf-article:has(.maf-title:contains(\"Додаток МАФ\")), .maf-article:first-of-type { visibility: hidden !important; opacity: 0 !important; }';" +
+                val hideStyle = "javascript:(function() { " +
+                        "var style = document.getElementById('maf-hide-style');" +
+                        "if (!style) {" +
+                        "style = document.createElement('style');" +
+                        "style.id = 'maf-hide-style';" +
+                        "style.innerHTML = '.maf-article:has(.maf-title:contains(\"Додаток МАФ\")), .maf-article:first-of-type { display: none !important; opacity: 0 !important; visibility: hidden !important; }';" +
                         "document.head.appendChild(style);" +
+                        "}" +
                         "})()"
-                view?.loadUrl(hideCss)
+                view?.loadUrl(hideStyle)
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 
-                // 2. Видаляємо статтю через 400мс, щоб впевнитись, що вона зникла
+                // КРОК 2: Видаляємо статтю через JS
                 webView.postDelayed({
                     view?.evaluateJavascript("""
                         (function() {
@@ -88,7 +92,7 @@ class MainActivity : AppCompatActivity() {
                         })();
                     """.trimIndent(), null)
                     
-                    // 3. Тільки тепер плавно показуємо весь сайт
+                    // КРОК 3: Плавно показуємо сайт
                     webView.animate().alpha(1f).setDuration(400).start()
                 }, 400)
                 
@@ -207,6 +211,7 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 }
+
 
 
 
