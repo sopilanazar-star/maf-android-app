@@ -29,8 +29,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private val START_URL = "https://maf.lviv.ua"
     private val OFFLINE_URL = "file:///android_asset/offline.html"
-    
-    // Пряме RAW посилання на файл версії
     private val VERSION_JSON_URL = "https://raw.githubusercontent.com/sopilanazar-star/maf-android-app/main/version.json"
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -38,7 +36,6 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        // Активуємо повний екран
         setFullScreen()
 
         webView = WebView(this)
@@ -52,24 +49,32 @@ class MainActivity : AppCompatActivity() {
         with(settings) {
             javaScriptEnabled = true
             webView.addJavascriptInterface(WebAppInterface(this@MainActivity), "Android")
-            
             domStorageEnabled = true
             databaseEnabled = true
             loadsImagesAutomatically = true
             setSupportZoom(true)
             builtInZoomControls = true
             displayZoomControls = false
-            
             cacheMode = if (isNetworkAvailable()) WebSettings.LOAD_DEFAULT else WebSettings.LOAD_CACHE_ELSE_NETWORK
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
         }
 
         webView.webViewClient = object : WebViewClient() {
+            // 1. Приховуємо статтю в момент початку завантаження (CSS ін'єкція)
+            override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                super.onPageStarted(view, url, favicon)
+                val hideCss = "javascript:(function() { " +
+                        "var style = document.createElement('style');" +
+                        "style.innerHTML = '.maf-article:has(.maf-title:contains(\"Додаток МАФ\")), .maf-article:first-of-type { visibility: hidden !important; opacity: 0 !important; }';" +
+                        "document.head.appendChild(style);" +
+                        "})()"
+                view?.loadUrl(hideCss)
+            }
+
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 
-                // РОЗУМНЕ ВИДАЛЕННЯ СТАТТІ ПРО ДОДАТОК
-                // Шукаємо блок з класом .maf-article, який містить текст про додаток
+                // 2. Видаляємо статтю через 400мс, щоб впевнитись, що вона зникла
                 webView.postDelayed({
                     view?.evaluateJavascript("""
                         (function() {
@@ -82,12 +87,11 @@ class MainActivity : AppCompatActivity() {
                             });
                         })();
                     """.trimIndent(), null)
-                }, 600)
-
-                // Плавна поява сторінки
-                webView.animate().alpha(1f).setDuration(500).start()
+                    
+                    // 3. Тільки тепер плавно показуємо весь сайт
+                    webView.animate().alpha(1f).setDuration(400).start()
+                }, 400)
                 
-                // Перевірка оновлень
                 if (isNetworkAvailable()) {
                     checkUpdate()
                 }
@@ -110,12 +114,10 @@ class MainActivity : AppCompatActivity() {
                         return true
                     } catch (e: Exception) { return false }
                 }
-                
                 if (!url.contains("maf.lviv.ua")) {
                     startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                     return true
                 }
-
                 return false 
             }
 
@@ -149,29 +151,22 @@ class MainActivity : AppCompatActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) {
-            setFullScreen()
-        }
+        if (hasFocus) { setFullScreen() }
     }
 
     private fun checkUpdate() {
         val client = OkHttpClient()
         val request = Request.Builder().url(VERSION_JSON_URL).build()
-
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) { e.printStackTrace() }
-
             override fun onResponse(call: Call, response: Response) {
                 response.body?.string()?.let { jsonString ->
                     try {
                         val json = JSONObject(jsonString)
                         val newVersionCode = json.getInt("new_version_code")
                         val downloadUrl = json.getString("download_url")
-
                         if (newVersionCode > BuildConfig.VERSION_CODE) {
-                            runOnUiThread {
-                                showUpdateDialog(downloadUrl)
-                            }
+                            runOnUiThread { showUpdateDialog(downloadUrl) }
                         }
                     } catch (e: Exception) { e.printStackTrace() }
                 }
@@ -200,11 +195,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        if (webView.canGoBack()) {
-            webView.goBack()
-        } else {
-            showExitDialog()
-        }
+        if (webView.canGoBack()) { webView.goBack() } else { showExitDialog() }
     }
 
     private fun showExitDialog() {
@@ -216,5 +207,6 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 }
+
 
 
