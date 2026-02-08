@@ -13,8 +13,8 @@ class TournamentAdapter(
 ) : RecyclerView.Adapter<TournamentAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val year: TextView = view.findViewById(R.id.textYear)
-        val winner: TextView = view.findViewById(R.id.textWinner)
+        val title: TextView = view.findViewById(R.id.textYear)
+        val subtitle: TextView = view.findViewById(R.id.textWinner)
         val icon: ImageView = view.findViewById(R.id.itemIcon)
     }
 
@@ -26,27 +26,19 @@ class TournamentAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
-        holder.year.text = item.year
-        holder.winner.text = item.winner
+        holder.title.text = item.year
+        holder.subtitle.text = item.winner
         
-        // Встановлюємо іконки для кожного пункту розділу "Більше"
-        when (item.year) {
-            "Прогнози (MAF Bet)" -> {
-                // Використовуємо твою іконку ic_bet.png
-                holder.icon.setImageResource(R.drawable.ic_bet)
+        // Логіка іконок для нового дизайну
+        when {
+            item.year.contains("Прогнози") -> holder.icon.setImageResource(R.drawable.ic_bet) // Перевір, чи є ця іконка!
+            item.year.contains("Дискваліфікації") -> holder.icon.setImageResource(android.R.drawable.ic_delete)
+            item.year.contains("Історія") -> holder.icon.setImageResource(android.R.drawable.ic_menu_recent_history)
+            item.winner.contains("Команда:") -> {
+                // Це гравець у бані
+                holder.icon.setImageResource(android.R.drawable.ic_dialog_alert)
             }
-            "Дискваліфікації" -> {
-                // Стандартна системна іконка (кошик або попередження)
-                holder.icon.setImageResource(android.R.drawable.ic_delete)
-            }
-            "Історія" -> {
-                // Використовуємо ic_menu_search або ic_menu_info_details (вони стабільні)
-                holder.icon.setImageResource(android.R.drawable.ic_menu_info_details)
-            }
-            else -> {
-                // Для звичайних турнірів залишаємо кубок або лого
-                holder.icon.setImageResource(android.R.drawable.ic_menu_gallery)
-            }
+            else -> holder.icon.setImageResource(android.R.drawable.ic_menu_sort_by_size)
         }
 
         holder.itemView.setOnClickListener { onItemClick(item) }
