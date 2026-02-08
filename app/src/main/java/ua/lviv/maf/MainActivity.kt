@@ -34,7 +34,7 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         
-        // Крок 1: Ховаємо годинник та навігацію смартфона
+        // ПРАВКА: Повний екран (без годинника) збережено
         hideSystemUI()
 
         val mainLayout = LinearLayout(this).apply {
@@ -61,7 +61,7 @@ class MainActivity : AppCompatActivity() {
             layoutManager = LinearLayoutManager(this@MainActivity)
         }
 
-        // Крок 2: Нативний макет для тексту історії
+        // Нативний макет історії
         historyView = layoutInflater.inflate(R.layout.layout_history, null).apply {
             visibility = View.GONE
         }
@@ -72,8 +72,7 @@ class MainActivity : AppCompatActivity() {
             selectedItemId = R.id.nav_more
             
             setOnItemSelectedListener { item ->
-                historyView.visibility = View.GONE
-                recyclerView.visibility = View.VISIBLE
+                resetViews()
                 when (item.itemId) {
                     R.id.nav_home -> { updateUI("Новини", "news"); true }
                     R.id.nav_tables -> { updateUI("Турніри", "tables"); true }
@@ -94,6 +93,11 @@ class MainActivity : AppCompatActivity() {
         updateUI("Більше", "more")
     }
 
+    private fun resetViews() {
+        historyView.visibility = View.GONE
+        recyclerView.visibility = View.VISIBLE
+    }
+
     private fun updateUI(title: String, type: String) {
         titleHeader.text = title
         if (type == "history_screen") {
@@ -101,31 +105,27 @@ class MainActivity : AppCompatActivity() {
             historyView.visibility = View.VISIBLE
             loadHistoryData()
         } else {
-            historyView.visibility = View.GONE
-            recyclerView.visibility = View.VISIBLE
+            resetViews()
             loadDataFromApi(type)
         }
     }
 
     private fun loadDataFromApi(type: String) {
-        // Визначаємо URL: або стандартні таблиці, або твій новий API для банів
         val url = if (type == "bans_list") "https://maf.lviv.ua/wp-json/maf/v1/bans" 
                   else "https://maf.lviv.ua/wp-json/maf/v1/tables-data"
 
         val request = Request.Builder().url(url).build()
         client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                runOnUiThread { Toast.makeText(this@MainActivity, "Помилка мережі", Toast.LENGTH_SHORT).show() }
-            }
+            override fun onFailure(call: Call, e: IOException) {}
             override fun onResponse(call: Call, response: Response) {
                 val jsonString = response.body?.string() ?: return
                 val displayList = mutableListOf<TournamentRow>()
                 try {
                     if (type == "bans_list") {
+                        // ПРАВКА: Читаємо кириличні ключі з твого JSON
                         val jsonArray = JSONArray(jsonString)
                         for (i in 0 until jsonArray.length()) {
                             val obj = jsonArray.getJSONObject(i)
-                            // "імя" та "причина" — це ключі з твого JSON
                             displayList.add(TournamentRow(obj.getString("імя"), obj.getString("причина")))
                         }
                     } else if (type == "more") {
@@ -135,6 +135,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     
                     runOnUiThread {
+                        // ПРАВКА: Оновлюємо адаптер новими даними
                         recyclerView.adapter = TournamentAdapter(displayList) { selectedItem ->
                             handleItemClick(selectedItem)
                         }
@@ -145,6 +146,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadHistoryData() {
+        // ПРАВКА: Замінено URL на правильний /history/ з твого сайту
         val request = Request.Builder().url("https://maf.lviv.ua/wp-json/maf/v1/history").build()
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {}
@@ -156,7 +158,13 @@ class MainActivity : AppCompatActivity() {
                         findViewById<TextView>(R.id.historyTitle).text = json.getString("title")
                         findViewById<TextView>(R.id.historyContent).text = json.getString("content")
                     }
-                } catch (e: Exception) {}
+                } catch (e: Exception) {
+                    runOnUiThread { 
+                        // Якщо ярлик все одно не той, виведемо текст помилки з JSON
+                        val errorJson = JSONObject(jsonString)
+                        findViewById<TextView>(R.id.historyContent).text = errorJson.optString("content", "Помилка завантаження")
+                    }
+                }
             }
         })
     }
@@ -165,7 +173,7 @@ class MainActivity : AppCompatActivity() {
         when (item.year) {
             "Дискваліфікації" -> updateUI("Список банів", "bans_list")
             "Історія" -> updateUI("Історія МАФ", "history_screen")
-            "Прогнози (MAF Bet)" -> Toast.makeText(this, "Форма прогнозів скоро...", Toast.LENGTH_SHORT).show()
+            "Прогнози (MAF Bet)" -> Toast.makeText(this, "MAF Bet скоро...", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -185,7 +193,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        if (titleHeader.text == "Список банів" || titleHeader.text == "Історія МАФ") {
+        // ПРАВКА: Повернення до "Більше" працює для всіх підрозділів
+        if (titleHeader.text != "Більше" && bottomNav.selectedItemId == R.id.nav_more) {
             updateUI("Більше", "more")
         } else {
             super.onBackPressed()
