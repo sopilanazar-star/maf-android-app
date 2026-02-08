@@ -6,8 +6,10 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-class TournamentAdapter(private val items: List<TournamentRow>) :
-    RecyclerView.Adapter<TournamentAdapter.ViewHolder>() {
+class TournamentAdapter(
+    private val items: List<TournamentRow>,
+    private val onItemClick: (TournamentRow) -> Unit // Додаємо функцію натискання
+) : RecyclerView.Adapter<TournamentAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val year: TextView = view.findViewById(R.id.textYear)
@@ -22,8 +24,11 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
-        holder.year.text = "Сезон ${item.year}"
-        holder.winner.text = "🏆 Чемпіон: ${item.winner}"
+        holder.year.text = item.year
+        holder.winner.text = item.winner
+        
+        // Обробка натискання на всю картку
+        holder.itemView.setOnClickListener { onItemClick(item) }
     }
 
     override fun getItemCount() = items.size
