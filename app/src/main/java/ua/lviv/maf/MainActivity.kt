@@ -1,4 +1,3 @@
-
 package ua.lviv.maf
 
 import android.annotation.SuppressLint
@@ -33,10 +32,9 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        // 1. ПОВНИЙ ЕКРАН: Прибираємо статус-бар та навігацію телефона
+        // 1. ПОВНИЙ ЕКРАН
         hideSystemUI()
 
-        // Головний контейнер
         val mainLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
@@ -46,10 +44,10 @@ class MainActivity : AppCompatActivity() {
             setBackgroundColor(Color.parseColor("#F5F5F5"))
         }
 
-        // 2. ХЕДЕР: Нативний заголовок додатка
+        // 2. ХЕДЕР
         titleHeader = TextView(this).apply {
             text = "МАФ: Турніри"
-            textSize = 22f // Виправлено: тип Float для коду
+            textSize = 22f
             setTextColor(Color.WHITE)
             setBackgroundColor(Color.parseColor("#007c3d"))
             setPadding(40, 70, 40, 40)
@@ -57,7 +55,7 @@ class MainActivity : AppCompatActivity() {
             elevation = 10f
         }
 
-        // 3. СПИСОК: Нативний RecyclerView для всього контенту
+        // 3. СПИСОК (RecyclerView)
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             layoutParams = LinearLayout.LayoutParams(
@@ -68,7 +66,7 @@ class MainActivity : AppCompatActivity() {
             clipToPadding = false
         }
 
-        // 4. НАВІГАЦІЯ: Чотири кнопки знизу
+        // 4. НИЖНЯ НАВІГАЦІЯ
         bottomNav = BottomNavigationView(this).apply {
             inflateMenu(R.menu.bottom_nav_menu)
             setBackgroundColor(Color.WHITE)
@@ -89,7 +87,6 @@ class MainActivity : AppCompatActivity() {
         mainLayout.addView(bottomNav)
         setContentView(mainLayout)
 
-        // Завантаження при старті
         updateUI("Турніри", "tables")
     }
 
@@ -140,24 +137,54 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
                         "more" -> {
-                            // Наповнення розділу Більше
                             displayList.add(TournamentRow("Прогнози (MAF Bet)", "Зробити прогноз на матчі"))
                             displayList.add(TournamentRow("Дискваліфікації", "Список відсторонених гравців"))
                             displayList.add(TournamentRow("Історія", "Архів та досягнення асоціації"))
                         }
+                        "bans_list" -> {
+                            displayList.add(TournamentRow("Степан Гірняк (ФК Миколаїв)", "🟥 3 матчі (Червона картка)"))
+                            displayList.add(TournamentRow("Олег Кульчицький (ФК Зубра)", "🟥 До 15.03.2026 (4 жовті)"))
+                        }
                         "news" -> {
-                            displayList.add(TournamentRow("Останні новини", "Завантаження новин з сайту..."))
+                            displayList.add(TournamentRow("Новина 1", "Відкриття сезону 2026 вже скоро!"))
                         }
                         "matches" -> {
-                            displayList.add(TournamentRow("Календар", "Розклад матчів на вихідні"))
+                            displayList.add(TournamentRow("15.02.2026", "Миколаїв - Зубра (12:00)"))
                         }
                     }
 
                     runOnUiThread {
-                        recyclerView.adapter = TournamentAdapter(displayList)
+                        // ПЕРЕДАЄМО ОБРОБНИК НАТИСКАНЬ В АДАПТЕР
+                        recyclerView.adapter = TournamentAdapter(displayList) { selectedItem ->
+                            handleItemClick(selectedItem)
+                        }
                     }
                 } catch (e: Exception) { e.printStackTrace() }
             }
         })
+    }
+
+    private fun handleItemClick(item: TournamentRow) {
+        when (item.year) {
+            "Дискваліфікації" -> {
+                updateUI("Список банів", "bans_list")
+            }
+            "Прогнози (MAF Bet)" -> {
+                // Тут ми зробимо відкриття вікна для вводу рахунку
+                android.widget.Toast.makeText(this, "Готуємо форму прогнозів...", android.widget.Toast.LENGTH_SHORT).show()
+            }
+            "Історія" -> {
+                updateUI("Історія МАФ", "history")
+            }
+        }
+    }
+
+    override fun onBackPressed() {
+        // Якщо ми в списку банів, повертаємось до розділу "Більше"
+        if (titleHeader.text == "Список банів") {
+            updateUI("Більше", "more")
+        } else {
+            super.onBackPressed()
+        }
     }
 }
