@@ -12,7 +12,6 @@ class TournamentAdapter(
     private val onItemClick: (TournamentRow) -> Unit
 ) : RecyclerView.Adapter<TournamentAdapter.ViewHolder>() {
 
-    // ViewHolder тепер знає про існування іконки
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val year: TextView = view.findViewById(R.id.textYear)
         val winner: TextView = view.findViewById(R.id.textWinner)
@@ -30,27 +29,24 @@ class TournamentAdapter(
         holder.year.text = item.year
         holder.winner.text = item.winner
         
-        // ЛОГІКА ІКОНОК: підставляємо іконки залежно від тексту
+        // Встановлюємо іконки для розділу "Більше"
         when (item.year) {
             "Прогнози (MAF Bet)" -> {
                 // Твоя нова іконка
                 holder.icon.setImageResource(R.drawable.ic_bet)
             }
             "Дискваліфікації" -> {
-                // Системна іконка видалення/заборони
                 holder.icon.setImageResource(android.R.drawable.ic_delete)
             }
             "Історія" -> {
-                // Системна іконка книги
-                holder.icon.setImageResource(android.R.drawable.ic_menu_book)
+                // Замінено на стандартну робочу іконку
+                holder.icon.setImageResource(android.R.drawable.ic_menu_help)
             }
             else -> {
-                // Іконка кубка для сезонів
-                holder.icon.setImageResource(android.R.drawable.btn_star_big_on)
+                holder.icon.setImageResource(android.R.drawable.ic_menu_gallery)
             }
         }
-        
-        // Обробка натискання на всю картку
+
         holder.itemView.setOnClickListener { onItemClick(item) }
     }
 
