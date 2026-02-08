@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF"
+    android:padding="20dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/historyTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Історія Миколаївської асоціації футболу"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="#007c3d"
+            android:layout_marginBottom="16dp"/>
+
+        <TextView
+            android:id="@+id/historyContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:lineSpacingExtra="6dp"
+            android:textColor="#333333"
+            android:text="Тут буде твій текст про створення асоціації, перші турніри та розвиток футболу в районі..."/>
+
+    </LinearLayout>
+</ScrollView>
