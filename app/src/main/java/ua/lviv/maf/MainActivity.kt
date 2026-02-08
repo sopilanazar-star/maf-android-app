@@ -10,7 +10,7 @@ import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
+import android.widget.ScrollView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -23,8 +23,10 @@ import java.io.IOException
 class MainActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
+    private lateinit var historyView: View
     private lateinit var bottomNav: BottomNavigationView
     private lateinit var titleHeader: TextView
+    
     private val MAF_API_URL = "https://maf.lviv.ua/wp-json/maf/v1/tables-data"
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,15 +49,26 @@ class MainActivity : AppCompatActivity() {
             gravity = Gravity.CENTER
         }
 
+        // Контейнер для зміни контенту
+        val contentFrame = android.widget.FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
+        }
+
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
-            layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
+        }
+
+        // Завантажуємо макет історії
+        historyView = layoutInflater.inflate(R.layout.layout_history, null).apply {
+            visibility = View.GONE
         }
 
         bottomNav = BottomNavigationView(this).apply {
             inflateMenu(R.menu.bottom_nav_menu)
             setBackgroundColor(Color.WHITE)
             setOnItemSelectedListener { item ->
+                historyView.visibility = View.GONE
+                recyclerView.visibility = View.VISIBLE
                 when (item.itemId) {
                     R.id.nav_home -> { updateUI("Новини", "news"); true }
                     R.id.nav_tables -> { updateUI("Турніри", "tables"); true }
@@ -66,14 +79,24 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        mainLayout.addView(titleHeader); mainLayout.addView(recyclerView); mainLayout.addView(bottomNav)
+        contentFrame.addView(recyclerView)
+        contentFrame.addView(historyView)
+        mainLayout.addView(titleHeader); mainLayout.addView(contentFrame); mainLayout.addView(bottomNav)
         setContentView(mainLayout)
-        updateUI("Більше", "more") // Стартуємо з вкладки "Більше" для тесту
+
+        updateUI("Більше", "more")
     }
 
     private fun updateUI(title: String, type: String) {
         titleHeader.text = title
-        loadDataFromApi(type)
+        if (type != "history_screen") {
+            historyView.visibility = View.GONE
+            recyclerView.visibility = View.VISIBLE
+            loadDataFromApi(type)
+        } else {
+            recyclerView.visibility = View.GONE
+            historyView.visibility = View.VISIBLE
+        }
     }
 
     private fun loadDataFromApi(type: String) {
@@ -109,7 +132,7 @@ class MainActivity : AppCompatActivity() {
     private fun handleItemClick(item: TournamentRow) {
         when (item.year) {
             "Дискваліфікації" -> updateUI("Список банів", "bans_list")
-            "Прогнози (MAF Bet)" -> Toast.makeText(this, "Відкриваємо MAF Bet...", Toast.LENGTH_SHORT).show()
+            "Історія" -> updateUI("Історія МАФ", "history_screen")
         }
     }
 
@@ -117,6 +140,14 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.setDecorFitsSystemWindows(false)
             window.insetsController?.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
+        }
+    }
+
+    override fun onBackPressed() {
+        if (titleHeader.text == "Список банів" || titleHeader.text == "Історія МАФ") {
+            updateUI("Більше", "more")
+        } else {
+            super.onBackPressed()
         }
     }
 }
