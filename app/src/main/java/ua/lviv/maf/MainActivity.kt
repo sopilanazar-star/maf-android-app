@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.text.Html
 import android.view.Gravity
 import android.view.View
 import android.view.WindowInsets
@@ -34,7 +35,7 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         
-        // ПРАВКА: Повний екран (без годинника) збережено
+        // Повний екран: без годинника та навігації
         hideSystemUI()
 
         val mainLayout = LinearLayout(this).apply {
@@ -61,7 +62,6 @@ class MainActivity : AppCompatActivity() {
             layoutManager = LinearLayoutManager(this@MainActivity)
         }
 
-        // Нативний макет історії
         historyView = layoutInflater.inflate(R.layout.layout_history, null).apply {
             visibility = View.GONE
         }
@@ -85,9 +85,7 @@ class MainActivity : AppCompatActivity() {
 
         contentFrame.addView(recyclerView)
         contentFrame.addView(historyView)
-        mainLayout.addView(titleHeader)
-        mainLayout.addView(contentFrame)
-        mainLayout.addView(bottomNav)
+        mainLayout.addView(titleHeader); mainLayout.addView(contentFrame); mainLayout.addView(bottomNav)
         setContentView(mainLayout)
 
         updateUI("Більше", "more")
@@ -96,6 +94,8 @@ class MainActivity : AppCompatActivity() {
     private fun resetViews() {
         historyView.visibility = View.GONE
         recyclerView.visibility = View.VISIBLE
+        // Очищаємо адаптер перед завантаженням нового списку
+        recyclerView.adapter = null
     }
 
     private fun updateUI(title: String, type: String) {
@@ -122,10 +122,10 @@ class MainActivity : AppCompatActivity() {
                 val displayList = mutableListOf<TournamentRow>()
                 try {
                     if (type == "bans_list") {
-                        // ПРАВКА: Читаємо кириличні ключі з твого JSON
                         val jsonArray = JSONArray(jsonString)
                         for (i in 0 until jsonArray.length()) {
                             val obj = jsonArray.getJSONObject(i)
+                            // Використовуємо ключі з твого JSON
                             displayList.add(TournamentRow(obj.getString("імя"), obj.getString("причина")))
                         }
                     } else if (type == "more") {
@@ -135,10 +135,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     
                     runOnUiThread {
-                        // ПРАВКА: Оновлюємо адаптер новими даними
-                        recyclerView.adapter = TournamentAdapter(displayList) { selectedItem ->
-                            handleItemClick(selectedItem)
-                        }
+                        recyclerView.adapter = TournamentAdapter(displayList) { handleItemClick(it) }
                     }
                 } catch (e: Exception) { e.printStackTrace() }
             }
@@ -146,7 +143,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadHistoryData() {
-        // ПРАВКА: Замінено URL на правильний /history/ з твого сайту
         val request = Request.Builder().url("https://maf.lviv.ua/wp-json/maf/v1/history").build()
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {}
@@ -154,17 +150,15 @@ class MainActivity : AppCompatActivity() {
                 val jsonString = response.body?.string() ?: return
                 try {
                     val json = JSONObject(jsonString)
+                    val contentHtml = json.getString("content")
                     runOnUiThread {
                         findViewById<TextView>(R.id.historyTitle).text = json.getString("title")
-                        findViewById<TextView>(R.id.historyContent).text = json.getString("content")
+                        // Підтримка HTML для відображення тексту з сайту
+                        findViewById<TextView>(R.id.historyContent).text = 
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) Html.fromHtml(contentHtml, Html.FROM_HTML_MODE_COMPACT)
+                            else @Suppress("DEPRECATION") Html.fromHtml(contentHtml)
                     }
-                } catch (e: Exception) {
-                    runOnUiThread { 
-                        // Якщо ярлик все одно не той, виведемо текст помилки з JSON
-                        val errorJson = JSONObject(jsonString)
-                        findViewById<TextView>(R.id.historyContent).text = errorJson.optString("content", "Помилка завантаження")
-                    }
-                }
+                } catch (e: Exception) { e.printStackTrace() }
             }
         })
     }
@@ -180,24 +174,18 @@ class MainActivity : AppCompatActivity() {
     private fun hideSystemUI() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.setDecorFitsSystemWindows(false)
-            window.insetsController?.let { controller ->
-                controller.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-                controller.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            window.insetsController?.let { 
+                it.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
+                it.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             }
         } else {
             @Suppress("DEPRECATION")
-            window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_FULLSCREEN 
-                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION 
-                    or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
+            window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
         }
     }
 
     override fun onBackPressed() {
-        // ПРАВКА: Повернення до "Більше" працює для всіх підрозділів
-        if (titleHeader.text != "Більше" && bottomNav.selectedItemId == R.id.nav_more) {
-            updateUI("Більше", "more")
-        } else {
-            super.onBackPressed()
-        }
+        if (titleHeader.text != "Більше" && bottomNav.selectedItemId == R.id.nav_more) updateUI("Більше", "more")
+        else super.onBackPressed()
     }
 }
