@@ -32,9 +32,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        
-        // ПОВНИЙ ЕКРАН (без годинника)
-        hideSystemUI()
+        hideSystemUI() // ПОВНИЙ ЕКРАН ПРАЦЮЄ
 
         val mainLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -103,7 +101,9 @@ class MainActivity : AppCompatActivity() {
                   else "https://maf.lviv.ua/wp-json/maf/v1/tables-data"
 
         client.newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {}
+            override fun onFailure(call: Call, e: IOException) {
+                runOnUiThread { Toast.makeText(this@MainActivity, "Помилка мережі", Toast.LENGTH_SHORT).show() }
+            }
             override fun onResponse(call: Call, response: Response) {
                 val body = response.body?.string() ?: ""
                 val list = mutableListOf<TournamentRow>()
@@ -112,7 +112,7 @@ class MainActivity : AppCompatActivity() {
                         val arr = JSONArray(body)
                         for (i in 0 until arr.length()) {
                             val obj = arr.getJSONObject(i)
-                            // Використовуємо твій TournamentRow з 4 полями
+                            // ВИПРАВЛЕНО: ключі name та reason
                             list.add(TournamentRow(obj.getString("name"), obj.getString("reason"), "", ""))
                         }
                     } else if (type == "more") {
@@ -126,7 +126,7 @@ class MainActivity : AppCompatActivity() {
                             if (item.year == "Історія") updateUI("Історія", "history_screen")
                         }
                     }
-                } catch (e: Exception) {}
+                } catch (e: Exception) { e.printStackTrace() }
             }
         })
     }
@@ -139,7 +139,9 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     findViewById<TextView>(R.id.historyTitle).text = json.getString("title")
                     val content = json.getString("content")
-                    findViewById<TextView>(R.id.historyContent).text = Html.fromHtml(content, Html.FROM_HTML_MODE_COMPACT)
+                    findViewById<TextView>(R.id.historyContent).text = 
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) Html.fromHtml(content, Html.FROM_HTML_MODE_COMPACT)
+                        else @Suppress("DEPRECATION") Html.fromHtml(content)
                 }
             }
         })
@@ -148,8 +150,13 @@ class MainActivity : AppCompatActivity() {
     private fun hideSystemUI() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.setDecorFitsSystemWindows(false)
-            window.insetsController?.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-            window.insetsController?.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            window.insetsController?.let {
+                it.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
+                it.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
         }
     }
 
