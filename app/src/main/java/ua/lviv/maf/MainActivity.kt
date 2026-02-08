@@ -1,18 +1,15 @@
 package ua.lviv.maf
 
 import android.annotation.SuppressLint
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.content.Context
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.view.View
-import android.widget.FrameLayout
+import android.view.WindowInsets
+import android.view.WindowInsetsController
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.NotificationCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -34,7 +31,9 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        // Головний контейнер
+        // Прибираємо відступи зверху та знизу для повного екрану
+        hideSystemUI()
+
         val mainLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
@@ -44,17 +43,15 @@ class MainActivity : AppCompatActivity() {
             setBackgroundColor(Color.parseColor("#F5F5F5"))
         }
 
-        // Кастомний хедер замість логотипу сайту
         titleHeader = TextView(this).apply {
             text = "МАФ: Турніри"
-            textSize = 20sp
+            textSize = 20f // Виправлено: sp замінено на Float
             setTextColor(Color.WHITE)
             setBackgroundColor(Color.parseColor("#007c3d"))
-            setPadding(40, 40, 40, 40)
+            setPadding(40, 60, 40, 40) // Додано відступ зверху для естетики
             gravity = android.view.Gravity.CENTER
         }
 
-        // Основний список контенту
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             layoutParams = LinearLayout.LayoutParams(
@@ -63,30 +60,17 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        // Нижня навігація
         bottomNav = BottomNavigationView(this).apply {
             inflateMenu(R.menu.bottom_nav_menu)
             setBackgroundColor(Color.WHITE)
-            itemIconTintList = null // Щоб іконки були оригінальними
             
             setOnItemSelectedListener { item ->
                 when (item.itemId) {
-                    R.id.nav_home -> {
-                        updateUI("Новини", "news")
-                        true
-                    }
-                    R.id.nav_tables -> {
-                        updateUI("Турніри", "tables")
-                        true
-                    }
-                    R.id.nav_matches -> {
-                        updateUI("Матчі", "matches")
-                        true
-                    }
-                    R.id.nav_more -> {
-                        updateUI("Більше", "more")
-                        true
-                    }
+                    R.id.nav_home -> { updateUI("Новини", "news"); true }
+                    R.id.nav_tables -> { updateUI("Турніри", "tables"); true }
+                    R.id.nav_matches -> { updateUI("Матчі", "matches"); true }
+                    // Виправлено: закоментовано nav_more, поки ти не додаси його в XML-меню
+                    // R.id.nav_more -> { updateUI("Більше", "more"); true }
                     else -> false
                 }
             }
@@ -97,9 +81,25 @@ class MainActivity : AppCompatActivity() {
         mainLayout.addView(bottomNav)
         setContentView(mainLayout)
 
-        // Початкове завантаження
         updateUI("Турніри", "tables")
-        checkUpdate()
+    }
+
+    private fun hideSystemUI() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.setDecorFitsSystemWindows(false)
+            window.insetsController?.let { controller ->
+                controller.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
+                controller.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_FULLSCREEN 
+                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION 
+                    or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION)
+        }
     }
 
     private fun updateUI(title: String, type: String) {
@@ -119,7 +119,6 @@ class MainActivity : AppCompatActivity() {
                     val jsonObject = JSONObject(jsonString)
                     val tournamentList = mutableListOf<TournamentRow>()
 
-                    // Обробка даних залежно від вкладки
                     if (type == "tables") {
                         val futsal = jsonObject.getJSONObject("futsal").getJSONObject("stats")
                         val years = listOf("2026", "2025")
@@ -135,25 +134,6 @@ class MainActivity : AppCompatActivity() {
                         recyclerView.adapter = TournamentAdapter(tournamentList)
                     }
                 } catch (e: Exception) { e.printStackTrace() }
-            }
-        })
-    }
-
-    // Твої методи сповіщень та перевірки версії
-    private fun checkUpdate() {
-        val client = OkHttpClient()
-        val request = Request.Builder().url(VERSION_JSON_URL).build()
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {}
-            override fun onResponse(call: Call, response: Response) {
-                response.body?.string()?.let { jsonString ->
-                    try {
-                        val json = JSONObject(jsonString)
-                        if (json.getInt("new_version_code") > BuildConfig.VERSION_CODE) {
-                            // Логіка показу діалогу оновлення
-                        }
-                    } catch (e: Exception) {}
-                }
             }
         })
     }
