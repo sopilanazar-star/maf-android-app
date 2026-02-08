@@ -5,12 +5,14 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.view.Gravity
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowInsetsController
@@ -26,6 +28,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
@@ -34,6 +37,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
     private lateinit var recyclerView: RecyclerView
+    private lateinit var fab: FloatingActionButton
     private val START_URL = "https://maf.lviv.ua"
     private val OFFLINE_URL = "file:///android_asset/offline.html"
     private val VERSION_JSON_URL = "https://raw.githubusercontent.com/sopilanazar-star/maf-android-app/main/version.json"
@@ -46,32 +50,57 @@ class MainActivity : AppCompatActivity() {
 
         setFullScreen()
 
-        // Створюємо спільний контейнер
         val rootLayout = FrameLayout(this)
 
-        // Налаштовуємо WebView
+        // 1. Налаштовуємо WebView
         webView = WebView(this).apply {
             setBackgroundColor(Color.WHITE)
             alpha = 0f
-            setLayerType(View.LAYER_TYPE_HARDWARE, null)
         }
         setupWebViewSettings()
         setupWebViewClient()
 
-        // Налаштовуємо нативний список (RecyclerView)
+        // 2. Налаштовуємо RecyclerView (Нативний список)
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             setBackgroundColor(Color.WHITE)
-            visibility = View.GONE // Ховаємо, поки завантажується сайт
+            visibility = View.GONE
+        }
+
+        // 3. Створюємо кнопку перемикання (FAB)
+        fab = FloatingActionButton(this).apply {
+            val params = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = Gravity.BOTTOM or Gravity.END
+                setMargins(0, 0, 60, 60)
+            }
+            layoutParams = params
+            setImageResource(android.R.drawable.ic_menu_sort_by_size) // Іконка списку
+            backgroundTintList = ColorStateList.valueOf(Color.parseColor("#007c3d")) // Зелений МАФ
+            contentDescription = "Перемкнути вигляд"
+            
+            setOnClickListener {
+                if (recyclerView.visibility == View.GONE) {
+                    webView.visibility = View.GONE
+                    recyclerView.visibility = View.VISIBLE
+                    showNotification("Режим", "Перемкнуто на нативні таблиці")
+                } else {
+                    recyclerView.visibility = View.GONE
+                    webView.visibility = View.VISIBLE
+                }
+            }
         }
 
         rootLayout.addView(webView)
         rootLayout.addView(recyclerView)
+        rootLayout.addView(fab)
         setContentView(rootLayout)
 
         if (isNetworkAvailable()) {
             webView.loadUrl(START_URL)
-            loadNativeData() // Завантажуємо дані для нативного списку
+            loadNativeData()
             checkUpdate()
         } else {
             webView.loadUrl(OFFLINE_URL)
@@ -85,9 +114,6 @@ class MainActivity : AppCompatActivity() {
             domStorageEnabled = true
             databaseEnabled = true
             loadsImagesAutomatically = true
-            setSupportZoom(true)
-            builtInZoomControls = true
-            displayZoomControls = false
             cacheMode = if (isNetworkAvailable()) WebSettings.LOAD_DEFAULT else WebSettings.LOAD_CACHE_ELSE_NETWORK
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
         }
@@ -102,7 +128,7 @@ class MainActivity : AppCompatActivity() {
                         "if (!style) {" +
                         "style = document.createElement('style');" +
                         "style.id = 'maf-hide-style';" +
-                        "style.innerHTML = '.maf-article:has(.maf-title:contains(\"Додаток МАФ\")), .maf-article:first-of-type, header, footer { display: none !important; }';" +
+                        "style.innerHTML = 'header, footer, .maf-article:first-of-type { display: none !important; }';" +
                         "document.head.appendChild(style);" +
                         "}" +
                         "})()"
@@ -111,10 +137,7 @@ class MainActivity : AppCompatActivity() {
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                webView.postDelayed({
-                    view?.evaluateJavascript("(function() { document.querySelectorAll('header, footer, .menu-toggle').forEach(el => el.style.display = 'none'); })();", null)
-                    webView.animate().alpha(1f).setDuration(400).start()
-                }, 400)
+                webView.animate().alpha(1f).setDuration(400).start()
             }
 
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
@@ -149,7 +172,6 @@ class MainActivity : AppCompatActivity() {
                         val futsalStats = jsonObject.getJSONObject("futsal").getJSONObject("stats")
                         val tournamentList = mutableListOf<TournamentRow>()
 
-                        // Парсимо 2026 та 2025 роки
                         val years = listOf("2026", "2025")
                         for (year in years) {
                             if (futsalStats.has(year)) {
@@ -160,9 +182,6 @@ class MainActivity : AppCompatActivity() {
 
                         runOnUiThread {
                             recyclerView.adapter = TournamentAdapter(tournamentList)
-                            if (tournamentList.isNotEmpty()) {
-                                showNotification("МАФ", "Нативні таблиці оновлено!")
-                            }
                         }
                     } catch (e: Exception) { e.printStackTrace() }
                 }
@@ -174,7 +193,7 @@ class MainActivity : AppCompatActivity() {
         val channelId = "maf_channel"
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            manager.createNotificationChannel(NotificationChannel(channelId, "MAF", NotificationManager.IMPORTANCE_DEFAULT))
+            manager.createNotificationChannel(NotificationChannel(channelId, "MAF", NotificationManager.IMPORTANCE_LOW))
         }
         val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
@@ -223,7 +242,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        if (webView.canGoBack()) webView.goBack() else showExitDialog()
+        if (recyclerView.visibility == View.VISIBLE) {
+            recyclerView.visibility = View.GONE
+            webView.visibility = View.VISIBLE
+        } else if (webView.canGoBack()) {
+            webView.goBack()
+        } else {
+            showExitDialog()
+        }
     }
 
     private fun showExitDialog() {
