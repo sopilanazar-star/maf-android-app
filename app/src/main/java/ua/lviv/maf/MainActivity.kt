@@ -5,14 +5,12 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
-import android.content.res.ColorStateList
 import android.graphics.Color
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.view.Gravity
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowInsetsController
@@ -22,13 +20,14 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import android.widget.LinearLayout
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
@@ -37,7 +36,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
     private lateinit var recyclerView: RecyclerView
-    private lateinit var fab: FloatingActionButton
+    private lateinit var bottomNav: BottomNavigationView
+    
     private val START_URL = "https://maf.lviv.ua"
     private val OFFLINE_URL = "file:///android_asset/offline.html"
     private val VERSION_JSON_URL = "https://raw.githubusercontent.com/sopilanazar-star/maf-android-app/main/version.json"
@@ -50,7 +50,22 @@ class MainActivity : AppCompatActivity() {
 
         setFullScreen()
 
-        val rootLayout = FrameLayout(this)
+        // Створюємо головний контейнер (вертикальний)
+        val mainLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT
+            )
+        }
+
+        // Контейнер для контенту (WebView та RecyclerView)
+        val contentFrame = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0, 1f // Займає весь вільний простір
+            )
+        }
 
         // 1. Налаштовуємо WebView
         webView = WebView(this).apply {
@@ -67,36 +82,45 @@ class MainActivity : AppCompatActivity() {
             visibility = View.GONE
         }
 
-        // 3. Створюємо кнопку перемикання (FAB)
-        fab = FloatingActionButton(this).apply {
-            val params = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                gravity = Gravity.BOTTOM or Gravity.END
-                setMargins(0, 0, 60, 60)
-            }
-            layoutParams = params
-            setImageResource(android.R.drawable.ic_menu_sort_by_size) // Іконка списку
-            backgroundTintList = ColorStateList.valueOf(Color.parseColor("#007c3d")) // Зелений МАФ
-            contentDescription = "Перемкнути вигляд"
+        // 3. Налаштовуємо Bottom Navigation
+        bottomNav = BottomNavigationView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            // Важливо: файл menu/bottom_nav_menu.xml вже має бути створений
+            inflateMenu(R.menu.bottom_nav_menu)
+            setBackgroundColor(Color.WHITE)
             
-            setOnClickListener {
-                if (recyclerView.visibility == View.GONE) {
-                    webView.visibility = View.GONE
-                    recyclerView.visibility = View.VISIBLE
-                    showNotification("Режим", "Перемкнуто на нативні таблиці")
-                } else {
-                    recyclerView.visibility = View.GONE
-                    webView.visibility = View.VISIBLE
+            setOnItemSelectedListener { item ->
+                when (item.itemId) {
+                    R.id.nav_home -> {
+                        recyclerView.visibility = View.GONE
+                        webView.visibility = View.VISIBLE
+                        true
+                    }
+                    R.id.nav_tables -> {
+                        webView.visibility = View.GONE
+                        recyclerView.visibility = View.VISIBLE
+                        true
+                    }
+                    R.id.nav_matches -> {
+                        // Тут буде логіка для матчів пізніше
+                        true
+                    }
+                    else -> false
                 }
             }
         }
 
-        rootLayout.addView(webView)
-        rootLayout.addView(recyclerView)
-        rootLayout.addView(fab)
-        setContentView(rootLayout)
+        // Збираємо ієрархію
+        contentFrame.addView(webView)
+        contentFrame.addView(recyclerView)
+        
+        mainLayout.addView(contentFrame)
+        mainLayout.addView(bottomNav)
+        
+        setContentView(mainLayout)
 
         if (isNetworkAvailable()) {
             webView.loadUrl(START_URL)
@@ -243,8 +267,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onBackPressed() {
         if (recyclerView.visibility == View.VISIBLE) {
-            recyclerView.visibility = View.GONE
-            webView.visibility = View.VISIBLE
+            bottomNav.selectedItemId = R.id.nav_home
         } else if (webView.canGoBack()) {
             webView.goBack()
         } else {
