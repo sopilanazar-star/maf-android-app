@@ -34,7 +34,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        hideSystemUI() // ПОВНИЙ ЕКРАН
+        hideSystemUI()
 
         val mainLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -120,8 +120,8 @@ class MainActivity : AppCompatActivity() {
                         val jsonArray = JSONArray(jsonString)
                         for (i in 0 until jsonArray.length()) {
                             val obj = jsonArray.getJSONObject(i)
-                            // ВИПРАВЛЕНО: Ключі тепер name та reason
-                            displayList.add(TournamentRow(obj.getString("name"), obj.getString("reason")))
+                            // ВИКОРИСТОВУЄМО ТВОЇ КЛЮЧІ З СКРИНШОТУ
+                            displayList.add(TournamentRow(obj.getString("імя"), obj.getString("причина")))
                         }
                     } else if (type == "more") {
                         displayList.add(TournamentRow("Прогнози (MAF Bet)", "Зробити прогноз на матчі"))
@@ -158,7 +158,7 @@ class MainActivity : AppCompatActivity() {
         when (item.year) {
             "Дискваліфікації" -> updateUI("Список банів", "bans_list")
             "Історія" -> updateUI("Історія МАФ", "history_screen")
-            "Прогнози (MAF Bet)" -> Toast.makeText(this, "MAF Bet скоро...", Toast.LENGTH_SHORT).show()
+            "Прогнози (MAF Bet)" -> Toast.makeText(this, "Форма прогнозів скоро...", Toast.LENGTH_SHORT).show()
         }
     }
 
