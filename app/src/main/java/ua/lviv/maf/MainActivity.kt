@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        hideSystemUI() // ПОВНИЙ ЕКРАН ПРАЦЮЄ
+        hideSystemUI()
 
         val mainLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -57,6 +57,7 @@ class MainActivity : AppCompatActivity() {
             layoutManager = LinearLayoutManager(this@MainActivity)
         }
 
+        // ПРАВКА: ініціалізація historyView
         historyView = layoutInflater.inflate(R.layout.layout_history, null).apply {
             visibility = View.GONE
         }
@@ -76,7 +77,9 @@ class MainActivity : AppCompatActivity() {
 
         contentFrame.addView(recyclerView)
         contentFrame.addView(historyView)
-        mainLayout.addView(titleHeader); mainLayout.addView(contentFrame); mainLayout.addView(bottomNav)
+        mainLayout.addView(titleHeader)
+        mainLayout.addView(contentFrame)
+        mainLayout.addView(bottomNav)
         setContentView(mainLayout)
 
         updateUI("Більше", "more")
@@ -84,26 +87,23 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateUI(title: String, type: String) {
         titleHeader.text = title
-        historyView.visibility = View.GONE
-        recyclerView.visibility = View.VISIBLE
-        loadData(type)
-    }
-
-    private fun loadData(type: String) {
         if (type == "history_screen") {
             recyclerView.visibility = View.GONE
             historyView.visibility = View.VISIBLE
             loadHistory()
-            return
+        } else {
+            historyView.visibility = View.GONE
+            recyclerView.visibility = View.VISIBLE
+            loadData(type)
         }
+    }
 
+    private fun loadData(type: String) {
         val url = if (type == "bans_list") "https://maf.lviv.ua/wp-json/maf/v1/bans" 
                   else "https://maf.lviv.ua/wp-json/maf/v1/tables-data"
 
         client.newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                runOnUiThread { Toast.makeText(this@MainActivity, "Помилка мережі", Toast.LENGTH_SHORT).show() }
-            }
+            override fun onFailure(call: Call, e: IOException) {}
             override fun onResponse(call: Call, response: Response) {
                 val body = response.body?.string() ?: ""
                 val list = mutableListOf<TournamentRow>()
@@ -112,7 +112,6 @@ class MainActivity : AppCompatActivity() {
                         val arr = JSONArray(body)
                         for (i in 0 until arr.length()) {
                             val obj = arr.getJSONObject(i)
-                            // ВИПРАВЛЕНО: ключі name та reason
                             list.add(TournamentRow(obj.getString("name"), obj.getString("reason"), "", ""))
                         }
                     } else if (type == "more") {
@@ -123,10 +122,10 @@ class MainActivity : AppCompatActivity() {
                     runOnUiThread {
                         recyclerView.adapter = TournamentAdapter(list) { item ->
                             if (item.year == "Дискваліфікації") updateUI("Список банів", "bans_list")
-                            if (item.year == "Історія") updateUI("Історія", "history_screen")
+                            if (item.year == "Історія") updateUI("Історія МАФ", "history_screen")
                         }
                     }
-                } catch (e: Exception) { e.printStackTrace() }
+                } catch (e: Exception) {}
             }
         })
     }
@@ -135,14 +134,25 @@ class MainActivity : AppCompatActivity() {
         client.newCall(Request.Builder().url("https://maf.lviv.ua/wp-json/maf/v1/history").build()).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {}
             override fun onResponse(call: Call, response: Response) {
-                val json = JSONObject(response.body?.string() ?: "")
-                runOnUiThread {
-                    findViewById<TextView>(R.id.historyTitle).text = json.getString("title")
-                    val content = json.getString("content")
-                    findViewById<TextView>(R.id.historyContent).text = 
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) Html.fromHtml(content, Html.FROM_HTML_MODE_COMPACT)
-                        else @Suppress("DEPRECATION") Html.fromHtml(content)
-                }
+                val body = response.body?.string() ?: return
+                try {
+                    val json = JSONObject(body)
+                    val titleText = json.optString("title", "Історія")
+                    val contentHtml = json.optString("content", "Дані відсутні")
+                    
+                    runOnUiThread {
+                        // ПРАВКА: шукаємо всередині historyView, щоб не було вильоту
+                        val hTitle = historyView.findViewById<TextView>(R.id.historyTitle)
+                        val hContent = historyView.findViewById<TextView>(R.id.historyContent)
+                        
+                        hTitle?.text = titleText
+                        hContent?.text = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            Html.fromHtml(contentHtml, Html.FROM_HTML_MODE_COMPACT)
+                        } else {
+                            @Suppress("DEPRECATION") Html.fromHtml(contentHtml)
+                        }
+                    }
+                } catch (e: Exception) {}
             }
         })
     }
@@ -150,13 +160,8 @@ class MainActivity : AppCompatActivity() {
     private fun hideSystemUI() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.setDecorFitsSystemWindows(false)
-            window.insetsController?.let {
-                it.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-                it.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            }
-        } else {
-            @Suppress("DEPRECATION")
-            window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
+            window.insetsController?.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
+            window.insetsController?.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
     }
 
