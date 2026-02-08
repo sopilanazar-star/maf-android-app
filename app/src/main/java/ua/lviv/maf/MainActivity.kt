@@ -34,9 +34,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        
-        // Повний екран: без годинника та навігації
-        hideSystemUI()
+        hideSystemUI() // ПОВНИЙ ЕКРАН
 
         val mainLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -70,7 +68,6 @@ class MainActivity : AppCompatActivity() {
             inflateMenu(R.menu.bottom_nav_menu)
             setBackgroundColor(Color.WHITE)
             selectedItemId = R.id.nav_more
-            
             setOnItemSelectedListener { item ->
                 resetViews()
                 when (item.itemId) {
@@ -87,14 +84,12 @@ class MainActivity : AppCompatActivity() {
         contentFrame.addView(historyView)
         mainLayout.addView(titleHeader); mainLayout.addView(contentFrame); mainLayout.addView(bottomNav)
         setContentView(mainLayout)
-
         updateUI("Більше", "more")
     }
 
     private fun resetViews() {
         historyView.visibility = View.GONE
         recyclerView.visibility = View.VISIBLE
-        // Очищаємо адаптер перед завантаженням нового списку
         recyclerView.adapter = null
     }
 
@@ -125,18 +120,15 @@ class MainActivity : AppCompatActivity() {
                         val jsonArray = JSONArray(jsonString)
                         for (i in 0 until jsonArray.length()) {
                             val obj = jsonArray.getJSONObject(i)
-                            // Використовуємо ключі з твого JSON
-                            displayList.add(TournamentRow(obj.getString("імя"), obj.getString("причина")))
+                            // ВИПРАВЛЕНО: Ключі тепер name та reason
+                            displayList.add(TournamentRow(obj.getString("name"), obj.getString("reason")))
                         }
                     } else if (type == "more") {
                         displayList.add(TournamentRow("Прогнози (MAF Bet)", "Зробити прогноз на матчі"))
                         displayList.add(TournamentRow("Дискваліфікації", "Список відсторонених гравців"))
                         displayList.add(TournamentRow("Історія", "Архів та досягнення асоціації"))
                     }
-                    
-                    runOnUiThread {
-                        recyclerView.adapter = TournamentAdapter(displayList) { handleItemClick(it) }
-                    }
+                    runOnUiThread { recyclerView.adapter = TournamentAdapter(displayList) { handleItemClick(it) } }
                 } catch (e: Exception) { e.printStackTrace() }
             }
         })
@@ -153,12 +145,11 @@ class MainActivity : AppCompatActivity() {
                     val contentHtml = json.getString("content")
                     runOnUiThread {
                         findViewById<TextView>(R.id.historyTitle).text = json.getString("title")
-                        // Підтримка HTML для відображення тексту з сайту
                         findViewById<TextView>(R.id.historyContent).text = 
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) Html.fromHtml(contentHtml, Html.FROM_HTML_MODE_COMPACT)
                             else @Suppress("DEPRECATION") Html.fromHtml(contentHtml)
                     }
-                } catch (e: Exception) { e.printStackTrace() }
+                } catch (e: Exception) {}
             }
         })
     }
@@ -174,7 +165,7 @@ class MainActivity : AppCompatActivity() {
     private fun hideSystemUI() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.setDecorFitsSystemWindows(false)
-            window.insetsController?.let { 
+            window.insetsController?.let {
                 it.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
                 it.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             }
