@@ -29,20 +29,22 @@ class TournamentAdapter(
         holder.year.text = item.year
         holder.winner.text = item.winner
         
-        // Встановлюємо іконки для розділу "Більше"
+        // Встановлюємо іконки для кожного пункту розділу "Більше"
         when (item.year) {
             "Прогнози (MAF Bet)" -> {
-                // Твоя нова іконка
+                // Використовуємо твою іконку ic_bet.png
                 holder.icon.setImageResource(R.drawable.ic_bet)
             }
             "Дискваліфікації" -> {
+                // Стандартна системна іконка (кошик або попередження)
                 holder.icon.setImageResource(android.R.drawable.ic_delete)
             }
             "Історія" -> {
-                // Замінено на стандартну робочу іконку
-                holder.icon.setImageResource(android.R.drawable.ic_menu_help)
+                // Використовуємо ic_menu_search або ic_menu_info_details (вони стабільні)
+                holder.icon.setImageResource(android.R.drawable.ic_menu_info_details)
             }
             else -> {
+                // Для звичайних турнірів залишаємо кубок або лого
                 holder.icon.setImageResource(android.R.drawable.ic_menu_gallery)
             }
         }
