@@ -19,10 +19,13 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
@@ -30,10 +33,10 @@ import java.io.IOException
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
+    private lateinit var recyclerView: RecyclerView
     private val START_URL = "https://maf.lviv.ua"
     private val OFFLINE_URL = "file:///android_asset/offline.html"
     private val VERSION_JSON_URL = "https://raw.githubusercontent.com/sopilanazar-star/maf-android-app/main/version.json"
-    // Новий API для турнірів
     private val MAF_API_URL = "https://maf.lviv.ua/wp-json/maf/v1/tables-data"
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -43,17 +46,42 @@ class MainActivity : AppCompatActivity() {
 
         setFullScreen()
 
-        webView = WebView(this)
-        setContentView(webView)
+        // Створюємо спільний контейнер
+        val rootLayout = FrameLayout(this)
 
-        webView.setBackgroundColor(Color.WHITE)
-        webView.alpha = 0f 
-        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+        // Налаштовуємо WebView
+        webView = WebView(this).apply {
+            setBackgroundColor(Color.WHITE)
+            alpha = 0f
+            setLayerType(View.LAYER_TYPE_HARDWARE, null)
+        }
+        setupWebViewSettings()
+        setupWebViewClient()
 
+        // Налаштовуємо нативний список (RecyclerView)
+        recyclerView = RecyclerView(this).apply {
+            layoutManager = LinearLayoutManager(this@MainActivity)
+            setBackgroundColor(Color.WHITE)
+            visibility = View.GONE // Ховаємо, поки завантажується сайт
+        }
+
+        rootLayout.addView(webView)
+        rootLayout.addView(recyclerView)
+        setContentView(rootLayout)
+
+        if (isNetworkAvailable()) {
+            webView.loadUrl(START_URL)
+            loadNativeData() // Завантажуємо дані для нативного списку
+            checkUpdate()
+        } else {
+            webView.loadUrl(OFFLINE_URL)
+        }
+    }
+
+    private fun setupWebViewSettings() {
         val settings = webView.settings
         with(settings) {
             javaScriptEnabled = true
-            webView.addJavascriptInterface(WebAppInterface(this@MainActivity), "Android")
             domStorageEnabled = true
             databaseEnabled = true
             loadsImagesAutomatically = true
@@ -63,17 +91,18 @@ class MainActivity : AppCompatActivity() {
             cacheMode = if (isNetworkAvailable()) WebSettings.LOAD_DEFAULT else WebSettings.LOAD_CACHE_ELSE_NETWORK
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
         }
+    }
 
+    private fun setupWebViewClient() {
         webView.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                 super.onPageStarted(view, url, favicon)
-                // КРОК 1: Приховуємо статтю миттєво
                 val hideStyle = "javascript:(function() { " +
                         "var style = document.getElementById('maf-hide-style');" +
                         "if (!style) {" +
                         "style = document.createElement('style');" +
                         "style.id = 'maf-hide-style';" +
-                        "style.innerHTML = '.maf-article:has(.maf-title:contains(\"Додаток МАФ\")), .maf-article:first-of-type, header, footer { display: none !important; opacity: 0 !important; visibility: hidden !important; }';" +
+                        "style.innerHTML = '.maf-article:has(.maf-title:contains(\"Додаток МАФ\")), .maf-article:first-of-type, header, footer { display: none !important; }';" +
                         "document.head.appendChild(style);" +
                         "}" +
                         "})()"
@@ -82,73 +111,60 @@ class MainActivity : AppCompatActivity() {
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                
                 webView.postDelayed({
-                    // КРОК 2: Видаляємо статтю та елементи меню через JS
-                    view?.evaluateJavascript("""
-                        (function() {
-                            document.querySelectorAll('header, footer, .menu-toggle').forEach(el => el.style.display = 'none');
-                            var articles = document.querySelectorAll('.maf-article');
-                            articles.forEach(function(article) {
-                                var title = article.querySelector('.maf-title');
-                                if (title && title.innerText.includes('Додаток МАФ')) {
-                                    article.remove();
-                                }
-                            });
-                        })();
-                    """.trimIndent(), null)
-                    
-                    // КРОК 3: Плавно показуємо сайт
+                    view?.evaluateJavascript("(function() { document.querySelectorAll('header, footer, .menu-toggle').forEach(el => el.style.display = 'none'); })();", null)
                     webView.animate().alpha(1f).setDuration(400).start()
                 }, 400)
-                
-                if (isNetworkAvailable()) {
-                    checkUpdate()      // Твоя перевірка версії додатка
-                    checkMafApiUpdates() // Наша нова перевірка даних турнірів
-                }
             }
 
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                return handleUrl(request?.url.toString())
-            }
-
-            private fun handleUrl(url: String): Boolean {
+                val url = request?.url.toString()
                 if (url.lowercase().endsWith(".pdf")) {
                     webView.loadUrl("https://docs.google.com/viewer?embedded=true&url=$url")
                     return true
-                }
-                if (url.startsWith("tel:") || url.startsWith("mailto:") || url.startsWith("tg:") || url.startsWith("viber:") || url.startsWith("whatsapp:")) {
-                    try {
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                        return true
-                    } catch (e: Exception) { return false }
                 }
                 if (!url.contains("maf.lviv.ua")) {
                     startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                     return true
                 }
-                return false 
+                return false
             }
 
             override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
                 if (request?.isForMainFrame == true) { webView.loadUrl(OFFLINE_URL) }
             }
         }
-
-        webView.loadUrl(START_URL)
     }
 
-    // НОВА ФУНКЦІЯ: Перевірка оновлень турнірів через API
-    private fun checkMafApiUpdates() {
+    private fun loadNativeData() {
         val client = OkHttpClient()
         val request = Request.Builder().url(MAF_API_URL).build()
+
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {}
             override fun onResponse(call: Call, response: Response) {
-                response.body?.string()?.let { 
-                    if (it.contains("2026")) { 
-                        runOnUiThread { showNotification("МАФ", "Оновлено турнірні таблиці 2026!") }
-                    }
+                response.body?.string()?.let { jsonString ->
+                    try {
+                        val jsonObject = JSONObject(jsonString)
+                        val futsalStats = jsonObject.getJSONObject("futsal").getJSONObject("stats")
+                        val tournamentList = mutableListOf<TournamentRow>()
+
+                        // Парсимо 2026 та 2025 роки
+                        val years = listOf("2026", "2025")
+                        for (year in years) {
+                            if (futsalStats.has(year)) {
+                                val data = futsalStats.getJSONArray(year)
+                                tournamentList.add(TournamentRow(year, data.getString(0)))
+                            }
+                        }
+
+                        runOnUiThread {
+                            recyclerView.adapter = TournamentAdapter(tournamentList)
+                            if (tournamentList.isNotEmpty()) {
+                                showNotification("МАФ", "Нативні таблиці оновлено!")
+                            }
+                        }
+                    } catch (e: Exception) { e.printStackTrace() }
                 }
             }
         })
@@ -161,10 +177,8 @@ class MainActivity : AppCompatActivity() {
             manager.createNotificationChannel(NotificationChannel(channelId, "MAF", NotificationManager.IMPORTANCE_DEFAULT))
         }
         val builder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(android.R.drawable.ic_popup_reminder)
-            .setContentTitle(title)
-            .setContentText(message)
-            .setAutoCancel(true)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(title).setContentText(message).setAutoCancel(true)
         manager.notify(100, builder.build())
     }
 
@@ -172,14 +186,11 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.setDecorFitsSystemWindows(false)
             window.insetsController?.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-            window.insetsController?.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         } else {
             @Suppress("DEPRECATION")
             window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN)
         }
     }
-
-    override fun onWindowFocusChanged(hasFocus: Boolean) { super.onWindowFocusChanged(hasFocus); if (hasFocus) setFullScreen() }
 
     private fun checkUpdate() {
         val client = OkHttpClient()
@@ -211,7 +222,9 @@ class MainActivity : AppCompatActivity() {
         return caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) ?: false
     }
 
-    override fun onBackPressed() { if (webView.canGoBack()) webView.goBack() else showExitDialog() }
+    override fun onBackPressed() {
+        if (webView.canGoBack()) webView.goBack() else showExitDialog()
+    }
 
     private fun showExitDialog() {
         AlertDialog.Builder(this).setTitle("Вихід").setMessage("Вийти з додатка?")
