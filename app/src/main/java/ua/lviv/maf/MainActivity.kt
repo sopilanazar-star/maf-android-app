@@ -1,9 +1,11 @@
+
 package ua.lviv.maf
 
 import android.annotation.SuppressLint
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.view.Gravity
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowInsetsController
@@ -31,9 +33,10 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        // Прибираємо відступи зверху та знизу для повного екрану
+        // 1. ПОВНИЙ ЕКРАН: Прибираємо статус-бар та навігацію телефона
         hideSystemUI()
 
+        // Головний контейнер
         val mainLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
@@ -43,23 +46,29 @@ class MainActivity : AppCompatActivity() {
             setBackgroundColor(Color.parseColor("#F5F5F5"))
         }
 
+        // 2. ХЕДЕР: Нативний заголовок додатка
         titleHeader = TextView(this).apply {
             text = "МАФ: Турніри"
-            textSize = 20f // Виправлено: sp замінено на Float
+            textSize = 22f // Виправлено: тип Float для коду
             setTextColor(Color.WHITE)
             setBackgroundColor(Color.parseColor("#007c3d"))
-            setPadding(40, 60, 40, 40) // Додано відступ зверху для естетики
-            gravity = android.view.Gravity.CENTER
+            setPadding(40, 70, 40, 40)
+            gravity = Gravity.CENTER
+            elevation = 10f
         }
 
+        // 3. СПИСОК: Нативний RecyclerView для всього контенту
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 0, 1f
             )
+            setPadding(0, 10, 0, 10)
+            clipToPadding = false
         }
 
+        // 4. НАВІГАЦІЯ: Чотири кнопки знизу
         bottomNav = BottomNavigationView(this).apply {
             inflateMenu(R.menu.bottom_nav_menu)
             setBackgroundColor(Color.WHITE)
@@ -69,8 +78,7 @@ class MainActivity : AppCompatActivity() {
                     R.id.nav_home -> { updateUI("Новини", "news"); true }
                     R.id.nav_tables -> { updateUI("Турніри", "tables"); true }
                     R.id.nav_matches -> { updateUI("Матчі", "matches"); true }
-                    // Виправлено: закоментовано nav_more, поки ти не додаси його в XML-меню
-                    // R.id.nav_more -> { updateUI("Більше", "more"); true }
+                    R.id.nav_more -> { updateUI("Більше", "more"); true }
                     else -> false
                 }
             }
@@ -81,6 +89,7 @@ class MainActivity : AppCompatActivity() {
         mainLayout.addView(bottomNav)
         setContentView(mainLayout)
 
+        // Завантаження при старті
         updateUI("Турніри", "tables")
     }
 
@@ -117,21 +126,35 @@ class MainActivity : AppCompatActivity() {
                 val jsonString = response.body?.string() ?: return
                 try {
                     val jsonObject = JSONObject(jsonString)
-                    val tournamentList = mutableListOf<TournamentRow>()
+                    val displayList = mutableListOf<TournamentRow>()
 
-                    if (type == "tables") {
-                        val futsal = jsonObject.getJSONObject("futsal").getJSONObject("stats")
-                        val years = listOf("2026", "2025")
-                        for (year in years) {
-                            if (futsal.has(year)) {
-                                val data = futsal.getJSONArray(year)
-                                tournamentList.add(TournamentRow(year, data.getString(0)))
+                    when (type) {
+                        "tables" -> {
+                            val futsal = jsonObject.getJSONObject("futsal").getJSONObject("stats")
+                            val years = listOf("2026", "2025")
+                            for (year in years) {
+                                if (futsal.has(year)) {
+                                    val data = futsal.getJSONArray(year)
+                                    displayList.add(TournamentRow(year, "Чемпіон: ${data.getString(0)}"))
+                                }
                             }
+                        }
+                        "more" -> {
+                            // Наповнення розділу Більше
+                            displayList.add(TournamentRow("Прогнози (MAF Bet)", "Зробити прогноз на матчі"))
+                            displayList.add(TournamentRow("Дискваліфікації", "Список відсторонених гравців"))
+                            displayList.add(TournamentRow("Історія", "Архів та досягнення асоціації"))
+                        }
+                        "news" -> {
+                            displayList.add(TournamentRow("Останні новини", "Завантаження новин з сайту..."))
+                        }
+                        "matches" -> {
+                            displayList.add(TournamentRow("Календар", "Розклад матчів на вихідні"))
                         }
                     }
 
                     runOnUiThread {
-                        recyclerView.adapter = TournamentAdapter(tournamentList)
+                        recyclerView.adapter = TournamentAdapter(displayList)
                     }
                 } catch (e: Exception) { e.printStackTrace() }
             }
