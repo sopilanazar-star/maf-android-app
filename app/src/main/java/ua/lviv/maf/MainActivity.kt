@@ -9,11 +9,14 @@ import android.view.View
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -26,7 +29,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var historyView: View
-    private lateinit var titleHeader: TextView
+    private lateinit var headerTitle: TextView
     private val client = OkHttpClient()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,34 +40,58 @@ class MainActivity : AppCompatActivity() {
         val mainLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(-1, -1)
-            setBackgroundColor(Color.WHITE)
+            setBackgroundColor(Color.parseColor("#F5F5F5")) // Світло-сірий фон
         }
 
-        titleHeader = TextView(this).apply {
+        // --- ВЕРХНЯ ПАНЕЛЬ (Як на скриншоті) ---
+        val topBar = RelativeLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(-1, 160)
+            setBackgroundColor(Color.parseColor("#007c3d")) // Зелений МАФ
+            setPadding(30, 40, 30, 20)
+        }
+
+        // Ліва частина: "Турніри"
+        headerTitle = TextView(this).apply {
             text = "Більше"
-            textSize = 22f
+            textSize = 24f
             setTextColor(Color.WHITE)
-            setBackgroundColor(Color.parseColor("#007c3d"))
-            setPadding(40, 80, 40, 40)
-            gravity = Gravity.CENTER
+            // typeface = android.graphics.Typeface.DEFAULT_BOLD
+            layoutParams = RelativeLayout.LayoutParams(-2, -2).apply {
+                addRule(RelativeLayout.ALIGN_PARENT_LEFT)
+                addRule(RelativeLayout.CENTER_VERTICAL)
+            }
         }
 
+        // Права частина: Іконка профілю/Вхід
+        val profileIcon = ImageView(this).apply {
+            setImageResource(android.R.drawable.ic_menu_my_calendar) // Тимчасова іконка профілю
+            setColorFilter(Color.WHITE)
+            layoutParams = RelativeLayout.LayoutParams(80, 80).apply {
+                addRule(RelativeLayout.ALIGN_PARENT_RIGHT)
+                addRule(RelativeLayout.CENTER_VERTICAL)
+            }
+            setOnClickListener { Toast.makeText(context, "Вхід у кабінет скоро...", Toast.LENGTH_SHORT).show() }
+        }
+
+        topBar.addView(headerTitle)
+        topBar.addView(profileIcon)
+
+        // --- ОСНОВНИЙ КОНТЕНТ ---
         val contentFrame = FrameLayout(this).apply {
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
         }
 
-        recyclerView = RecyclerView(this).apply {
-            layoutManager = LinearLayoutManager(this@MainActivity)
-        }
+        recyclerView = RecyclerView(this)
 
-        // ПРАВКА: ініціалізація historyView
         historyView = layoutInflater.inflate(R.layout.layout_history, null).apply {
             visibility = View.GONE
         }
 
+        // --- НИЖНЯ НАВІГАЦІЯ ---
         val bottomNav = BottomNavigationView(this).apply {
             inflateMenu(R.menu.bottom_nav_menu)
             selectedItemId = R.id.nav_more
+            setBackgroundColor(Color.WHITE)
             setOnItemSelectedListener { item ->
                 when (item.itemId) {
                     R.id.nav_more -> { updateUI("Більше", "more"); true }
@@ -77,33 +104,49 @@ class MainActivity : AppCompatActivity() {
 
         contentFrame.addView(recyclerView)
         contentFrame.addView(historyView)
-        mainLayout.addView(titleHeader)
+
+        mainLayout.addView(topBar)
         mainLayout.addView(contentFrame)
         mainLayout.addView(bottomNav)
+
         setContentView(mainLayout)
 
         updateUI("Більше", "more")
     }
 
     private fun updateUI(title: String, type: String) {
-        titleHeader.text = title
+        headerTitle.text = title
+        
+        // Скидаємо видимість
+        historyView.visibility = View.GONE
+        recyclerView.visibility = View.VISIBLE
+
         if (type == "history_screen") {
             recyclerView.visibility = View.GONE
             historyView.visibility = View.VISIBLE
             loadHistory()
         } else {
-            historyView.visibility = View.GONE
-            recyclerView.visibility = View.VISIBLE
             loadData(type)
         }
     }
 
     private fun loadData(type: String) {
+        // Налаштування сітки або списку
+        if (type == "more") {
+            // СІТКА ДЛЯ МЕНЮ (2 колонки)
+            recyclerView.layoutManager = GridLayoutManager(this, 2)
+        } else {
+            // СПИСОК ДЛЯ ІНШОГО
+            recyclerView.layoutManager = LinearLayoutManager(this)
+        }
+
         val url = if (type == "bans_list") "https://maf.lviv.ua/wp-json/maf/v1/bans" 
                   else "https://maf.lviv.ua/wp-json/maf/v1/tables-data"
 
         client.newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {}
+            override fun onFailure(call: Call, e: IOException) {
+                 runOnUiThread { Toast.makeText(this@MainActivity, "Помилка з'єднання", Toast.LENGTH_SHORT).show() }
+            }
             override fun onResponse(call: Call, response: Response) {
                 val body = response.body?.string() ?: ""
                 val list = mutableListOf<TournamentRow>()
@@ -112,6 +155,7 @@ class MainActivity : AppCompatActivity() {
                         val arr = JSONArray(body)
                         for (i in 0 until arr.length()) {
                             val obj = arr.getJSONObject(i)
+                            // КЛЮЧІ МАЮТЬ БУТИ ЛАТИНИЦЕЮ (name, reason) ЯК У PHP
                             list.add(TournamentRow(obj.getString("name"), obj.getString("reason"), "", ""))
                         }
                     } else if (type == "more") {
@@ -121,11 +165,13 @@ class MainActivity : AppCompatActivity() {
                     }
                     runOnUiThread {
                         recyclerView.adapter = TournamentAdapter(list) { item ->
-                            if (item.year == "Дискваліфікації") updateUI("Список банів", "bans_list")
-                            if (item.year == "Історія") updateUI("Історія МАФ", "history_screen")
+                            if (item.year.contains("Дискваліфікації")) updateUI("Список банів", "bans_list")
+                            if (item.year.contains("Історія")) updateUI("Історія МАФ", "history_screen")
                         }
                     }
-                } catch (e: Exception) {}
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         })
     }
@@ -134,22 +180,19 @@ class MainActivity : AppCompatActivity() {
         client.newCall(Request.Builder().url("https://maf.lviv.ua/wp-json/maf/v1/history").build()).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {}
             override fun onResponse(call: Call, response: Response) {
-                val body = response.body?.string() ?: return
+                val body = response.body?.string() ?: ""
                 try {
                     val json = JSONObject(body)
-                    val titleText = json.optString("title", "Історія")
-                    val contentHtml = json.optString("content", "Дані відсутні")
-                    
+                    val t = json.optString("title", "Історія")
+                    val c = json.optString("content", "Немає даних")
                     runOnUiThread {
-                        // ПРАВКА: шукаємо всередині historyView, щоб не було вильоту
                         val hTitle = historyView.findViewById<TextView>(R.id.historyTitle)
                         val hContent = historyView.findViewById<TextView>(R.id.historyContent)
-                        
-                        hTitle?.text = titleText
-                        hContent?.text = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                            Html.fromHtml(contentHtml, Html.FROM_HTML_MODE_COMPACT)
-                        } else {
-                            @Suppress("DEPRECATION") Html.fromHtml(contentHtml)
+                        if (hTitle != null && hContent != null) {
+                            hTitle.text = t
+                            hContent.text = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) 
+                                Html.fromHtml(c, Html.FROM_HTML_MODE_COMPACT) 
+                                else @Suppress("DEPRECATION") Html.fromHtml(c)
                         }
                     }
                 } catch (e: Exception) {}
@@ -164,8 +207,8 @@ class MainActivity : AppCompatActivity() {
             window.insetsController?.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
     }
-
+    
     override fun onBackPressed() {
-        if (titleHeader.text != "Більше") updateUI("Більше", "more") else super.onBackPressed()
+        if (headerTitle.text != "Більше") updateUI("Більше", "more") else super.onBackPressed()
     }
 }
