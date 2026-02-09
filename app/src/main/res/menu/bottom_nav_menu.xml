@@ -1,22 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:id="@+id/nav_home"
+        android:id="@+id/nav_news"
         android:icon="@android:drawable/ic_menu_today"
         android:title="Новини" />
-    
+    <item
+        android:id="@+id/nav_matches"
+        android:icon="@android:drawable/ic_media_play"
+        android:title="Матчі" />
     <item
         android:id="@+id/nav_tables"
         android:icon="@android:drawable/ic_menu_sort_by_size"
-        android:title="Турніри" />
-
-    <item
-        android:id="@+id/nav_matches"
-        android:icon="@android:drawable/ic_menu_myplaces"
-        android:title="Матчі" />
-
+        android:title="Таблиці" />
     <item
         android:id="@+id/nav_more"
-        android:icon="@android:drawable/ic_menu_manage"
+        android:icon="@android:drawable/ic_menu_more"
         android:title="Більше" />
 </menu>
