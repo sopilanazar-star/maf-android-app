@@ -2,6 +2,7 @@ package ua.lviv.maf
 
 import android.annotation.SuppressLint
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
@@ -25,7 +26,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bottomNav: BottomNavigationView
     private lateinit var titleHeader: TextView
     
-    // Посилання на твій API
     private val MAF_API_URL = "https://maf.lviv.ua/wp-json/maf/v1/tables-data"
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,32 +34,52 @@ class MainActivity : AppCompatActivity() {
 
         hideSystemUI()
 
+        // 1. ГОЛОВНИЙ КОНТЕЙНЕР (Тепер темно-сірий #1A1D23)
         val mainLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(-1, -1)
-            setBackgroundColor(Color.parseColor("#F5F5F5"))
+            setBackgroundColor(Color.parseColor("#1A1D23"))
         }
 
-        // ХЕДЕР
+        // 2. ХЕДЕР (З градієнтом від бордового до фону)
         titleHeader = TextView(this).apply {
             text = "МАФ: Турніри"
-            textSize = 22f
+            textSize = 26f
             setTextColor(Color.WHITE)
-            setBackgroundColor(Color.parseColor("#007c3d"))
-            setPadding(40, 70, 40, 40)
-            gravity = Gravity.CENTER
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            
+            // Градієнт як на малюнку
+            val headerBg = GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(Color.parseColor("#450000"), Color.parseColor("#1A1D23"))
+            )
+            background = headerBg
+            
+            setPadding(60, 100, 40, 60)
+            gravity = Gravity.START or Gravity.CENTER_VERTICAL
         }
 
-        // СПИСОК
+        // 3. СПИСОК
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
+            // Додаємо відступи, щоб картки не липли до країв
+            setPadding(20, 0, 20, 0)
         }
 
-        // НИЖНЯ НАВІГАЦІЯ (Виправлені ID під твоє меню)
+        // 4. НИЖНЯ НАВІГАЦІЯ (Темна з червоними акцентами)
         bottomNav = BottomNavigationView(this).apply {
             inflateMenu(R.menu.bottom_nav_menu)
-            setBackgroundColor(Color.WHITE)
+            setBackgroundColor(Color.parseColor("#121417"))
+            
+            // Налаштування кольорів іконок: червоний для активного, сірий для інших
+            val states = arrayOf(
+                intArrayOf(android.R.attr.state_checked),
+                intArrayOf(-android.R.attr.state_checked)
+            )
+            val colors = intArrayOf(Color.parseColor("#E30613"), Color.GRAY)
+            itemIconTintList = android.content.res.ColorStateList(states, colors)
+            itemTextColor = android.content.res.ColorStateList(states, colors)
             
             setOnItemSelectedListener { item ->
                 when (item.itemId) {
@@ -101,16 +121,13 @@ class MainActivity : AppCompatActivity() {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                // Якщо PHP видалено, завантажуємо локальні заглушки для тесту
                 showLocalData(type)
             }
             override fun onResponse(call: Call, response: Response) {
                 val jsonString = response.body?.string() ?: ""
                 try {
                     val jsonObject = JSONObject(jsonString)
-                    val displayList = mutableListOf<TournamentRow>()
-                    // Тут логіка обробки твого JSON
-                    // ... (залишаємо як було в #272)
+                    // Тут твоя логіка парсингу (якщо повернув PHP)
                 } catch (e: Exception) { 
                     runOnUiThread { showLocalData(type) }
                 }
@@ -118,7 +135,6 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    // Додав метод, щоб додаток не був порожнім без PHP
     private fun showLocalData(type: String) {
         val displayList = mutableListOf<TournamentRow>()
         when (type) {
