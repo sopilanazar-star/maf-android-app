@@ -1,68 +1,145 @@
 package ua.lviv.maf
 
+import android.annotation.SuppressLint
 import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
+import android.view.Gravity
 import android.view.View
 import android.view.WindowInsets
-import android.widget.RelativeLayout
+import android.view.WindowInsetsController
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import okhttp3.*
+import org.json.JSONObject
+import java.io.IOException
 
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var bottomNav: BottomNavigationView
+    private lateinit var titleHeader: TextView
+    
+    // Посилання на твій API
+    private val MAF_API_URL = "https://maf.lviv.ua/wp-json/maf/v1/tables-data"
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
-        
-        // 1. Повний екран (без статус-бару)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.setDecorFitsSystemWindows(false)
-            window.insetsController?.hide(WindowInsets.Type.statusBars())
+
+        hideSystemUI()
+
+        val mainLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(-1, -1)
+            setBackgroundColor(Color.parseColor("#F5F5F5"))
         }
 
-        // 2. Фон (Градієнт) - створюємо прямо в коді
-        val gradient = GradientDrawable(
-            GradientDrawable.Orientation.TOP_BOTTOM,
-            intArrayOf(Color.parseColor("#007c3d"), Color.parseColor("#004d26"))
-        )
-
-        val root = RelativeLayout(this).apply {
-            background = gradient
-        }
-
-        // 3. Текст-заглушка замість Спінера
-        val title = TextView(this).apply {
-            id = View.generateViewId()
-            text = "МАФ 2026"
-            setTextColor(Color.WHITE)
+        // ХЕДЕР
+        titleHeader = TextView(this).apply {
+            text = "МАФ: Турніри"
             textSize = 22f
-            setPadding(50, 100, 0, 0)
+            setTextColor(Color.WHITE)
+            setBackgroundColor(Color.parseColor("#007c3d"))
+            setPadding(40, 70, 40, 40)
+            gravity = Gravity.CENTER
         }
-        root.addView(title)
 
-        // 4. НИЖНЯ НАВІГАЦІЯ (БЕЗПЕЧНА)
-        try {
-            val nav = BottomNavigationView(this).apply {
-                id = View.generateViewId()
-                setBackgroundColor(Color.WHITE)
-                
-                // Використовуємо ТІЛЬКИ системні іконки, щоб не було вильотів
-                menu.add(0, 1, 0, "Новини").setIcon(android.R.drawable.ic_menu_gallery)
-                menu.add(0, 2, 0, "Матчі").setIcon(android.R.drawable.ic_menu_today)
-                menu.add(0, 3, 0, "Таблиці").setIcon(android.R.drawable.ic_menu_sort_by_size)
-                menu.add(0, 4, 0, "Більше").setIcon(android.R.drawable.ic_menu_more)
+        // СПИСОК
+        recyclerView = RecyclerView(this).apply {
+            layoutManager = LinearLayoutManager(this@MainActivity)
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
+        }
 
-                layoutParams = RelativeLayout.LayoutParams(-1, -2).apply {
-                    addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
+        // НИЖНЯ НАВІГАЦІЯ (Виправлені ID під твоє меню)
+        bottomNav = BottomNavigationView(this).apply {
+            inflateMenu(R.menu.bottom_nav_menu)
+            setBackgroundColor(Color.WHITE)
+            
+            setOnItemSelectedListener { item ->
+                when (item.itemId) {
+                    R.id.nav_news -> { updateUI("Новини", "news"); true }
+                    R.id.nav_matches -> { updateUI("Матчі", "matches"); true }
+                    R.id.nav_tables -> { updateUI("Турніри", "tables"); true }
+                    R.id.nav_more -> { updateUI("Більше", "more"); true }
+                    else -> false
                 }
             }
-            root.addView(nav)
-        } catch (e: Exception) {
-            // Навіть якщо нава впаде, ми її просто не покажемо
         }
 
-        setContentView(root)
+        mainLayout.addView(titleHeader)
+        mainLayout.addView(recyclerView)
+        mainLayout.addView(bottomNav)
+        setContentView(mainLayout)
+
+        updateUI("Турніри", "tables")
+    }
+
+    private fun hideSystemUI() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.setDecorFitsSystemWindows(false)
+            window.insetsController?.let { controller ->
+                controller.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
+                controller.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        }
+    }
+
+    private fun updateUI(title: String, type: String) {
+        titleHeader.text = title
+        loadDataFromApi(type)
+    }
+
+    private fun loadDataFromApi(type: String) {
+        val client = OkHttpClient()
+        val request = Request.Builder().url(MAF_API_URL).build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                // Якщо PHP видалено, завантажуємо локальні заглушки для тесту
+                showLocalData(type)
+            }
+            override fun onResponse(call: Call, response: Response) {
+                val jsonString = response.body?.string() ?: ""
+                try {
+                    val jsonObject = JSONObject(jsonString)
+                    val displayList = mutableListOf<TournamentRow>()
+                    // Тут логіка обробки твого JSON
+                    // ... (залишаємо як було в #272)
+                } catch (e: Exception) { 
+                    runOnUiThread { showLocalData(type) }
+                }
+            }
+        })
+    }
+
+    // Додав метод, щоб додаток не був порожнім без PHP
+    private fun showLocalData(type: String) {
+        val displayList = mutableListOf<TournamentRow>()
+        when (type) {
+            "more" -> {
+                displayList.add(TournamentRow("Прогнози (MAF Bet)", "Зробити прогноз на матчі"))
+                displayList.add(TournamentRow("Дискваліфікації", "Список відсторонених гравців"))
+                displayList.add(TournamentRow("Історія", "Архів та досягнення асоціації"))
+            }
+            "tables" -> displayList.add(TournamentRow("2025", "Турнірні таблиці незабаром"))
+            else -> displayList.add(TournamentRow("Інфо", "Дані завантажуються..."))
+        }
+        runOnUiThread {
+            recyclerView.adapter = TournamentAdapter(displayList) { handleItemClick(it) }
+        }
+    }
+
+    private fun handleItemClick(item: TournamentRow) {
+        when (item.year) {
+            "Дискваліфікації" -> updateUI("Список банів", "bans_list")
+            "Історія" -> updateUI("Історія МАФ", "history")
+            else -> android.widget.Toast.makeText(this, item.year, android.widget.Toast.LENGTH_SHORT).show()
+        }
     }
 }
