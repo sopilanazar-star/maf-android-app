@@ -34,21 +34,20 @@ class MainActivity : AppCompatActivity() {
 
         hideSystemUI()
 
-        // 1. ГОЛОВНИЙ КОНТЕЙНЕР (Тепер темно-сірий #1A1D23)
+        // ГОЛОВНИЙ КОНТЕЙНЕР (Темний)
         val mainLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(-1, -1)
             setBackgroundColor(Color.parseColor("#1A1D23"))
         }
 
-        // 2. ХЕДЕР (З градієнтом від бордового до фону)
+        // ХЕДЕР (З градієнтом UEFA)
         titleHeader = TextView(this).apply {
-            text = "МАФ: Турніри"
-            textSize = 26f
+            text = "Матчі"
+            textSize = 28f
             setTextColor(Color.WHITE)
             setTypeface(null, android.graphics.Typeface.BOLD)
             
-            // Градієнт як на малюнку
             val headerBg = GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
                 intArrayOf(Color.parseColor("#450000"), Color.parseColor("#1A1D23"))
@@ -59,24 +58,19 @@ class MainActivity : AppCompatActivity() {
             gravity = Gravity.START or Gravity.CENTER_VERTICAL
         }
 
-        // 3. СПИСОК
+        // СПИСОК
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
-            // Додаємо відступи, щоб картки не липли до країв
             setPadding(20, 0, 20, 0)
         }
 
-        // 4. НИЖНЯ НАВІГАЦІЯ (Темна з червоними акцентами)
+        // НИЖНЯ НАВІГАЦІЯ (Темна з червоним фокусом)
         bottomNav = BottomNavigationView(this).apply {
             inflateMenu(R.menu.bottom_nav_menu)
             setBackgroundColor(Color.parseColor("#121417"))
             
-            // Налаштування кольорів іконок: червоний для активного, сірий для інших
-            val states = arrayOf(
-                intArrayOf(android.R.attr.state_checked),
-                intArrayOf(-android.R.attr.state_checked)
-            )
+            val states = arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf(-android.R.attr.state_checked))
             val colors = intArrayOf(Color.parseColor("#E30613"), Color.GRAY)
             itemIconTintList = android.content.res.ColorStateList(states, colors)
             itemTextColor = android.content.res.ColorStateList(states, colors)
@@ -97,7 +91,7 @@ class MainActivity : AppCompatActivity() {
         mainLayout.addView(bottomNav)
         setContentView(mainLayout)
 
-        updateUI("Турніри", "tables")
+        updateUI("Матчі", "matches")
     }
 
     private fun hideSystemUI() {
@@ -120,17 +114,13 @@ class MainActivity : AppCompatActivity() {
         val request = Request.Builder().url(MAF_API_URL).build()
 
         client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                showLocalData(type)
-            }
+            override fun onFailure(call: Call, e: IOException) { runOnUiThread { showLocalData(type) } }
             override fun onResponse(call: Call, response: Response) {
                 val jsonString = response.body?.string() ?: ""
                 try {
                     val jsonObject = JSONObject(jsonString)
-                    // Тут твоя логіка парсингу (якщо повернув PHP)
-                } catch (e: Exception) { 
-                    runOnUiThread { showLocalData(type) }
-                }
+                    // Тут логіка твого PHP
+                } catch (e: Exception) { runOnUiThread { showLocalData(type) } }
             }
         })
     }
@@ -143,19 +133,17 @@ class MainActivity : AppCompatActivity() {
                 displayList.add(TournamentRow("Дискваліфікації", "Список відсторонених гравців"))
                 displayList.add(TournamentRow("Історія", "Архів та досягнення асоціації"))
             }
-            "tables" -> displayList.add(TournamentRow("2025", "Турнірні таблиці незабаром"))
-            else -> displayList.add(TournamentRow("Інфо", "Дані завантажуються..."))
+            "matches" -> {
+                displayList.add(TournamentRow("Україна - Ірландія", "2 : 1"))
+                displayList.add(TournamentRow("Португалія - Вірменія", "9 : 1"))
+            }
+            else -> displayList.add(TournamentRow("Турнір", "Дані оновлюються"))
         }
         runOnUiThread {
-            recyclerView.adapter = TournamentAdapter(displayList) { handleItemClick(it) }
-        }
-    }
-
-    private fun handleItemClick(item: TournamentRow) {
-        when (item.year) {
-            "Дискваліфікації" -> updateUI("Список банів", "bans_list")
-            "Історія" -> updateUI("Історія МАФ", "history")
-            else -> android.widget.Toast.makeText(this, item.year, android.widget.Toast.LENGTH_SHORT).show()
+            recyclerView.adapter = TournamentAdapter(displayList) { 
+                if (it.year == "Дискваліфікації") updateUI("Бан-лист", "bans")
+                else android.widget.Toast.makeText(this, it.year, android.widget.Toast.LENGTH_SHORT).show()
+            }
         }
     }
 }
