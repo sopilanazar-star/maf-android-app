@@ -1,4 +1,10 @@
 <resources>
-    <color name="bg_dark">#1A1D23</color>          <color name="card_dark">#22262B</color>        <color name="maf_red">#E30613</color>          <color name="text_white">#FFFFFF</color>
+    <color name="bg_dark">#1A1D23</color>
+    <color name="card_dark">#22262B</color>
+    <color name="maf_red">#E30613</color>
+    
+    <color name="ic_launcher_background">#007c3d</color> 
+    
+    <color name="text_white">#FFFFFF</color>
     <color name="text_grey">#888888</color>
-    <color name="nav_bg">#121417</color>           </resources>
+</resources>
