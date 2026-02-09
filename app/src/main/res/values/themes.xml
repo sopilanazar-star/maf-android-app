@@ -1,11 +1,13 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-
     <style name="Theme.MAFFootball" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="android:windowBackground">@android:color/black</item>
-        
-        <item name="android:statusBarColor">#007c3d</item>
-        
         <item name="colorPrimary">#007c3d</item>
         <item name="colorPrimaryVariant">#004d26</item>
         <item name="colorOnPrimary">@android:color/white</item>
-    </style> </resources>
+        
+        <item name="colorSecondary">#007c3d</item>
+        <item name="colorOnSecondary">@android:color/white</item>
+
+        <item name="android:statusBarColor">#007c3d</item>
+        <item name="android:windowBackground">#007c3d</item>
+    </style>
+</resources>
