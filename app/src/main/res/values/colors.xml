@@ -1,9 +1,4 @@
 <resources>
-    <color name="maf_green">#0E7A2E</color>
-    <color name="maf_dark">#0A2D1A</color>
-    <color name="white">#FFFFFF</color>
-    <color name="black">#000000</color>
-
-    <!-- фон адаптивної іконки -->
-    <color name="ic_launcher_background">#0E7A2E</color>
-</resources>
+    <color name="bg_dark">#1A1D23</color>          <color name="card_dark">#22262B</color>        <color name="maf_red">#E30613</color>          <color name="text_white">#FFFFFF</color>
+    <color name="text_grey">#888888</color>
+    <color name="nav_bg">#121417</color>           </resources>
