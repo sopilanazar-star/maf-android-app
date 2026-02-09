@@ -4,7 +4,6 @@ import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
-import android.view.Gravity
 import android.view.View
 import android.view.WindowInsets
 import android.widget.*
@@ -18,28 +17,26 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        // 1. ПОВНИЙ ЕКРАН
         hideSystemUI()
 
-        // 2. СТВОРЮЄМО ГРАДІЄНТ ПРОГРАМНО (щоб не вилітало через відсутній XML)
-        val gradientDrawable = GradientDrawable(
+        // 1. Створюємо фон-градієнт прямо в коді
+        val gradient = GradientDrawable(
             GradientDrawable.Orientation.TOP_BOTTOM,
             intArrayOf(Color.parseColor("#007c3d"), Color.parseColor("#004d26"))
         )
 
-        val rootLayout = RelativeLayout(this).apply {
-            background = gradientDrawable
+        val root = RelativeLayout(this).apply {
+            background = gradient
         }
 
-        // 3. ВЕРХНЯ ПАНЕЛЬ (HEADER)
+        // 2. ВЕРХНЯ ПАНЕЛЬ (HEADER)
         val header = RelativeLayout(this).apply {
             id = View.generateViewId()
-            layoutParams = RelativeLayout.LayoutParams(-1, 200)
-            setPadding(40, 80, 40, 20)
+            layoutParams = RelativeLayout.LayoutParams(-1, 220)
+            setPadding(40, 90, 40, 20)
         }
 
-        // Випадаючий список турнірів (Зліва)
+        // Спінер турнірів (Зліва)
         val spinner = Spinner(this).apply {
             val items = arrayOf("Вища ліга", "Перша ліга", "Кубок", "Футзал")
             adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, items)
@@ -49,65 +46,59 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Кнопка авторизації (Справа)
+        // Кнопка профілю (Справа)
         val authBtn = ImageButton(this).apply {
-            setImageResource(android.R.drawable.ic_menu_view) 
+            setImageResource(android.R.drawable.ic_menu_view)
             setBackgroundColor(Color.TRANSPARENT)
             setColorFilter(Color.WHITE)
-            layoutParams = RelativeLayout.LayoutParams(100, 100).apply {
+            layoutParams = RelativeLayout.LayoutParams(110, 110).apply {
                 addRule(RelativeLayout.ALIGN_PARENT_RIGHT)
                 addRule(RelativeLayout.CENTER_VERTICAL)
             }
-            setOnClickListener { Toast.makeText(context, "Вхід у систему...", Toast.LENGTH_SHORT).show() }
+            setOnClickListener { Toast.makeText(context, "Вхід...", Toast.LENGTH_SHORT).show() }
         }
 
         header.addView(spinner)
         header.addView(authBtn)
 
-        // 4. НИЖНЯ НАВІГАЦІЯ
-        val bottomNav = BottomNavigationView(this).apply {
+        // 3. НИЖНЯ НАВІГАЦІЯ
+        val nav = BottomNavigationView(this).apply {
             id = View.generateViewId()
-            // Переконайся, що файл res/menu/bottom_nav_menu.xml ІСНУЄ!
+            setBackgroundColor(Color.WHITE)
             try {
                 inflateMenu(R.menu.bottom_nav_menu)
             } catch (e: Exception) {
-                // Якщо меню немає, додаток не вилетить, а просто покаже пусту панель
+                // Захист від вильоту, якщо меню не знайдено
             }
-            setBackgroundColor(Color.WHITE)
             
             layoutParams = RelativeLayout.LayoutParams(-1, -2).apply {
                 addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
             }
         }
 
-        // 5. КОНТЕНТНА ОБЛАСТЬ
+        // 4. КОНТЕНТ (По центру)
         contentFrame = FrameLayout(this).apply {
             layoutParams = RelativeLayout.LayoutParams(-1, -1).apply {
                 addRule(RelativeLayout.BELOW, header.id)
-                addRule(RelativeLayout.ABOVE, bottomNav.id)
+                addRule(RelativeLayout.ABOVE, nav.id)
             }
         }
 
-        rootLayout.addView(header)
-        rootLayout.addView(contentFrame)
-        rootLayout.addView(bottomNav)
+        root.addView(header)
+        root.addView(contentFrame)
+        root.addView(nav)
 
-        setContentView(rootLayout)
+        setContentView(root)
 
-        // ЛОГІКА ПЕРЕМИКАННЯ
-        bottomNav.setOnItemSelectedListener { item ->
+        // Обробка натискань
+        nav.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_more -> showMessage("Більше")
-                R.id.nav_home -> showMessage("Новини")
-                R.id.nav_tables -> showMessage("Таблиці")
-                R.id.nav_matches -> showMessage("Матчі")
+                R.id.nav_more -> Toast.makeText(this, "Вкладка Більше", Toast.LENGTH_SHORT).show()
+                R.id.nav_news -> Toast.makeText(this, "Новини МАФ", Toast.LENGTH_SHORT).show()
+                // Додай інші кейси за аналогією
             }
             true
         }
-    }
-
-    private fun showMessage(text: String) {
-        Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
     }
 
     private fun hideSystemUI() {
