@@ -26,7 +26,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bottomNav: BottomNavigationView
     private lateinit var titleHeader: TextView
     
-    // Твоє посилання на API (PHP код вище активує це посилання)
+    // Твоя робоча адреса
     private val MAF_API_URL = "https://maf.lviv.ua/wp-json/maf/v1/tables-data"
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,14 +34,14 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         hideSystemUI()
 
-        // 1. ФОН (Темно-сірий UEFA)
+        // 1. ГОЛОВНИЙ ФОН
         val mainLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(-1, -1)
             setBackgroundColor(Color.parseColor("#1A1D23"))
         }
 
-        // 2. ЗАГОЛОВОК
+        // 2. ХЕДЕР (З градієнтом)
         titleHeader = TextView(this).apply {
             text = "Матчі"
             textSize = 28f
@@ -56,7 +56,7 @@ class MainActivity : AppCompatActivity() {
             gravity = Gravity.START or Gravity.CENTER_VERTICAL
         }
 
-        // 3. СПИСОК
+        // 3. СПИСОК РЕЗУЛЬТАТІВ
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
@@ -64,14 +64,16 @@ class MainActivity : AppCompatActivity() {
             clipToPadding = false
         }
 
-        // 4. МЕНЮ
+        // 4. НИЖНЯ НАВІГАЦІЯ (Усі твої вкладки)
         bottomNav = BottomNavigationView(this).apply {
             inflateMenu(R.menu.bottom_nav_menu)
             setBackgroundColor(Color.parseColor("#121417"))
+            
             val states = arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf(-android.R.attr.state_checked))
             val colors = intArrayOf(Color.parseColor("#E30613"), Color.GRAY)
             itemIconTintList = android.content.res.ColorStateList(states, colors)
             itemTextColor = android.content.res.ColorStateList(states, colors)
+            
             setOnItemSelectedListener { item ->
                 when (item.itemId) {
                     R.id.nav_news -> { updateUI("Новини", "news"); true }
@@ -107,15 +109,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadDataFromApi(type: String) {
-        // Показуємо завантаження або старі дані, поки вантажиться
-        if (recyclerView.adapter == null) runOnUiThread { showLocalData(type) }
-
         val client = OkHttpClient()
         val request = Request.Builder().url(MAF_API_URL).build()
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                // Якщо інтернету немає - показуємо локальні заглушки
                 runOnUiThread { showLocalData(type) }
             }
 
@@ -124,31 +122,26 @@ class MainActivity : AppCompatActivity() {
                 try {
                     val displayList = mutableListOf<TournamentRow>()
                     
-                    if (jsonString.startsWith("{")) {
+                    // Обробляємо JSON з твого сайту
+                    if (jsonString.contains("matches")) {
                         val jsonObject = JSONObject(jsonString)
-                        
-                        // Шукаємо масив 'matches', який повертає наш новий PHP код
-                        if (type == "matches" && jsonObject.has("matches")) {
-                            val array = jsonObject.getJSONArray("matches")
-                            for (i in 0 until array.length()) {
-                                val m = array.getJSONObject(i)
-                                displayList.add(TournamentRow(
-                                    m.optString("team1", "Команда 1"),
-                                    m.optString("team2", "Команда 2"),
-                                    m.optString("score", "-:-"),
-                                    false
-                                ))
-                            }
+                        val array = jsonObject.getJSONArray("matches")
+                        for (i in 0 until array.length()) {
+                            val m = array.getJSONObject(i)
+                            displayList.add(TournamentRow(
+                                m.getString("team1"),
+                                m.getString("team2"),
+                                m.getString("score"),
+                                false
+                            ))
                         }
                     }
 
                     runOnUiThread {
-                        if (displayList.isNotEmpty()) {
-                            // УРА! Ми отримали дані з сайту
-                            recyclerView.adapter = TournamentAdapter(displayList) { handleItemClick(it) }
-                        } else {
-                            // Якщо сайт повернув пустоту, показуємо локальні
+                        if (displayList.isEmpty()) {
                             showLocalData(type)
+                        } else {
+                            recyclerView.adapter = TournamentAdapter(displayList) { handleItemClick(it) }
                         }
                     }
                 } catch (e: Exception) {
@@ -158,28 +151,36 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    // ЛОКАЛЬНІ ДАНІ (Для інших вкладок та якщо сайт не віддає матчі)
     private fun showLocalData(type: String) {
         val displayList = mutableListOf<TournamentRow>()
         when (type) {
             "matches" -> {
-                // Це запасний варіант, якщо PHP ще не додано
-                displayList.add(TournamentRow("ФК Миколаїв", "ФК Зубра", "2 : 1", false))
-                displayList.add(TournamentRow("Очікування...", "Даних з сайту", "...", false))
+                displayList.add(TournamentRow("Оновлення...", "Зачекайте", "vs", false))
             }
             "more" -> {
-                displayList.add(TournamentRow("Прогнози (MAF Bet)", "Перейти", ">>", false))
+                displayList.add(TournamentRow("Прогнози (MAF Bet)", "Конкурс", ">>", false))
                 displayList.add(TournamentRow("Дискваліфікації", "Список", ">>", false))
                 displayList.add(TournamentRow("Архів", "Історія", ">>", false))
+            }
+            "news" -> {
+                displayList.add(TournamentRow("Новини асоціації", "Читайте на сайті", "LIVE", false))
             }
             "tables" -> {
                 displayList.add(TournamentRow("Прем'єр Ліга", "Сезон 25/26", "Таблиця", false))
             }
-            else -> displayList.add(TournamentRow("МАФ", "Завантаження...", "...", false))
+            else -> displayList.add(TournamentRow("МАФ", "Львів", "2026", false))
         }
-        recyclerView.adapter = TournamentAdapter(displayList) { handleItemClick(it) }
+        runOnUiThread {
+            recyclerView.adapter = TournamentAdapter(displayList) { handleItemClick(it) }
+        }
     }
 
     private fun handleItemClick(item: TournamentRow) {
-        android.widget.Toast.makeText(this, item.team1, android.widget.Toast.LENGTH_SHORT).show()
+        // Логіка кліків
+        when (item.team1) {
+            "Дискваліфікації" -> updateUI("Бан-лист", "bans")
+            else -> android.widget.Toast.makeText(this, "${item.team1} обрано", android.widget.Toast.LENGTH_SHORT).show()
+        }
     }
 }
