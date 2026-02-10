@@ -1,48 +1,88 @@
 package ua.lviv.maf
 
-import android.view.LayoutInflater
-import android.view.View
+import android.graphics.Color
+import android.graphics.Typeface
+import android.view.Gravity
 import android.view.ViewGroup
-import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
 
 class TournamentAdapter(
     private val items: List<TournamentRow>,
-    private val onItemClick: (TournamentRow) -> Unit
+    private val onClick: (TournamentRow) -> Unit
 ) : RecyclerView.Adapter<TournamentAdapter.ViewHolder>() {
 
-    class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val title: TextView = view.findViewById(R.id.textYear)
-        val subtitle: TextView = view.findViewById(R.id.textWinner)
-        val icon: ImageView = view.findViewById(R.id.itemIcon)
+    class ViewHolder(val card: CardView) : RecyclerView.ViewHolder(card) {
+        val team1Txt = card.findViewWithTag<TextView>("t1")
+        val team2Txt = card.findViewWithTag<TextView>("t2")
+        val scoreTxt = card.findViewWithTag<TextView>("score")
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_tournament, parent, false)
-        return ViewHolder(view)
+        val context = parent.context
+        val card = CardView(context).apply {
+            layoutParams = ViewGroup.MarginLayoutParams(-1, -2).apply {
+                setMargins(20, 15, 20, 15)
+            }
+            radius = 30f
+            setCardBackgroundColor(Color.parseColor("#22262B"))
+            elevation = 8f
+
+            val layout = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                padding(40, 50, 40, 50)
+                gravity = Gravity.CENTER
+            }
+
+            // Команда 1
+            val t1 = TextView(context).apply {
+                tag = "t1"
+                layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
+                setTextColor(Color.WHITE)
+                textSize = 16f
+                gravity = Gravity.CENTER
+                setTypeface(null, Typeface.BOLD)
+            }
+
+            // Рахунок
+            val score = TextView(context).apply {
+                tag = "score"
+                layoutParams = LinearLayout.LayoutParams(-2, -2)
+                setTextColor(Color.WHITE)
+                textSize = 28f
+                setPadding(30, 0, 30, 0)
+                setTypeface(null, Typeface.BOLD)
+            }
+
+            // Команда 2
+            val t2 = TextView(context).apply {
+                tag = "t2"
+                layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
+                setTextColor(Color.WHITE)
+                textSize = 16f
+                gravity = Gravity.CENTER
+                setTypeface(null, Typeface.BOLD)
+            }
+
+            layout.addView(t1)
+            layout.addView(score)
+            layout.addView(t2)
+            addView(layout)
+        }
+        return ViewHolder(card)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
-        holder.title.text = item.year
-        holder.subtitle.text = item.winner
-        
-        // Логіка іконок для нового дизайну
-        when {
-            item.year.contains("Прогнози") -> holder.icon.setImageResource(R.drawable.ic_bet) // Перевір, чи є ця іконка!
-            item.year.contains("Дискваліфікації") -> holder.icon.setImageResource(android.R.drawable.ic_delete)
-            item.year.contains("Історія") -> holder.icon.setImageResource(android.R.drawable.ic_menu_recent_history)
-            item.winner.contains("Команда:") -> {
-                // Це гравець у бані
-                holder.icon.setImageResource(android.R.drawable.ic_dialog_alert)
-            }
-            else -> holder.icon.setImageResource(android.R.drawable.ic_menu_sort_by_size)
-        }
-
-        holder.itemView.setOnClickListener { onItemClick(item) }
+        holder.team1Txt.text = item.team1
+        holder.team2Txt.text = item.team2
+        holder.scoreTxt.text = item.score
+        holder.card.setOnClickListener { onClick(item) }
     }
 
     override fun getItemCount() = items.size
+
+    private fun android.view.View.padding(l: Int, t: Int, r: Int, b: Int) = setPadding(l, t, r, b)
 }
