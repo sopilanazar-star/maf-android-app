@@ -34,14 +34,12 @@ class MainActivity : AppCompatActivity() {
 
         hideSystemUI()
 
-        // 1. ГОЛОВНИЙ КОНТЕЙНЕР
         val mainLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(-1, -1)
             setBackgroundColor(Color.parseColor("#1A1D23"))
         }
 
-        // 2. ХЕДЕР (З градієнтом UEFA)
         titleHeader = TextView(this).apply {
             text = "Матчі"
             textSize = 28f
@@ -58,14 +56,14 @@ class MainActivity : AppCompatActivity() {
             gravity = Gravity.START or Gravity.CENTER_VERTICAL
         }
 
-        // 3. СПИСОК
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
-            setPadding(20, 0, 20, 0)
+            // Прибираємо відступи тут, бо вони вже є в самих картках адаптера
+            setPadding(0, 10, 0, 10) 
+            clipToPadding = false
         }
 
-        // 4. НИЖНЯ НАВІГАЦІЯ
         bottomNav = BottomNavigationView(this).apply {
             inflateMenu(R.menu.bottom_nav_menu)
             setBackgroundColor(Color.parseColor("#121417"))
@@ -114,13 +112,17 @@ class MainActivity : AppCompatActivity() {
         val request = Request.Builder().url(MAF_API_URL).build()
 
         client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) { runOnUiThread { showLocalData(type) } }
+            override fun onFailure(call: Call, e: IOException) {
+                runOnUiThread { showLocalData(type) }
+            }
             override fun onResponse(call: Call, response: Response) {
                 val jsonString = response.body?.string() ?: ""
                 try {
-                    val jsonObject = JSONObject(jsonString)
-                    // Тут буде логіка твого PHP
-                } catch (e: Exception) { runOnUiThread { showLocalData(type) } }
+                    // Коли PHP запрацює, тут буде обробка JSON
+                    runOnUiThread { showLocalData(type) }
+                } catch (e: Exception) { 
+                    runOnUiThread { showLocalData(type) }
+                }
             }
         })
     }
@@ -128,28 +130,36 @@ class MainActivity : AppCompatActivity() {
     private fun showLocalData(type: String) {
         val displayList = mutableListOf<TournamentRow>()
         when (type) {
-            "more" -> {
-                displayList.add(TournamentRow("Прогнози (MAF Bet)", "Зробити прогноз", "", false))
-                displayList.add(TournamentRow("Дискваліфікації", "Список відсторонених", "", false))
-                displayList.add(TournamentRow("Історія", "Архів асоціації", "", false))
-            }
             "matches" -> {
                 displayList.add(TournamentRow("Україна", "Ісландія", "2 : 0", false))
                 displayList.add(TournamentRow("Португалія", "Вірменія", "9 : 1", false))
+                displayList.add(TournamentRow("Угорщина", "Ірландія", "2 : 3", false))
             }
-            else -> displayList.add(TournamentRow("МАФ", "Дані оновлюються", "", false))
+            "more" -> {
+                displayList.add(TournamentRow("Прогнози (MAF Bet)", "Перейти", ">>", false))
+                displayList.add(TournamentRow("Дискваліфікації", "Список", ">>", false))
+                displayList.add(TournamentRow("Історія", "Архів", ">>", false))
+            }
+            "news" -> {
+                displayList.add(TournamentRow("Новини", "Офіційно", "Сьогодні", false))
+            }
+            "tables" -> {
+                displayList.add(TournamentRow("Вища ліга", "2025/26", "Таблиця", false))
+            }
+            else -> {
+                displayList.add(TournamentRow("МАФ", "Оновлення", "...", false))
+            }
         }
-        runOnUiThread {
-            recyclerView.adapter = TournamentAdapter(displayList) { handleItemClick(it) }
-        }
+        
+        // КРИТИЧНО: Призначаємо адаптер з новими даними
+        recyclerView.adapter = TournamentAdapter(displayList) { handleItemClick(it) }
     }
 
     private fun handleItemClick(item: TournamentRow) {
-        // Виправлено: тепер перевіряємо поле team1 замість year
         when (item.team1) {
             "Дискваліфікації" -> updateUI("Бан-лист", "bans")
             "Історія" -> updateUI("Історія МАФ", "history")
-            else -> android.widget.Toast.makeText(this, item.team1, android.widget.Toast.LENGTH_SHORT).show()
+            else -> android.widget.Toast.makeText(this, "${item.team1} натиснуто", android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 }
