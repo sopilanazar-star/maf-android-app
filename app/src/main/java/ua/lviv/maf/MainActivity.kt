@@ -4,7 +4,6 @@ import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
-import android.view.Gravity
 import android.view.WindowInsets
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -21,13 +20,13 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var titleHeader: TextView
-    private val MAF_API_URL = "https://maf.lviv.ua/wp-json/maf/v1/tables-data"
+    // ОНОВЛЕНО: Нова адреса API v2, яку ми створили в плагіні
+    private val MAF_API_URL = "https://maf.lviv.ua/wp-json/maf/v2/matches"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         
-        // Приховуємо статус-бар для краси
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.setDecorFitsSystemWindows(false)
             window.insetsController?.hide(WindowInsets.Type.statusBars())
@@ -38,7 +37,6 @@ class MainActivity : AppCompatActivity() {
             setBackgroundColor(Color.parseColor("#1A1D23"))
         }
 
-        // Хедер
         titleHeader = TextView(this).apply {
             text = "Матчі"
             textSize = 28f
@@ -48,13 +46,11 @@ class MainActivity : AppCompatActivity() {
             setPadding(60, 100, 40, 60)
         }
 
-        // Список
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
         }
 
-        // Навігація
         val bottomNav = BottomNavigationView(this).apply {
             inflateMenu(R.menu.bottom_nav_menu)
             setBackgroundColor(Color.parseColor("#121417"))
@@ -102,9 +98,20 @@ class MainActivity : AppCompatActivity() {
                     val array = obj.getJSONArray("matches")
                     for (i in 0 until array.length()) {
                         val m = array.getJSONObject(i)
-                        list.add(TournamentRow(m.getString("team1"), m.getString("team2"), m.getString("score"), false))
+                        // ОНОВЛЕНО: Читаємо всі поля: логотипи, дату та лігу
+                        list.add(TournamentRow(
+                            team1 = m.getString("team1"),
+                            logo1 = m.getString("logo1"),
+                            team2 = m.getString("team2"),
+                            logo2 = m.getString("logo2"),
+                            score = m.getString("score"),
+                            date  = m.getString("date"),
+                            league = m.getString("league"),
+                            isHeader = false
+                        ))
                     }
-                    runOnUiThread { recyclerView.adapter = TournamentAdapter(list) {} }
+                    // ОНОВЛЕНО: Передаємо список в адаптер
+                    runOnUiThread { recyclerView.adapter = TournamentAdapter(list) }
                 } catch (e: Exception) {
                     runOnUiThread { showStaticData("error") }
                 }
@@ -115,10 +122,10 @@ class MainActivity : AppCompatActivity() {
     private fun showStaticData(type: String) {
         val list = mutableListOf<TournamentRow>()
         when (type) {
-            "tables" -> list.add(TournamentRow("Вища ліга", "2025", "Таблиця", false))
-            "more" -> list.add(TournamentRow("Дискваліфікації", "Список", ">>", false))
-            else -> list.add(TournamentRow("Помилка", "Дані відсутні", "!", false))
+            "tables" -> list.add(TournamentRow("Вища ліга", "", "2025", "", "Таблиця", "", "", false))
+            "more" -> list.add(TournamentRow("Дискваліфікації", "", "Список", "", ">>", "", "", false))
+            else -> list.add(TournamentRow("Помилка", "", "Дані відсутні", "", "!", "", "", false))
         }
-        runOnUiThread { recyclerView.adapter = TournamentAdapter(list) {} }
+        runOnUiThread { recyclerView.adapter = TournamentAdapter(list) }
     }
 }
