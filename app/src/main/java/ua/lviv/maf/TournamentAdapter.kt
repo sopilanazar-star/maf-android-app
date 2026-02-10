@@ -15,63 +15,46 @@ class TournamentAdapter(
 ) : RecyclerView.Adapter<TournamentAdapter.ViewHolder>() {
 
     class ViewHolder(val card: CardView) : RecyclerView.ViewHolder(card) {
-        // Використовуємо теги, щоб знайти текстові поля в коді
-        val team1Txt: TextView = card.findViewWithTag("t1")
-        val team2Txt: TextView = card.findViewWithTag("t2")
-        val scoreTxt: TextView = card.findViewWithTag("score")
+        val t1 = card.findViewWithTag<TextView>("t1")
+        val t2 = card.findViewWithTag<TextView>("t2")
+        val score = card.findViewWithTag<TextView>("score")
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val context = parent.context
-        
-        // Створюємо картку програмно, щоб не возитися з XML
         val card = CardView(context).apply {
             layoutParams = ViewGroup.MarginLayoutParams(-1, -2).apply {
-                setMargins(20, 15, 20, 15)
+                setMargins(25, 20, 25, 20)
             }
-            radius = 30f
-            setCardBackgroundColor(Color.parseColor("#22262B")) // Темний колір картки
-            elevation = 8f
+            radius = 35f
+            setCardBackgroundColor(Color.parseColor("#22262B"))
+            elevation = 10f
 
             val layout = LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
-                setPadding(40, 50, 40, 50)
+                setPadding(40, 60, 40, 60)
                 gravity = Gravity.CENTER
             }
 
-            // Назва команди 1
-            val t1 = TextView(context).apply {
-                tag = "t1"
+            // Команда 1
+            val txt1 = TextView(context).apply {
+                tag = "t1"; setTextColor(Color.WHITE); textSize = 16f
+                gravity = Gravity.CENTER; setTypeface(null, Typeface.BOLD)
                 layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
-                setTextColor(Color.WHITE)
-                textSize = 16f
-                gravity = Gravity.CENTER
-                setTypeface(null, Typeface.BOLD)
             }
-
-            // Рахунок по центру
-            val score = TextView(context).apply {
-                tag = "score"
-                layoutParams = LinearLayout.LayoutParams(-2, -2)
-                setTextColor(Color.WHITE)
-                textSize = 28f
-                setPadding(30, 0, 30, 0)
-                setTypeface(null, Typeface.BOLD)
+            // Рахунок
+            val txtScore = TextView(context).apply {
+                tag = "score"; setTextColor(Color.WHITE); textSize = 30f
+                setPadding(35, 0, 35, 0); setTypeface(null, Typeface.BOLD)
             }
-
-            // Назва команди 2
-            val t2 = TextView(context).apply {
-                tag = "t2"
+            // Команда 2
+            val txt2 = TextView(context).apply {
+                tag = "t2"; setTextColor(Color.WHITE); textSize = 16f
+                gravity = Gravity.CENTER; setTypeface(null, Typeface.BOLD)
                 layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
-                setTextColor(Color.WHITE)
-                textSize = 16f
-                gravity = Gravity.CENTER
-                setTypeface(null, Typeface.BOLD)
             }
 
-            layout.addView(t1)
-            layout.addView(score)
-            layout.addView(t2)
+            layout.addView(txt1); layout.addView(txtScore); layout.addView(txt2)
             addView(layout)
         }
         return ViewHolder(card)
@@ -79,13 +62,9 @@ class TournamentAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
-        
-        // Заповнюємо дані
-        holder.team1Txt.text = item.team1
-        holder.team2Txt.text = item.team2
-        holder.scoreTxt.text = item.score
-
-        // Обробка натискання
+        holder.t1?.text = item.team1
+        holder.t2?.text = item.team2
+        holder.score?.text = item.score
         holder.card.setOnClickListener { onClick(item) }
     }
 
