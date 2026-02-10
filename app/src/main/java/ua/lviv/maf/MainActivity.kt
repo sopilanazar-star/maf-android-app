@@ -59,8 +59,7 @@ class MainActivity : AppCompatActivity() {
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
-            // Прибираємо відступи тут, бо вони вже є в самих картках адаптера
-            setPadding(0, 10, 0, 10) 
+            setPadding(0, 10, 0, 10)
             clipToPadding = false
         }
 
@@ -118,9 +117,40 @@ class MainActivity : AppCompatActivity() {
             override fun onResponse(call: Call, response: Response) {
                 val jsonString = response.body?.string() ?: ""
                 try {
-                    // Коли PHP запрацює, тут буде обробка JSON
-                    runOnUiThread { showLocalData(type) }
-                } catch (e: Exception) { 
+                    val jsonObject = JSONObject(jsonString)
+                    val displayList = mutableListOf<TournamentRow>()
+
+                    // ПЕРЕВІРКА: Футзал або Футбол
+                    val sportKey = if (jsonObject.has("futsal")) "futsal" else if (jsonObject.has("football")) "football" else null
+                    
+                    if (sportKey != null) {
+                        val stats = jsonObject.getJSONObject(sportKey).getJSONObject("stats")
+                        
+                        // РОЗУМНИЙ ПОШУК РОКУ: спочатку 2026, якщо немає - 2025
+                        val targetYear = when {
+                            stats.has("2026") -> "2026"
+                            stats.has("2025") -> "2025"
+                            else -> null
+                        }
+
+                        if (targetYear != null) {
+                            val dataArray = stats.getJSONArray(targetYear)
+                            for (i in 0 until dataArray.length()) {
+                                // Витягуємо назву команди з твого масиву
+                                val teamName = dataArray.getString(i)
+                                displayList.add(TournamentRow(teamName, "Сезон $targetYear", "v", false))
+                            }
+                        }
+                    }
+
+                    runOnUiThread {
+                        if (displayList.isEmpty()) {
+                            showLocalData(type)
+                        } else {
+                            recyclerView.adapter = TournamentAdapter(displayList) { handleItemClick(it) }
+                        }
+                    }
+                } catch (e: Exception) {
                     runOnUiThread { showLocalData(type) }
                 }
             }
@@ -133,33 +163,19 @@ class MainActivity : AppCompatActivity() {
             "matches" -> {
                 displayList.add(TournamentRow("Україна", "Ісландія", "2 : 0", false))
                 displayList.add(TournamentRow("Португалія", "Вірменія", "9 : 1", false))
-                displayList.add(TournamentRow("Угорщина", "Ірландія", "2 : 3", false))
             }
             "more" -> {
                 displayList.add(TournamentRow("Прогнози (MAF Bet)", "Перейти", ">>", false))
                 displayList.add(TournamentRow("Дискваліфікації", "Список", ">>", false))
-                displayList.add(TournamentRow("Історія", "Архів", ">>", false))
             }
-            "news" -> {
-                displayList.add(TournamentRow("Новини", "Офіційно", "Сьогодні", false))
-            }
-            "tables" -> {
-                displayList.add(TournamentRow("Вища ліга", "2025/26", "Таблиця", false))
-            }
-            else -> {
-                displayList.add(TournamentRow("МАФ", "Оновлення", "...", false))
-            }
+            else -> displayList.add(TournamentRow("МАФ", "Дані", "...", false))
         }
-        
-        // КРИТИЧНО: Призначаємо адаптер з новими даними
-        recyclerView.adapter = TournamentAdapter(displayList) { handleItemClick(it) }
+        runOnUiThread {
+            recyclerView.adapter = TournamentAdapter(displayList) { handleItemClick(it) }
+        }
     }
 
     private fun handleItemClick(item: TournamentRow) {
-        when (item.team1) {
-            "Дискваліфікації" -> updateUI("Бан-лист", "bans")
-            "Історія" -> updateUI("Історія МАФ", "history")
-            else -> android.widget.Toast.makeText(this, "${item.team1} натиснуто", android.widget.Toast.LENGTH_SHORT).show()
-        }
+        android.widget.Toast.makeText(this, item.team1, android.widget.Toast.LENGTH_SHORT).show()
     }
 }
