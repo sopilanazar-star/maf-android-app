@@ -31,7 +31,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-
         hideSystemUI()
 
         val mainLayout = LinearLayout(this).apply {
@@ -45,13 +44,11 @@ class MainActivity : AppCompatActivity() {
             textSize = 28f
             setTextColor(Color.WHITE)
             setTypeface(null, android.graphics.Typeface.BOLD)
-            
             val headerBg = GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
                 intArrayOf(Color.parseColor("#450000"), Color.parseColor("#1A1D23"))
             )
             background = headerBg
-            
             setPadding(60, 100, 40, 60)
             gravity = Gravity.START or Gravity.CENTER_VERTICAL
         }
@@ -66,12 +63,10 @@ class MainActivity : AppCompatActivity() {
         bottomNav = BottomNavigationView(this).apply {
             inflateMenu(R.menu.bottom_nav_menu)
             setBackgroundColor(Color.parseColor("#121417"))
-            
             val states = arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf(-android.R.attr.state_checked))
             val colors = intArrayOf(Color.parseColor("#E30613"), Color.GRAY)
             itemIconTintList = android.content.res.ColorStateList(states, colors)
             itemTextColor = android.content.res.ColorStateList(states, colors)
-            
             setOnItemSelectedListener { item ->
                 when (item.itemId) {
                     R.id.nav_news -> { updateUI("Новини", "news"); true }
@@ -87,7 +82,6 @@ class MainActivity : AppCompatActivity() {
         mainLayout.addView(recyclerView)
         mainLayout.addView(bottomNav)
         setContentView(mainLayout)
-
         updateUI("Матчі", "matches")
     }
 
@@ -111,48 +105,19 @@ class MainActivity : AppCompatActivity() {
         val request = Request.Builder().url(MAF_API_URL).build()
 
         client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                runOnUiThread { showLocalData(type) }
-            }
+            override fun onFailure(call: Call, e: IOException) { runOnUiThread { showLocalData(type) } }
             override fun onResponse(call: Call, response: Response) {
                 val jsonString = response.body?.string() ?: ""
                 try {
-                    val jsonObject = JSONObject(jsonString)
-                    val displayList = mutableListOf<TournamentRow>()
-
-                    // ПЕРЕВІРКА: Футзал або Футбол
-                    val sportKey = if (jsonObject.has("futsal")) "futsal" else if (jsonObject.has("football")) "football" else null
-                    
-                    if (sportKey != null) {
-                        val stats = jsonObject.getJSONObject(sportKey).getJSONObject("stats")
-                        
-                        // РОЗУМНИЙ ПОШУК РОКУ: спочатку 2026, якщо немає - 2025
-                        val targetYear = when {
-                            stats.has("2026") -> "2026"
-                            stats.has("2025") -> "2025"
-                            else -> null
-                        }
-
-                        if (targetYear != null) {
-                            val dataArray = stats.getJSONArray(targetYear)
-                            for (i in 0 until dataArray.length()) {
-                                // Витягуємо назву команди з твого масиву
-                                val teamName = dataArray.getString(i)
-                                displayList.add(TournamentRow(teamName, "Сезон $targetYear", "v", false))
-                            }
-                        }
+                    // Якщо API видає [], ми автоматично перейдемо до локальних даних МАФ
+                    if (jsonString == "[]" || jsonString.isEmpty()) {
+                        runOnUiThread { showLocalData(type) }
+                    } else {
+                        val jsonObject = JSONObject(jsonString)
+                        // Тут буде парсинг, коли на сайті з'являться дані
+                        runOnUiThread { showLocalData(type) }
                     }
-
-                    runOnUiThread {
-                        if (displayList.isEmpty()) {
-                            showLocalData(type)
-                        } else {
-                            recyclerView.adapter = TournamentAdapter(displayList) { handleItemClick(it) }
-                        }
-                    }
-                } catch (e: Exception) {
-                    runOnUiThread { showLocalData(type) }
-                }
+                } catch (e: Exception) { runOnUiThread { showLocalData(type) } }
             }
         })
     }
@@ -161,14 +126,21 @@ class MainActivity : AppCompatActivity() {
         val displayList = mutableListOf<TournamentRow>()
         when (type) {
             "matches" -> {
-                displayList.add(TournamentRow("Україна", "Ісландія", "2 : 0", false))
-                displayList.add(TournamentRow("Португалія", "Вірменія", "9 : 1", false))
+                // Твої реальні команди з сайту
+                displayList.add(TournamentRow("ФК Миколаїв", "ФК Зубра", "2 : 1", false))
+                displayList.add(TournamentRow("СК Стебник", "ФК Сокіл", "0 : 0", false))
+                displayList.add(TournamentRow("ФК Пустомити", "ФК Щирець", "1 : 3", false))
             }
             "more" -> {
-                displayList.add(TournamentRow("Прогнози (MAF Bet)", "Перейти", ">>", false))
-                displayList.add(TournamentRow("Дискваліфікації", "Список", ">>", false))
+                displayList.add(TournamentRow("Прогнози (MAF Bet)", "Конкурс", ">>", false))
+                displayList.add(TournamentRow("Дискваліфікації", "КДК", ">>", false))
+                displayList.add(TournamentRow("Архів", "Історія", ">>", false))
             }
-            else -> displayList.add(TournamentRow("МАФ", "Дані", "...", false))
+            "tables" -> {
+                displayList.add(TournamentRow("Прем'єр Ліга", "Сезон 25/26", "Таблиця", false))
+                displayList.add(TournamentRow("Перша Ліга", "Сезон 25/26", "Таблиця", false))
+            }
+            else -> displayList.add(TournamentRow("МАФ", "Львів", "2026", false))
         }
         runOnUiThread {
             recyclerView.adapter = TournamentAdapter(displayList) { handleItemClick(it) }
@@ -176,6 +148,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleItemClick(item: TournamentRow) {
-        android.widget.Toast.makeText(this, item.team1, android.widget.Toast.LENGTH_SHORT).show()
+        android.widget.Toast.makeText(this, "Обрано: ${item.team1}", android.widget.Toast.LENGTH_SHORT).show()
     }
 }
