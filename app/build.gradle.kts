@@ -88,4 +88,13 @@ dependencies {
     implementation("androidx.activity:activity-ktx:1.9.3")
     implementation("androidx.browser:browser:1.8.0")
     implementation("androidx.core:core-splashscreen:1.0.1")
+
+    // --- НОВІ БІБЛІОТЕКИ ДЛЯ ЛОГОТИПІВ ТА ПЕРШОЇ ЛІГИ 2025 ---
+    
+    // Бібліотека для відображення логотипів команд у списку
+    implementation("com.github.bumptech.glide:glide:4.15.1")
+    
+    // Бібліотеки для читання даних з нашого API (Retrofit + GSON)
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
 }
