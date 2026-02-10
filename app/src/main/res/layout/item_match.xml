@@ -7,7 +7,9 @@
     android:layout_margin="12dp"
     app:cardCornerRadius="20dp"
     app:cardElevation="0dp"
-    app:cardBackgroundColor="#2C2C2E"> <LinearLayout
+    app:cardBackgroundColor="#2C2C2E">
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
@@ -26,6 +28,7 @@
                 android:layout_alignParentStart="true"
                 android:textColor="#FFFFFF"
                 android:textSize="14sp"
+                android:textStyle="bold"
                 android:text="Ukraine" />
 
             <TextView
@@ -35,6 +38,7 @@
                 android:layout_alignParentEnd="true"
                 android:textColor="#FFFFFF"
                 android:textSize="14sp"
+                android:textStyle="bold"
                 android:text="Republic of Ireland" />
         </RelativeLayout>
 
@@ -44,13 +48,11 @@
             android:orientation="horizontal"
             android:gravity="center">
 
-            <com.google.android.material.imageview.ShapeableImageView
+            <ImageView
                 android:id="@+id/ivLogo1"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
-                app:shapeAppearanceOverlay="@style/CircleImage"
-                android:scaleType="centerCrop"
-                android:background="#3A3A3C" />
+                android:scaleType="fitCenter" />
 
             <TextView
                 android:id="@+id/tvScore"
@@ -63,13 +65,11 @@
                 android:textStyle="bold"
                 android:text="2 : 1" />
 
-            <com.google.android.material.imageview.ShapeableImageView
+            <ImageView
                 android:id="@+id/ivLogo2"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
-                app:shapeAppearanceOverlay="@style/CircleImage"
-                android:scaleType="centerCrop"
-                android:background="#3A3A3C" />
+                android:scaleType="fitCenter" />
         </LinearLayout>
 
         <TextView
