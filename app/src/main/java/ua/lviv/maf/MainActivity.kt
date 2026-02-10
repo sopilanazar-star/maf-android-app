@@ -34,14 +34,14 @@ class MainActivity : AppCompatActivity() {
 
         hideSystemUI()
 
-        // ГОЛОВНИЙ КОНТЕЙНЕР (Темний)
+        // 1. ГОЛОВНИЙ КОНТЕЙНЕР
         val mainLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(-1, -1)
             setBackgroundColor(Color.parseColor("#1A1D23"))
         }
 
-        // ХЕДЕР (З градієнтом UEFA)
+        // 2. ХЕДЕР (З градієнтом UEFA)
         titleHeader = TextView(this).apply {
             text = "Матчі"
             textSize = 28f
@@ -58,14 +58,14 @@ class MainActivity : AppCompatActivity() {
             gravity = Gravity.START or Gravity.CENTER_VERTICAL
         }
 
-        // СПИСОК
+        // 3. СПИСОК
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
             setPadding(20, 0, 20, 0)
         }
 
-        // НИЖНЯ НАВІГАЦІЯ (Темна з червоним фокусом)
+        // 4. НИЖНЯ НАВІГАЦІЯ
         bottomNav = BottomNavigationView(this).apply {
             inflateMenu(R.menu.bottom_nav_menu)
             setBackgroundColor(Color.parseColor("#121417"))
@@ -119,7 +119,7 @@ class MainActivity : AppCompatActivity() {
                 val jsonString = response.body?.string() ?: ""
                 try {
                     val jsonObject = JSONObject(jsonString)
-                    // Тут логіка твого PHP
+                    // Тут буде логіка твого PHP
                 } catch (e: Exception) { runOnUiThread { showLocalData(type) } }
             }
         })
@@ -129,21 +129,27 @@ class MainActivity : AppCompatActivity() {
         val displayList = mutableListOf<TournamentRow>()
         when (type) {
             "more" -> {
-                displayList.add(TournamentRow("Прогнози (MAF Bet)", "Зробити прогноз на матчі"))
-                displayList.add(TournamentRow("Дискваліфікації", "Список відсторонених гравців"))
-                displayList.add(TournamentRow("Історія", "Архів та досягнення асоціації"))
+                displayList.add(TournamentRow("Прогнози (MAF Bet)", "Зробити прогноз", "", false))
+                displayList.add(TournamentRow("Дискваліфікації", "Список відсторонених", "", false))
+                displayList.add(TournamentRow("Історія", "Архів асоціації", "", false))
             }
             "matches" -> {
-                displayList.add(TournamentRow("Україна - Ірландія", "2 : 1"))
-                displayList.add(TournamentRow("Португалія - Вірменія", "9 : 1"))
+                displayList.add(TournamentRow("Україна", "Ісландія", "2 : 0", false))
+                displayList.add(TournamentRow("Португалія", "Вірменія", "9 : 1", false))
             }
-            else -> displayList.add(TournamentRow("Турнір", "Дані оновлюються"))
+            else -> displayList.add(TournamentRow("МАФ", "Дані оновлюються", "", false))
         }
         runOnUiThread {
-            recyclerView.adapter = TournamentAdapter(displayList) { 
-                if (it.year == "Дискваліфікації") updateUI("Бан-лист", "bans")
-                else android.widget.Toast.makeText(this, it.year, android.widget.Toast.LENGTH_SHORT).show()
-            }
+            recyclerView.adapter = TournamentAdapter(displayList) { handleItemClick(it) }
+        }
+    }
+
+    private fun handleItemClick(item: TournamentRow) {
+        // Виправлено: тепер перевіряємо поле team1 замість year
+        when (item.team1) {
+            "Дискваліфікації" -> updateUI("Бан-лист", "bans")
+            "Історія" -> updateUI("Історія МАФ", "history")
+            else -> android.widget.Toast.makeText(this, item.team1, android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 }
