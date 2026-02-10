@@ -15,28 +15,31 @@ class TournamentAdapter(
 ) : RecyclerView.Adapter<TournamentAdapter.ViewHolder>() {
 
     class ViewHolder(val card: CardView) : RecyclerView.ViewHolder(card) {
-        val team1Txt = card.findViewWithTag<TextView>("t1")
-        val team2Txt = card.findViewWithTag<TextView>("t2")
-        val scoreTxt = card.findViewWithTag<TextView>("score")
+        // Використовуємо теги, щоб знайти текстові поля в коді
+        val team1Txt: TextView = card.findViewWithTag("t1")
+        val team2Txt: TextView = card.findViewWithTag("t2")
+        val scoreTxt: TextView = card.findViewWithTag("score")
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val context = parent.context
+        
+        // Створюємо картку програмно, щоб не возитися з XML
         val card = CardView(context).apply {
             layoutParams = ViewGroup.MarginLayoutParams(-1, -2).apply {
                 setMargins(20, 15, 20, 15)
             }
             radius = 30f
-            setCardBackgroundColor(Color.parseColor("#22262B"))
+            setCardBackgroundColor(Color.parseColor("#22262B")) // Темний колір картки
             elevation = 8f
 
             val layout = LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
-                padding(40, 50, 40, 50)
+                setPadding(40, 50, 40, 50)
                 gravity = Gravity.CENTER
             }
 
-            // Команда 1
+            // Назва команди 1
             val t1 = TextView(context).apply {
                 tag = "t1"
                 layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
@@ -46,7 +49,7 @@ class TournamentAdapter(
                 setTypeface(null, Typeface.BOLD)
             }
 
-            // Рахунок
+            // Рахунок по центру
             val score = TextView(context).apply {
                 tag = "score"
                 layoutParams = LinearLayout.LayoutParams(-2, -2)
@@ -56,7 +59,7 @@ class TournamentAdapter(
                 setTypeface(null, Typeface.BOLD)
             }
 
-            // Команда 2
+            // Назва команди 2
             val t2 = TextView(context).apply {
                 tag = "t2"
                 layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
@@ -76,13 +79,15 @@ class TournamentAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
+        
+        // Заповнюємо дані
         holder.team1Txt.text = item.team1
         holder.team2Txt.text = item.team2
         holder.scoreTxt.text = item.score
+
+        // Обробка натискання
         holder.card.setOnClickListener { onClick(item) }
     }
 
     override fun getItemCount() = items.size
-
-    private fun android.view.View.padding(l: Int, t: Int, r: Int, b: Int) = setPadding(l, t, r, b)
 }
