@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout 
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="#1A1D23"> <LinearLayout
+    android:background="#1A1D23"
+    android:padding="8dp">
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="12dp"
         android:gravity="center_vertical">
 
         <LinearLayout
@@ -20,74 +21,43 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginBottom="8dp">
-                <ImageView
-                    android:id="@+id/ivLogo1"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_marginEnd="12dp" />
-                <TextView
-                    android:id="@+id/tvTeam1"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="#FFFFFF"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
+                android:layout_marginBottom="4dp">
+                <ImageView android:id="@+id/ivLogo1"
+                    android:layout_width="20dp" android:layout_height="20dp"
+                    android:layout_marginEnd="8dp" />
+                <TextView android:id="@+id/tvTeam1"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textColor="#FFFFFF" android:textSize="14sp" android:textStyle="bold" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
                 android:gravity="center_vertical">
-                <ImageView
-                    android:id="@+id/ivLogo2"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_marginEnd="12dp" />
-                <TextView
-                    android:id="@+id/tvTeam2"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="#FFFFFF"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
+                <ImageView android:id="@+id/ivLogo2"
+                    android:layout_width="20dp" android:layout_height="20dp"
+                    android:layout_marginEnd="8dp" />
+                <TextView android:id="@+id/tvTeam2"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textColor="#FFFFFF" android:textSize="14sp" android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:gravity="center"
-            android:minWidth="60dp">
-            
-            <TextView
-                android:id="@+id/tvScore"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-                
-            <TextView
-                android:id="@+id/tvViewDetails"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="View details"
-                android:textColor="#E30613"
-                android:textSize="10sp"
-                android:layout_marginTop="4dp" />
+            android:gravity="end">
+            <TextView android:id="@+id/tvScore"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:textColor="#FFFFFF" android:textSize="16sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tvDate"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:textColor="#8E8E93" android:textSize="10sp" />
         </LinearLayout>
-
     </LinearLayout>
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#2C2C2E"
-        android:layout_marginStart="12dp" />
+    <View android:layout_width="match_parent" android:layout_height="1dp"
+        android:background="#2C2C2E" android:layout_marginTop="8dp" />
 </LinearLayout>
-            
