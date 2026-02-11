@@ -1,7 +1,9 @@
 package ua.lviv.maf
 
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.fragment.app.Fragment
@@ -9,7 +11,7 @@ import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
 
-class TimelineFragment : Fragment(R.layout.fragment_timeline) {
+class TimelineFragment : Fragment() {
 
     private val client = OkHttpClient()
 
@@ -20,54 +22,80 @@ class TimelineFragment : Fragment(R.layout.fragment_timeline) {
         }
     }
 
+    // Правильний спосіб створення View для фрагмента
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        return inflater.inflate(R.layout.fragment_timeline, container, false)
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val matchId = arguments?.getString("match_id") ?: return
         
-        // Знаходимо контейнер, куди будемо додавати рядки подій
         val container = view.findViewById<LinearLayout>(R.id.timelineContainer)
         val tvLoading = view.findViewById<TextView>(R.id.tvTimelineLoading)
 
-        loadTimelineData(matchId, container, tvLoading)
+        if (container != null) {
+            loadTimelineData(matchId, container, tvLoading)
+        }
     }
 
-    private fun loadTimelineData(matchId: String, container: LinearLayout, tvLoading: TextView) {
+    private fun loadTimelineData(matchId: String, container: LinearLayout, tvLoading: TextView?) {
         val url = "https://maf.lviv.ua/wp-json/maf/v2/match-details?id=$matchId"
         val request = Request.Builder().url(url).build()
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                activity?.runOnUiThread { tvLoading.text = "Помилка завантаження" }
+                activity?.runOnUiThread {
+                    tvLoading?.text = "Помилка мережі"
+                }
             }
 
             override fun onResponse(call: Call, response: Response) {
-                val json = response.body?.string() ?: return
-                activity?.runOnUiThread {
-                    tvLoading.visibility = View.GONE
-                    parseAndShowTimeline(json, container)
+                response.use { 
+                    if (!response.isSuccessful) return
+                    val json = response.body?.string() ?: return
+                    activity?.runOnUiThread {
+                        tvLoading?.visibility = View.GONE
+                        parseAndShowTimeline(json, container)
+                    }
                 }
             }
         })
     }
 
     private fun parseAndShowTimeline(json: String, container: LinearLayout) {
-        val root = JSONObject(json)
-        val timeline = root.optJSONArray("timeline") ?: return
+        try {
+            val root = JSONObject(json)
+            val timeline = root.optJSONArray("timeline") ?: return
 
-        for (i in 0 until timeline.length()) {
-            val event = timeline.getJSONObject(i)
-            val minute = event.optString("minute")
-            val playerName = event.optString("player_name")
-            val type = event.optString("type")
+            container.removeAllViews() // Очищуємо старі дані
 
-            // Створюємо простий текстовий рядок для кожної події (поки без іконок)
-            val textView = TextView(context).apply {
-                text = "$minute' - $playerName ($type)"
-                setTextColor(android.graphics.Color.WHITE)
-                setPadding(0, 10, 0, 10)
-                textSize = 16f
+            if (timeline.length() == 0) {
+                val emptyTv = TextView(context).apply {
+                    text = "Подій поки немає"
+                    setTextColor(android.graphics.Color.GRAY)
+                    gravity = android.view.Gravity.CENTER
+                }
+                container.addView(emptyTv)
+                return
             }
-            container.addView(textView)
+
+            for (i in 0 until timeline.length()) {
+                val event = timeline.getJSONObject(i)
+                val minute = event.optString("minute")
+                val playerName = event.optString("player_name")
+                val type = event.optString("type")
+
+                val textView = TextView(context).apply {
+                    text = "$minute' - $playerName ($type)"
+                    setTextColor(android.graphics.Color.WHITE)
+                    textSize = 16f
+                    setPadding(0, 15, 0, 15)
+                }
+                container.addView(textView)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }
