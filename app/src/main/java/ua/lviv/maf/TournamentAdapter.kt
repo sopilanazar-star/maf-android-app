@@ -1,5 +1,6 @@
 package ua.lviv.maf
 
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -38,6 +39,10 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
             // Малюємо заголовок (Назва ліги + Етап)
             holder.tvLeagueName.text = item.league
             holder.tvStageName.text = item.stage
+            
+            // Приховуємо поле етапу, якщо воно порожнє
+            holder.tvStageName.visibility = if (item.stage.isNullOrEmpty()) View.GONE else View.VISIBLE
+            
         } else if (holder is MatchViewHolder) {
             // Малюємо звичайний матч
             holder.tvTeam1.text = item.team1
@@ -58,6 +63,22 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
             // Завантажуємо логотипи
             Glide.with(holder.itemView.context).load(item.logo1).into(holder.ivLogo1)
             Glide.with(holder.itemView.context).load(item.logo2).into(holder.ivLogo2)
+
+            // --- ОБРОБКА КЛІКУ НА МАТЧ ---
+            holder.itemView.setOnClickListener {
+                val context = holder.itemView.context
+                val intent = Intent(context, MatchDetailActivity::class.java).apply {
+                    putExtra("team1", item.team1)
+                    putExtra("team2", item.team2)
+                    putExtra("logo1", item.logo1)
+                    putExtra("logo2", item.logo2)
+                    putExtra("score", item.score)
+                    putExtra("league", item.league)
+                    putExtra("stage", item.stage)
+                    putExtra("date", item.date)
+                }
+                context.startActivity(intent)
+            }
         }
     }
 
