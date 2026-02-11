@@ -8,54 +8,74 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 
-class TournamentAdapter(private val matches: List<TournamentRow>) :
-    RecyclerView.Adapter<TournamentAdapter.MatchViewHolder>() {
+class TournamentAdapter(private val items: List<TournamentRow>) :
+    RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
+    // Константи для типів рядків
+    private val VIEW_TYPE_LEAGUE = 0
+    private val VIEW_TYPE_MATCH = 1
+
+    // Визначаємо, який тип рядка малювати
+    override fun getItemViewType(position: Int): Int {
+        return if (items[position].isHeader) VIEW_TYPE_LEAGUE else VIEW_TYPE_MATCH
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        val inflater = LayoutInflater.from(parent.context)
+        return if (viewType == VIEW_TYPE_LEAGUE) {
+            val view = inflater.inflate(R.layout.item_league_header, parent, false)
+            LeagueHeaderViewHolder(view)
+        } else {
+            val view = inflater.inflate(R.layout.item_match, parent, false)
+            MatchViewHolder(view)
+        }
+    }
+
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        val item = items[position]
+
+        if (holder is LeagueHeaderViewHolder) {
+            // Малюємо заголовок (Назва ліги + Етап)
+            holder.tvLeagueName.text = item.league
+            holder.tvStageName.text = item.stage
+        } else if (holder is MatchViewHolder) {
+            // Малюємо звичайний матч
+            holder.tvTeam1.text = item.team1
+            holder.tvTeam2.text = item.team2
+
+            // Розділяємо рахунок
+            if (item.score.contains(":")) {
+                val scores = item.score.split(":")
+                if (scores.size == 2) {
+                    holder.tvScore1.text = scores[0].trim()
+                    holder.tvScore2.text = scores[1].trim()
+                }
+            } else {
+                holder.tvScore1.text = ""
+                holder.tvScore2.text = item.score
+            }
+
+            // Завантажуємо логотипи
+            Glide.with(holder.itemView.context).load(item.logo1).into(holder.ivLogo1)
+            Glide.with(holder.itemView.context).load(item.logo2).into(holder.ivLogo2)
+        }
+    }
+
+    override fun getItemCount() = items.size
+
+    // ViewHolder для заголовка ліги
+    class LeagueHeaderViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val tvLeagueName: TextView = view.findViewById(R.id.tvLeagueName)
+        val tvStageName: TextView = view.findViewById(R.id.tvStageName)
+    }
+
+    // ViewHolder для самого матчу
     class MatchViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvTeam1: TextView = view.findViewById(R.id.tvTeam1)
         val tvTeam2: TextView = view.findViewById(R.id.tvTeam2)
         val ivLogo1: ImageView = view.findViewById(R.id.ivLogo1)
         val ivLogo2: ImageView = view.findViewById(R.id.ivLogo2)
-        val tvScore1: TextView = view.findViewById(R.id.tvScore1) // Нове поле для голів команди 1
-        val tvScore2: TextView = view.findViewById(R.id.tvScore2) // Нове поле для голів команди 2
+        val tvScore1: TextView = view.findViewById(R.id.tvScore1)
+        val tvScore2: TextView = view.findViewById(R.id.tvScore2)
     }
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MatchViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_match, parent, false)
-        return MatchViewHolder(view)
-    }
-
-    override fun onBindViewHolder(holder: MatchViewHolder, position: Int) {
-        val match = matches[position]
-        holder.tvTeam1.text = match.team1
-        holder.tvTeam2.text = match.team2
-
-        // Логіка розділення рахунку "3 : 4" на дві окремі цифри
-        if (match.score.contains(":")) {
-            val scores = match.score.split(":")
-            if (scores.size == 2) {
-                holder.tvScore1.text = scores[0].trim()
-                holder.tvScore2.text = scores[1].trim()
-            }
-        } else {
-            // Якщо рахунку ще немає (наприклад, там час "17:00" або "vs")
-            holder.tvScore1.text = ""
-            holder.tvScore2.text = match.score
-        }
-
-        // Завантаження логотипів через Glide
-        Glide.with(holder.itemView.context)
-            .load(match.logo1)
-            .placeholder(android.R.drawable.ic_menu_gallery)
-            .error(android.R.drawable.stat_notify_error)
-            .into(holder.ivLogo1)
-
-        Glide.with(holder.itemView.context)
-            .load(match.logo2)
-            .placeholder(android.R.drawable.ic_menu_gallery)
-            .error(android.R.drawable.stat_notify_error)
-            .into(holder.ivLogo2)
-    }
-
-    override fun getItemCount() = matches.size
 }
