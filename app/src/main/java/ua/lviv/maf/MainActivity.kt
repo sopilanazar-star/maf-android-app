@@ -7,20 +7,20 @@ import android.os.Bundle
 import android.view.WindowInsets
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import okhttp3.*
-import org.json.JSONObject
+import org.json.JSONArray // ОНОВЛЕНО: Працюємо з масивом напряму
 import java.io.IOException
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var titleHeader: TextView
-    // ОНОВЛЕНО: Нова адреса API v2, яку ми створили в плагіні
     private val MAF_API_URL = "https://maf.lviv.ua/wp-json/maf/v2/matches"
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -91,14 +91,15 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread { showStaticData("error") }
             }
             override fun onResponse(call: Call, response: Response) {
-                val json = response.body?.string() ?: ""
+                val jsonData = response.body?.string() ?: ""
                 try {
                     val list = mutableListOf<TournamentRow>()
-                    val obj = JSONObject(json)
-                    val array = obj.getJSONArray("matches")
+                    
+                    // ПРАВКА ТУТ: Читаємо JSON як JSONArray, бо сервер віддає список [...]
+                    val array = JSONArray(jsonData) 
+                    
                     for (i in 0 until array.length()) {
                         val m = array.getJSONObject(i)
-                        // ОНОВЛЕНО: Читаємо всі поля: логотипи, дату та лігу
                         list.add(TournamentRow(
                             team1 = m.getString("team1"),
                             logo1 = m.getString("logo1"),
@@ -110,10 +111,15 @@ class MainActivity : AppCompatActivity() {
                             isHeader = false
                         ))
                     }
-                    // ОНОВЛЕНО: Передаємо список в адаптер
-                    runOnUiThread { recyclerView.adapter = TournamentAdapter(list) }
+                    runOnUiThread { 
+                        recyclerView.adapter = TournamentAdapter(list) 
+                    }
                 } catch (e: Exception) {
-                    runOnUiThread { showStaticData("error") }
+                    runOnUiThread { 
+                        showStaticData("error") 
+                        // Для відладки додамо Toast (потім приберемо)
+                        // Toast.makeText(this@MainActivity, "Помилка обробки даних", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         })
