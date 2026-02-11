@@ -12,41 +12,29 @@ class TournamentAdapter(private val matches: List<TournamentRow>) :
     RecyclerView.Adapter<TournamentAdapter.MatchViewHolder>() {
 
     class MatchViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val team1: TextView = view.findViewById(R.id.tvTeam1)
-        val team2: TextView = view.findViewById(R.id.tvTeam2)
-        val logo1: ImageView = view.findViewById(R.id.ivLogo1)
-        val logo2: ImageView = view.findViewById(R.id.ivLogo2)
-        val score: TextView = view.findViewById(R.id.tvScore)
-        val date: TextView = view.findViewById(R.id.tvDate) // Виправляє помилку
+        val tvTeam1: TextView = view.findViewById(R.id.tvTeam1)
+        val tvTeam2: TextView = view.findViewById(R.id.tvTeam2)
+        val ivLogo1: ImageView = view.findViewById(R.id.ivLogo1)
+        val ivLogo2: ImageView = view.findViewById(R.id.ivLogo2)
+        val tvScore: TextView = view.findViewById(R.id.tvScore) // Ремонт
+        val tvDate: TextView = view.findViewById(R.id.tvDate)   // Ремонт
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MatchViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_match, parent, false)
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_match, parent, false)
         return MatchViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: MatchViewHolder, position: Int) {
         val match = matches[position]
-        holder.team1.text = match.team1
-        holder.team2.text = match.team2
-        holder.score.text = match.score
-        holder.date.text = match.date
+        holder.tvTeam1.text = match.team1
+        holder.tvTeam2.text = match.team2
+        holder.tvScore.text = match.score
+        holder.tvDate.text = match.date
 
-        // ЗАВАНТАЖЕННЯ ЛОГОТИПІВ
-        if (match.logo1.isNotEmpty()) {
-            Glide.with(holder.itemView.context)
-                .load(match.logo1)
-                .centerInside()
-                .into(holder.logo1)
-        }
-        
-        if (match.logo2.isNotEmpty()) {
-            Glide.with(holder.itemView.context)
-                .load(match.logo2)
-                .centerInside()
-                .into(holder.logo2)
-        }
+        // Завантаження логотипів через Glide
+        Glide.with(holder.itemView.context).load(match.logo1).into(holder.ivLogo1)
+        Glide.with(holder.itemView.context).load(match.logo2).into(holder.ivLogo2)
     }
 
     override fun getItemCount() = matches.size
