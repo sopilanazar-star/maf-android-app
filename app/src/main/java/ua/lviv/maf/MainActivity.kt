@@ -7,21 +7,25 @@ import android.os.Bundle
 import android.view.WindowInsets
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import okhttp3.*
-import org.json.JSONArray // ОНОВЛЕНО: Працюємо з масивом напряму
+import org.json.JSONArray
 import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
+    private lateinit var dateRecyclerView: RecyclerView
     private lateinit var titleHeader: TextView
     private val MAF_API_URL = "https://maf.lviv.ua/wp-json/maf/v2/matches"
+    
+    private var allMatches = mutableListOf<TournamentRow>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -46,6 +50,15 @@ class MainActivity : AppCompatActivity() {
             setPadding(60, 100, 40, 60)
         }
 
+        // 1. ГОРИЗОНТАЛЬНИЙ КАЛЕНДАР
+        dateRecyclerView = RecyclerView(this).apply {
+            layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
+            layoutParams = LinearLayout.LayoutParams(-1, -2)
+            setPadding(20, 0, 20, 0)
+            clipToPadding = false
+        }
+
+        // 2. ОСНОВНИЙ СПИСОК МАТЧІВ
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
@@ -54,32 +67,17 @@ class MainActivity : AppCompatActivity() {
         val bottomNav = BottomNavigationView(this).apply {
             inflateMenu(R.menu.bottom_nav_menu)
             setBackgroundColor(Color.parseColor("#121417"))
-            val states = arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf(-android.R.attr.state_checked))
-            val colors = intArrayOf(Color.parseColor("#E30613"), Color.GRAY)
-            itemIconTintList = android.content.res.ColorStateList(states, colors)
-            itemTextColor = android.content.res.ColorStateList(states, colors)
-            
-            setOnItemSelectedListener { item ->
-                when (item.itemId) {
-                    R.id.nav_matches -> { updateUI("Матчі", "matches"); true }
-                    R.id.nav_tables -> { updateUI("Турніри", "tables"); true }
-                    R.id.nav_more -> { updateUI("Більше", "more"); true }
-                    else -> true
-                }
-            }
+            itemIconTintList = android.content.res.ColorStateList.valueOf(Color.GRAY)
+            itemTextColor = android.content.res.ColorStateList.valueOf(Color.GRAY)
         }
 
         mainLayout.addView(titleHeader)
+        mainLayout.addView(dateRecyclerView) // Додаємо календар
         mainLayout.addView(recyclerView)
         mainLayout.addView(bottomNav)
         setContentView(mainLayout)
 
-        updateUI("Матчі", "matches")
-    }
-
-    private fun updateUI(title: String, type: String) {
-        titleHeader.text = title
-        if (type == "matches") loadFromApi() else showStaticData(type)
+        loadFromApi()
     }
 
     private fun loadFromApi() {
@@ -87,20 +85,16 @@ class MainActivity : AppCompatActivity() {
         val request = Request.Builder().url(MAF_API_URL).build()
 
         client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                runOnUiThread { showStaticData("error") }
-            }
+            override fun onFailure(call: Call, e: IOException) {}
             override fun onResponse(call: Call, response: Response) {
                 val jsonData = response.body?.string() ?: ""
                 try {
-                    val list = mutableListOf<TournamentRow>()
-                    
-                    // ПРАВКА ТУТ: Читаємо JSON як JSONArray, бо сервер віддає список [...]
-                    val array = JSONArray(jsonData) 
+                    val array = JSONArray(jsonData)
+                    allMatches.clear()
                     
                     for (i in 0 until array.length()) {
                         val m = array.getJSONObject(i)
-                        list.add(TournamentRow(
+                        allMatches.add(TournamentRow(
                             team1 = m.getString("team1"),
                             logo1 = m.getString("logo1"),
                             team2 = m.getString("team2"),
@@ -111,27 +105,54 @@ class MainActivity : AppCompatActivity() {
                             isHeader = false
                         ))
                     }
-                    runOnUiThread { 
-                        recyclerView.adapter = TournamentAdapter(list) 
+
+                    // Створюємо список унікальних дат для календаря
+                    val dateList = createDateList(allMatches)
+
+                    runOnUiThread {
+                        // Налаштовуємо календар
+                        dateRecyclerView.adapter = DateAdapter(dateList) { selectedDate ->
+                            filterMatches(selectedDate)
+                        }
+                        
+                        // По замовчуванню показуємо матчі першої дати
+                        if (dateList.isNotEmpty()) {
+                            dateList[0].isSelected = true
+                            filterMatches(dateList[0].date)
+                        }
                     }
-                } catch (e: Exception) {
-                    runOnUiThread { 
-                        showStaticData("error") 
-                        // Для відладки додамо Toast (потім приберемо)
-                        // Toast.makeText(this@MainActivity, "Помилка обробки даних", Toast.LENGTH_SHORT).show()
-                    }
-                }
+                } catch (e: Exception) { e.printStackTrace() }
             }
         })
     }
 
-    private fun showStaticData(type: String) {
-        val list = mutableListOf<TournamentRow>()
-        when (type) {
-            "tables" -> list.add(TournamentRow("Вища ліга", "", "2025", "", "Таблиця", "", "", false))
-            "more" -> list.add(TournamentRow("Дискваліфікації", "", "Список", "", ">>", "", "", false))
-            else -> list.add(TournamentRow("Помилка", "", "Дані відсутні", "", "!", "", "", false))
+    private fun createDateList(matches: List<TournamentRow>): List<DateModel> {
+        val uniqueDates = matches.map { it.date }.distinct().sortedByDescending { 
+            SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).parse(it) 
         }
-        runOnUiThread { recyclerView.adapter = TournamentAdapter(list) }
+        
+        val calendarList = mutableListOf<DateModel>()
+        val inputFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+        val dayNameFormat = SimpleDateFormat("EEE", Locale("uk"))
+        val dayNumFormat = SimpleDateFormat("dd", Locale.getDefault())
+        val monthFormat = SimpleDateFormat("MMM", Locale("uk"))
+
+        uniqueDates.forEach { dateStr ->
+            val date = inputFormat.parse(dateStr)
+            if (date != null) {
+                calendarList.add(DateModel(
+                    date = dateStr,
+                    dayName = dayNameFormat.format(date).uppercase(),
+                    dayNumber = dayNumFormat.format(date),
+                    month = monthFormat.format(date)
+                ))
+            }
+        }
+        return calendarList
+    }
+
+    private fun filterMatches(date: String) {
+        val filtered = allMatches.filter { it.date == date }
+        recyclerView.adapter = TournamentAdapter(filtered)
     }
 }
