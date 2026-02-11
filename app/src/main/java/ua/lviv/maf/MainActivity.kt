@@ -72,7 +72,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         mainLayout.addView(titleHeader)
-        mainLayout.addView(dateRecyclerView) // Додаємо календар
+        mainLayout.addView(dateRecyclerView)
         mainLayout.addView(recyclerView)
         mainLayout.addView(bottomNav)
         setContentView(mainLayout)
@@ -85,7 +85,9 @@ class MainActivity : AppCompatActivity() {
         val request = Request.Builder().url(MAF_API_URL).build()
 
         client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {}
+            override fun onFailure(call: Call, e: IOException) {
+                e.printStackTrace()
+            }
             override fun onResponse(call: Call, response: Response) {
                 val jsonData = response.body?.string() ?: ""
                 try {
@@ -95,27 +97,25 @@ class MainActivity : AppCompatActivity() {
                     for (i in 0 until array.length()) {
                         val m = array.getJSONObject(i)
                         allMatches.add(TournamentRow(
-                            team1 = m.getString("team1"),
-                            logo1 = m.getString("logo1"),
-                            team2 = m.getString("team2"),
-                            logo2 = m.getString("logo2"),
-                            score = m.getString("score"),
-                            date  = m.getString("date"),
-                            league = m.getString("league"),
+                            team1 = m.optString("team1", ""),
+                            logo1 = m.optString("logo1", ""),
+                            team2 = m.optString("team2", ""),
+                            logo2 = m.optString("logo2", ""),
+                            score = m.optString("score", ""),
+                            date  = m.optString("date", ""),
+                            league = m.optString("league", "MAF"),
+                            stage = m.optString("stage", ""), // Витягуємо етап (тур)
                             isHeader = false
                         ))
                     }
 
-                    // Створюємо список унікальних дат для календаря
                     val dateList = createDateList(allMatches)
 
                     runOnUiThread {
-                        // Налаштовуємо календар
                         dateRecyclerView.adapter = DateAdapter(dateList) { selectedDate ->
                             filterMatches(selectedDate)
                         }
                         
-                        // По замовчуванню показуємо матчі першої дати
                         if (dateList.isNotEmpty()) {
                             dateList[0].isSelected = true
                             filterMatches(dateList[0].date)
@@ -152,7 +152,38 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun filterMatches(date: String) {
-        val filtered = allMatches.filter { it.date == date }
-        recyclerView.adapter = TournamentAdapter(filtered)
+        // 1. Фільтруємо всі матчі за обраною датою
+        val filteredByDate = allMatches.filter { it.date == date }
+        
+        // 2. Автоматично групуємо їх за лігами та етапами
+        val groupedList = groupMatchesByLeagueAndStage(filteredByDate)
+        
+        runOnUiThread {
+            recyclerView.adapter = TournamentAdapter(groupedList)
+        }
+    }
+
+    private fun groupMatchesByLeagueAndStage(matches: List<TournamentRow>): List<TournamentRow> {
+        val result = mutableListOf<TournamentRow>()
+        
+        // Групуємо матчі: ключ складається з Назви Ліги та Етапу
+        val grouped = matches.groupBy { "${it.league}|${it.stage}" }
+        
+        for ((key, leagueMatches) in grouped) {
+            val parts = key.split("|")
+            val leagueTitle = parts[0]
+            val stageTitle = parts.getOrNull(1) ?: ""
+
+            // Додаємо віртуальний рядок-заголовок
+            result.add(TournamentRow(
+                league = leagueTitle, 
+                stage = stageTitle, 
+                isHeader = true
+            ))
+            
+            // Додаємо самі матчі, що належать до цієї ліги/етапу
+            result.addAll(leagueMatches)
+        }
+        return result
     }
 }
