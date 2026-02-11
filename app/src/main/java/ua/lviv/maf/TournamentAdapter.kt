@@ -68,6 +68,8 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
             holder.itemView.setOnClickListener {
                 val context = holder.itemView.context
                 val intent = Intent(context, MatchDetailActivity::class.java).apply {
+                    // Передаємо базові дані
+                    putExtra("id", item.id) // Важливо для Timeline
                     putExtra("team1", item.team1)
                     putExtra("team2", item.team2)
                     putExtra("logo1", item.logo1)
@@ -76,6 +78,10 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                     putExtra("league", item.league)
                     putExtra("stage", item.stage)
                     putExtra("date", item.date)
+                    
+                    // Передаємо нові дані для хедера деталей
+                    putExtra("stadium", item.stadium)
+                    putExtra("referee", item.referee)
                 }
                 context.startActivity(intent)
             }
