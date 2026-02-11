@@ -24,6 +24,7 @@ class MatchDetailActivity : AppCompatActivity() {
         btnBack.setOnClickListener { finish() }
 
         // 2. Отримуємо дані з Intent
+        val matchId = intent.getStringExtra("id") ?: ""
         val team1 = intent.getStringExtra("team1") ?: "Команда 1"
         val team2 = intent.getStringExtra("team2") ?: "Команда 2"
         val logo1 = intent.getStringExtra("logo1")
@@ -32,6 +33,8 @@ class MatchDetailActivity : AppCompatActivity() {
         val league = intent.getStringExtra("league") ?: ""
         val stage = intent.getStringExtra("stage") ?: ""
         val date = intent.getStringExtra("date") ?: ""
+        val stadium = intent.getStringExtra("stadium") ?: ""
+        val referee = intent.getStringExtra("referee") ?: ""
 
         // 3. Заповнюємо Header
         findViewById<TextView>(R.id.tvDetailTeam1).text = team1
@@ -40,15 +43,26 @@ class MatchDetailActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.tvDetailLeague).text = league
         findViewById<TextView>(R.id.tvDetailDateTime).text = date
         
+        // Етап (Тур)
         val tvStage: TextView = findViewById(R.id.tvStageName)
-        if (!stage.isNullOrEmpty()) {
-            tvStage.text = stage
-            tvStage.visibility = View.VISIBLE
+        tvStage.text = stage
+        tvStage.visibility = if (stage.isNotEmpty()) View.VISIBLE else View.GONE
+
+        // Стадіон
+        val tvStadium: TextView = findViewById(R.id.tvDetailStadium)
+        tvStadium.text = stadium
+        tvStadium.visibility = if (stadium.isNotEmpty()) View.VISIBLE else View.GONE
+
+        // Арбітр
+        val tvReferee: TextView = findViewById(R.id.tvDetailReferee)
+        if (referee.isNotEmpty()) {
+            tvReferee.text = "Арбітр: $referee"
+            tvReferee.visibility = View.VISIBLE
         } else {
-            tvStage.visibility = View.GONE
+            tvReferee.visibility = View.GONE
         }
 
-        // Завантаження логотипів (виправлено placeholder на стандартний)
+        // Завантаження логотипів
         val ivLogo1: ImageView = findViewById(R.id.ivDetailLogo1)
         val ivLogo2: ImageView = findViewById(R.id.ivDetailLogo2)
 
@@ -59,19 +73,18 @@ class MatchDetailActivity : AppCompatActivity() {
         val tabs: TabLayout = findViewById(R.id.detailTabs)
         val viewPager: ViewPager2 = findViewById(R.id.detailViewPager)
 
-        // Адаптер для перемикання між фрагментами
         viewPager.adapter = object : FragmentStateAdapter(this) {
             override fun getItemCount(): Int = 2
 
             override fun createFragment(position: Int): Fragment {
                 return when (position) {
-                    0 -> TimelineFragment() // Події матчу
-                    else -> LineupsFragment() // Склади команд
+                    // Передаємо matchId у фрагменти, щоб вони знали, чиї дані качати
+                    0 -> TimelineFragment.newInstance(matchId) 
+                    else -> LineupsFragment.newInstance(matchId)
                 }
             }
         }
 
-        // Зв'язуємо TabLayout і ViewPager2
         TabLayoutMediator(tabs, viewPager) { tab, position ->
             tab.text = if (position == 0) "Timeline" else "Склад"
         }.attach()
