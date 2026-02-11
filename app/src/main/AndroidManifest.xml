@@ -57,6 +57,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".MatchDetailActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
