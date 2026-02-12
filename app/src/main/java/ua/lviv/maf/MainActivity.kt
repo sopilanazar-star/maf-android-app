@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
+import android.view.Gravity
 import android.view.View
 import android.view.WindowInsets
 import android.widget.*
@@ -25,10 +26,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var dateRecyclerView: RecyclerView
     private lateinit var titleHeader: TextView
     private lateinit var contentLayout: LinearLayout
-    private lateinit var seasonSpinner: Spinner // Спінер для вибору року
+    private lateinit var seasonSpinner: Spinner
     
     private val MAF_API_URL = "https://maf.lviv.ua/wp-json/maf/v2/matches"
-    private var currentYear = "2025" // Рік за замовчуванням
+    private var currentYear = "2025"
     
     private var allMatches = mutableListOf<TournamentRow>()
 
@@ -41,34 +42,42 @@ class MainActivity : AppCompatActivity() {
             window.insetsController?.hide(WindowInsets.Type.statusBars())
         }
 
-        val mainLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
+        // --- ГОЛОВНИЙ КОНТЕЙНЕР (FRAME), ЩОБ МЕНЮ БУЛО ЗНИЗУ ---
+        val rootFrame = FrameLayout(this).apply {
             setBackgroundColor(Color.parseColor("#1A1D23"))
         }
 
-        // --- НОВИЙ HEADER ЗІ СПІНЕРОМ ---
+        // Весь основний контент пакуємо в вертикальний LinearLayout
+        val mainContentContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = FrameLayout.LayoutParams(-1, -1).apply {
+                // Робимо відступ знизу, щоб контент не перекривався меню (приблизно 60dp)
+                setMargins(0, 0, 0, 160) 
+            }
+        }
+
+        // --- HEADER ---
         val headerLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            gravity = android.view.Gravity.CENTER_VERTICAL
+            gravity = Gravity.CENTER_VERTICAL
             background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(Color.parseColor("#450000"), Color.parseColor("#1A1D23")))
             setPadding(60, 100, 40, 60)
         }
 
         titleHeader = TextView(this).apply {
-            text = "Матчі"
+            text = "Новини" // Починаємо з Новин
             textSize = 28f
             setTextColor(Color.WHITE)
             setTypeface(null, android.graphics.Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
         }
 
-        // Створюємо та налаштовуємо Spinner
         seasonSpinner = Spinner(this).apply {
             val seasons = arrayOf("2026", "2025", "2024")
+            // Використовуємо вбудований ресурс для кращого вигляду тексту в спінері
             val adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, seasons)
             this.adapter = adapter
-            setSelection(1) // Позиція "2025"
-            
-            // Налаштовуємо відступи, щоб стрілочка не тиснула на текст
+            setSelection(1)
             setPadding(30, 0, 0, 0)
         }
 
@@ -77,7 +86,7 @@ class MainActivity : AppCompatActivity() {
                 val selectedYear = parent?.getItemAtPosition(position).toString()
                 if (currentYear != selectedYear) {
                     currentYear = selectedYear
-                    loadFromApi(currentYear) // Перезавантажуємо дані для обраного року
+                    loadFromApi(currentYear)
                 }
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -86,9 +95,11 @@ class MainActivity : AppCompatActivity() {
         headerLayout.addView(titleHeader)
         headerLayout.addView(seasonSpinner)
 
+        // --- МАТЧІ ТА ДАТИ (ХОВАЄМО ДЛЯ НОВИН) ---
         contentLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
+            visibility = View.GONE 
         }
 
         dateRecyclerView = RecyclerView(this).apply {
@@ -106,6 +117,11 @@ class MainActivity : AppCompatActivity() {
         contentLayout.addView(dateRecyclerView)
         contentLayout.addView(recyclerView)
 
+        // Додаємо все в контентний контейнер
+        mainContentContainer.addView(headerLayout)
+        mainContentContainer.addView(contentLayout)
+
+        // --- НИЖНЯ НАВІГАЦІЯ ---
         val navColorStateList = ColorStateList(
             arrayOf(intArrayOf(android.R.attr.state_selected), intArrayOf(-android.R.attr.state_selected)),
             intArrayOf(Color.parseColor("#E30613"), Color.parseColor("#808080"))
@@ -118,35 +134,36 @@ class MainActivity : AppCompatActivity() {
             itemTextColor = navColorStateList
             itemRippleColor = ColorStateList.valueOf(Color.TRANSPARENT)
 
+            // Прив'язуємо меню строго до низу
+            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT).apply {
+                gravity = Gravity.BOTTOM
+            }
+
             setOnItemSelectedListener { item ->
+                titleHeader.text = item.title
                 when (item.itemId) {
                     R.id.nav_matches -> {
-                        headerLayout.visibility = View.VISIBLE
                         contentLayout.visibility = View.VISIBLE
                     }
                     else -> {
-                        // Для інших вкладок можна ховати спінер або весь хедер
-                        headerLayout.visibility = View.VISIBLE 
-                        titleHeader.text = item.title
                         contentLayout.visibility = View.GONE
                     }
                 }
                 true
             }
-            selectedItemId = R.id.nav_matches
+            selectedItemId = R.id.nav_news // Перша вкладка при старті - Новини
         }
 
-        mainLayout.addView(headerLayout)
-        mainLayout.addView(contentLayout)
-        mainLayout.addView(bottomNav)
-        setContentView(mainLayout)
+        // Збираємо все докупи в FrameLayout
+        rootFrame.addView(mainContentContainer)
+        rootFrame.addView(bottomNav)
+        setContentView(rootFrame)
 
         loadFromApi(currentYear)
     }
 
     private fun loadFromApi(year: String) {
         val client = OkHttpClient()
-        // Додаємо параметр року до URL запиту
         val urlWithYear = "$MAF_API_URL?year=$year"
         val request = Request.Builder().url(urlWithYear).build()
 
@@ -183,7 +200,6 @@ class MainActivity : AppCompatActivity() {
                             dateList[0].isSelected = true
                             filterMatches(dateList[0].date)
                         } else {
-                            // Очищуємо список, якщо на обраний рік матчів немає
                             recyclerView.adapter = TournamentAdapter(emptyList())
                         }
                     }
