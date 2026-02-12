@@ -95,17 +95,17 @@ class MainActivity : AppCompatActivity() {
                     for (i in 0 until array.length()) {
                         val m = array.getJSONObject(i)
                         
-                        // ПРАВКА: Передаємо УСІ параметри в конструктор TournamentRow
+                        // ПРАВИЛЬНЕ ЗАПОВНЕННЯ: Використовуємо імена параметрів
                         allMatches.add(TournamentRow(
                             id = m.optString("id", "0"),
                             team1 = m.optString("team1", ""),
-                            team2 = m.optString("team2", ""),
-                            score = m.optString("score", ""),
                             logo1 = m.optString("logo1", ""),
+                            team2 = m.optString("team2", ""),
                             logo2 = m.optString("logo2", ""),
+                            score = m.optString("score", ""),
+                            date  = m.optString("date", ""),
                             league = m.optString("league", "MAF"),
                             stage = m.optString("stage", ""),
-                            date = m.optString("date", ""),
                             stadium = m.optString("stadium", ""),
                             referee = m.optString("referee", ""),
                             isHeader = false
@@ -172,12 +172,20 @@ class MainActivity : AppCompatActivity() {
             val leagueTitle = parts[0]
             val stageTitle = parts.getOrNull(1) ?: ""
 
-            // ПРАВКА: Тут також додаємо порожні значення для нових полів у хедері
+            // ПРАВИЛЬНИЙ ХЕДЕР: Явно вказуємо параметри, щоб не було помилок "No value passed"
             result.add(TournamentRow(
+                id = "0",
+                team1 = "",
+                team2 = "",
+                score = "",
+                logo1 = "",
+                logo2 = "",
                 league = leagueTitle, 
                 stage = stageTitle, 
-                isHeader = true,
-                id = "0", team1 = "", team2 = "", score = "", logo1 = "", logo2 = "", date = "", stadium = "", referee = ""
+                date = "",
+                stadium = "",
+                referee = "",
+                isHeader = true
             ))
             
             result.addAll(leagueMatches)
