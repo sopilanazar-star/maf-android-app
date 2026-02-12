@@ -34,26 +34,11 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
             holder.tvTeam1.text = item.team1
             holder.tvTeam2.text = item.team2
             holder.tvStage.text = item.stage
-            holder.tvStadium.text = item.stadium
-            
-            if (item.referee.isNotEmpty()) {
-                holder.tvReferee.text = "Арбітр: ${item.referee}"
-                holder.tvReferee.visibility = View.VISIBLE
-            } else {
-                holder.tvReferee.visibility = View.GONE
-            }
+            holder.tvStadium?.text = item.stadium
+            holder.tvReferee?.text = if (item.referee.isNotEmpty()) "Арбітр: ${item.referee}" else ""
 
-            // Розбираємо рахунок "1 : 0" на дві частини
-            if (item.score.contains(":")) {
-                val parts = item.score.split(":")
-                if (parts.size >= 2) {
-                    holder.tvScore1.text = parts[0].trim()
-                    holder.tvScore2.text = parts[1].trim()
-                }
-            } else {
-                holder.tvScore1.text = ""
-                holder.tvScore2.text = item.score
-            }
+            // Безпечне заповнення рахунку
+            holder.tvScore?.text = item.score
 
             Glide.with(holder.itemView.context).load(item.logo1).into(holder.ivLogo1)
             Glide.with(holder.itemView.context).load(item.logo2).into(holder.ivLogo2)
@@ -82,13 +67,13 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
     class MatchViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val ivLogo1: ImageView = view.findViewById(R.id.ivLogo1)
         val ivLogo2: ImageView = view.findViewById(R.id.ivLogo2)
-        val tvScore1: TextView = view.findViewById(R.id.tvScore1)
-        val tvScore2: TextView = view.findViewById(R.id.tvScore2)
         val tvTeam1: TextView = view.findViewById(R.id.tvTeam1)
         val tvTeam2: TextView = view.findViewById(R.id.tvTeam2)
         val tvStage: TextView = view.findViewById(R.id.tvStage)
-        val tvStadium: TextView = view.findViewById(R.id.tvStadium)
-        val tvReferee: TextView = view.findViewById(R.id.tvReferee)
+        // Використовуємо знак питання, щоб не падало, якщо в XML немає цих ID
+        val tvScore: TextView? = view.findViewById(R.id.tvScore)
+        val tvStadium: TextView? = view.findViewById(R.id.tvStadium)
+        val tvReferee: TextView? = view.findViewById(R.id.tvReferee)
     }
     }
     
