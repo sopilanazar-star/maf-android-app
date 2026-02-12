@@ -50,7 +50,6 @@ class MainActivity : AppCompatActivity() {
             setPadding(60, 100, 40, 60)
         }
 
-        // 1. ГОРИЗОНТАЛЬНИЙ КАЛЕНДАР
         dateRecyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
             layoutParams = LinearLayout.LayoutParams(-1, -2)
@@ -58,7 +57,6 @@ class MainActivity : AppCompatActivity() {
             clipToPadding = false
         }
 
-        // 2. ОСНОВНИЙ СПИСОК МАТЧІВ
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
@@ -96,15 +94,20 @@ class MainActivity : AppCompatActivity() {
                     
                     for (i in 0 until array.length()) {
                         val m = array.getJSONObject(i)
+                        
+                        // ПРАВКА: Передаємо УСІ параметри в конструктор TournamentRow
                         allMatches.add(TournamentRow(
+                            id = m.optString("id", "0"),
                             team1 = m.optString("team1", ""),
-                            logo1 = m.optString("logo1", ""),
                             team2 = m.optString("team2", ""),
-                            logo2 = m.optString("logo2", ""),
                             score = m.optString("score", ""),
-                            date  = m.optString("date", ""),
+                            logo1 = m.optString("logo1", ""),
+                            logo2 = m.optString("logo2", ""),
                             league = m.optString("league", "MAF"),
-                            stage = m.optString("stage", ""), // Витягуємо етап (тур)
+                            stage = m.optString("stage", ""),
+                            date = m.optString("date", ""),
+                            stadium = m.optString("stadium", ""),
+                            referee = m.optString("referee", ""),
                             isHeader = false
                         ))
                     }
@@ -152,10 +155,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun filterMatches(date: String) {
-        // 1. Фільтруємо всі матчі за обраною датою
         val filteredByDate = allMatches.filter { it.date == date }
-        
-        // 2. Автоматично групуємо їх за лігами та етапами
         val groupedList = groupMatchesByLeagueAndStage(filteredByDate)
         
         runOnUiThread {
@@ -165,8 +165,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun groupMatchesByLeagueAndStage(matches: List<TournamentRow>): List<TournamentRow> {
         val result = mutableListOf<TournamentRow>()
-        
-        // Групуємо матчі: ключ складається з Назви Ліги та Етапу
         val grouped = matches.groupBy { "${it.league}|${it.stage}" }
         
         for ((key, leagueMatches) in grouped) {
@@ -174,14 +172,14 @@ class MainActivity : AppCompatActivity() {
             val leagueTitle = parts[0]
             val stageTitle = parts.getOrNull(1) ?: ""
 
-            // Додаємо віртуальний рядок-заголовок
+            // ПРАВКА: Тут також додаємо порожні значення для нових полів у хедері
             result.add(TournamentRow(
                 league = leagueTitle, 
                 stage = stageTitle, 
-                isHeader = true
+                isHeader = true,
+                id = "0", team1 = "", team2 = "", score = "", logo1 = "", logo2 = "", date = "", stadium = "", referee = ""
             ))
             
-            // Додаємо самі матчі, що належать до цієї ліги/етапу
             result.addAll(leagueMatches)
         }
         return result
