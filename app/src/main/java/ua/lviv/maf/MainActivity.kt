@@ -7,8 +7,7 @@ import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.WindowInsets
-import android.widget.LinearLayout
-import android.widget.TextView
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -26,7 +25,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var dateRecyclerView: RecyclerView
     private lateinit var titleHeader: TextView
     private lateinit var contentLayout: LinearLayout
+    private lateinit var seasonSpinner: Spinner // Спінер для вибору року
+    
     private val MAF_API_URL = "https://maf.lviv.ua/wp-json/maf/v2/matches"
+    private var currentYear = "2025" // Рік за замовчуванням
     
     private var allMatches = mutableListOf<TournamentRow>()
 
@@ -44,14 +46,45 @@ class MainActivity : AppCompatActivity() {
             setBackgroundColor(Color.parseColor("#1A1D23"))
         }
 
+        // --- НОВИЙ HEADER ЗІ СПІНЕРОМ ---
+        val headerLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(Color.parseColor("#450000"), Color.parseColor("#1A1D23")))
+            setPadding(60, 100, 40, 60)
+        }
+
         titleHeader = TextView(this).apply {
             text = "Матчі"
             textSize = 28f
             setTextColor(Color.WHITE)
             setTypeface(null, android.graphics.Typeface.BOLD)
-            background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(Color.parseColor("#450000"), Color.parseColor("#1A1D23")))
-            setPadding(60, 100, 40, 60)
         }
+
+        // Створюємо та налаштовуємо Spinner
+        seasonSpinner = Spinner(this).apply {
+            val seasons = arrayOf("2026", "2025", "2024")
+            val adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, seasons)
+            this.adapter = adapter
+            setSelection(1) // Позиція "2025"
+            
+            // Налаштовуємо відступи, щоб стрілочка не тиснула на текст
+            setPadding(30, 0, 0, 0)
+        }
+
+        seasonSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val selectedYear = parent?.getItemAtPosition(position).toString()
+                if (currentYear != selectedYear) {
+                    currentYear = selectedYear
+                    loadFromApi(currentYear) // Перезавантажуємо дані для обраного року
+                }
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        headerLayout.addView(titleHeader)
+        headerLayout.addView(seasonSpinner)
 
         contentLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -73,58 +106,49 @@ class MainActivity : AppCompatActivity() {
         contentLayout.addView(dateRecyclerView)
         contentLayout.addView(recyclerView)
 
-        // ФІКС ПІДСВІТКИ: Створюємо селектор кольорів (Червоний для вибраного, Сірий для інших)
         val navColorStateList = ColorStateList(
-            arrayOf(
-                intArrayOf(android.R.attr.state_selected),  // Стан: Вибрано
-                intArrayOf(-android.R.attr.state_selected) // Стан: НЕ вибрано
-            ),
-            intArrayOf(
-                Color.parseColor("#E30613"), // Яскраво-червоний
-                Color.parseColor("#808080")  // Сірий
-            )
+            arrayOf(intArrayOf(android.R.attr.state_selected), intArrayOf(-android.R.attr.state_selected)),
+            intArrayOf(Color.parseColor("#E30613"), Color.parseColor("#808080"))
         )
 
         val bottomNav = BottomNavigationView(this).apply {
             inflateMenu(R.menu.bottom_nav_menu)
             setBackgroundColor(Color.parseColor("#121417"))
-            
-            // Застосовуємо кольори до іконок та тексту
             itemIconTintList = navColorStateList
             itemTextColor = navColorStateList
-            
-            // Прибираємо ефект "натискання" (ripple), щоб не блимало сірим
             itemRippleColor = ColorStateList.valueOf(Color.TRANSPARENT)
 
             setOnItemSelectedListener { item ->
                 when (item.itemId) {
                     R.id.nav_matches -> {
-                        titleHeader.text = "Матчі"
+                        headerLayout.visibility = View.VISIBLE
                         contentLayout.visibility = View.VISIBLE
                     }
                     else -> {
+                        // Для інших вкладок можна ховати спінер або весь хедер
+                        headerLayout.visibility = View.VISIBLE 
                         titleHeader.text = item.title
                         contentLayout.visibility = View.GONE
                     }
                 }
                 true
             }
-            
-            // Встановлюємо активну вкладку за замовчуванням
             selectedItemId = R.id.nav_matches
         }
 
-        mainLayout.addView(titleHeader)
+        mainLayout.addView(headerLayout)
         mainLayout.addView(contentLayout)
         mainLayout.addView(bottomNav)
         setContentView(mainLayout)
 
-        loadFromApi()
+        loadFromApi(currentYear)
     }
 
-    private fun loadFromApi() {
+    private fun loadFromApi(year: String) {
         val client = OkHttpClient()
-        val request = Request.Builder().url(MAF_API_URL).build()
+        // Додаємо параметр року до URL запиту
+        val urlWithYear = "$MAF_API_URL?year=$year"
+        val request = Request.Builder().url(urlWithYear).build()
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) { e.printStackTrace() }
@@ -150,14 +174,17 @@ class MainActivity : AppCompatActivity() {
                             isHeader = false
                         ))
                     }
-                    val dateList = createDateList(allMatches)
                     runOnUiThread {
+                        val dateList = createDateList(allMatches)
                         dateRecyclerView.adapter = DateAdapter(dateList) { selectedDate ->
                             filterMatches(selectedDate)
                         }
                         if (dateList.isNotEmpty()) {
                             dateList[0].isSelected = true
                             filterMatches(dateList[0].date)
+                        } else {
+                            // Очищуємо список, якщо на обраний рік матчів немає
+                            recyclerView.adapter = TournamentAdapter(emptyList())
                         }
                     }
                 } catch (e: Exception) { e.printStackTrace() }
