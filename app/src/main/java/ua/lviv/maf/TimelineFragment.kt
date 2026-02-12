@@ -18,7 +18,7 @@ import java.io.IOException
 class TimelineFragment : Fragment() {
 
     private val client = OkHttpClient()
-    private var homeTeamId: String? = null // Зберігаємо ID домашньої команди
+    private var homeTeamId: String? = null
 
     companion object {
         fun newInstance(matchId: String, homeTeamId: String): TimelineFragment {
@@ -43,9 +43,7 @@ class TimelineFragment : Fragment() {
         val tvLoading = view.findViewById<TextView>(R.id.tvTimelineLoading)
         val centerLine = view.findViewById<View>(R.id.centerLine)
 
-        if (container != null) {
-            loadTimelineData(matchId, container, tvLoading, centerLine)
-        }
+        loadTimelineData(matchId, container, tvLoading, centerLine)
     }
 
     private fun loadTimelineData(matchId: String, container: LinearLayout, tvLoading: TextView?, centerLine: View?) {
@@ -54,9 +52,7 @@ class TimelineFragment : Fragment() {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                activity?.runOnUiThread {
-                    tvLoading?.text = "Помилка мережі"
-                }
+                activity?.runOnUiThread { tvLoading?.text = "Помилка мережі" }
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -76,7 +72,7 @@ class TimelineFragment : Fragment() {
     private fun parseAndShowTimeline(json: String, container: LinearLayout) {
         try {
             val root = JSONObject(json)
-            // Використовуємо "timeline" як у вашому коді
+            // Використовуємо оригінальний "timeline", ігноруючи переклад гугла
             val timeline = root.optJSONArray("timeline") ?: return
 
             container.removeAllViews()
@@ -99,22 +95,17 @@ class TimelineFragment : Fragment() {
                 val type = event.optString("type")
                 val eventTeamId = event.optString("team_id")
 
-                // Логіка визначення сторони (якщо ID збігається з домашнім - зліва)
                 val isHomeTeam = eventTeamId == homeTeamId
 
                 val rowLayout = LinearLayout(context).apply {
                     orientation = LinearLayout.HORIZONTAL
-                    layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                    )
+                    layoutParams = LinearLayout.LayoutParams(-1, -2)
                     gravity = Gravity.CENTER_VERTICAL
-                    setPadding(0, 20, 0, 20)
+                    setPadding(0, 25, 0, 25)
                 }
 
-                // --- 1. Текстовий блок (Гравець + Хвилина) ---
                 val infoLayout = LinearLayout(context).apply {
-                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                    layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
                     orientation = LinearLayout.VERTICAL
                     gravity = if (isHomeTeam) Gravity.END else Gravity.START
                 }
@@ -135,7 +126,6 @@ class TimelineFragment : Fragment() {
                 infoLayout.addView(tvPlayer)
                 infoLayout.addView(tvMin)
 
-                // --- 2. Іконка події (по центру) ---
                 val ivIcon = ImageView(context).apply {
                     val size = (24 * resources.displayMetrics.density).toInt()
                     layoutParams = LinearLayout.LayoutParams(size, size).apply {
@@ -143,27 +133,26 @@ class TimelineFragment : Fragment() {
                     }
                 }
 
-                // Вибір іконки
                 when (type) {
                     "goal" -> {
-                        ivIcon.setImageResource(android.R.drawable.ic_btn_speak_now)
+                        ivIcon.setImageResource(R.drawable.ic_ball)
                         ivIcon.setColorFilter(Color.WHITE)
                     }
                     "goal_og" -> {
-                        ivIcon.setImageResource(android.R.drawable.ic_btn_speak_now)
+                        ivIcon.setImageResource(R.drawable.ic_ball)
                         ivIcon.setColorFilter(Color.RED)
                     }
                     "yellow_card" -> {
-                        ivIcon.setImageResource(android.R.drawable.checkbox_on_background)
+                        ivIcon.setImageResource(R.drawable.ic_card)
                         ivIcon.setColorFilter(Color.YELLOW)
                     }
                     "red_card" -> {
-                        ivIcon.setImageResource(android.R.drawable.checkbox_on_background)
+                        ivIcon.setImageResource(R.drawable.ic_card)
                         ivIcon.setColorFilter(Color.RED)
                     }
-                    "substitution" -> {
-                        ivIcon.setImageResource(android.R.drawable.stat_notify_sync)
-                        ivIcon.setColorFilter(Color.GREEN)
+                    "substitution", "sub" -> {
+                        ivIcon.setImageResource(R.drawable.ic_sub)
+                        ivIcon.clearColorFilter()
                     }
                     else -> {
                         ivIcon.setImageResource(android.R.drawable.ic_menu_info_details)
@@ -171,26 +160,20 @@ class TimelineFragment : Fragment() {
                     }
                 }
 
-                // --- 3. Порожній блок для симетрії ---
-                val emptySpace = View(context).apply {
-                    layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
-                }
+                val emptySpace = View(context).apply { layoutParams = LinearLayout.LayoutParams(0, 1, 1f) }
 
-                // --- Формування черговості залежно від сторони ---
                 if (isHomeTeam) {
-                    rowLayout.addView(infoLayout)  // Текст зліва
-                    rowLayout.addView(ivIcon)      // Іконка в центрі
-                    rowLayout.addView(emptySpace)  // Порожнеча справа
+                    rowLayout.addView(infoLayout)
+                    rowLayout.addView(ivIcon)
+                    rowLayout.addView(emptySpace)
                 } else {
-                    rowLayout.addView(emptySpace)  // Порожнеча зліва
-                    rowLayout.addView(ivIcon)      // Іконка в центрі
-                    rowLayout.addView(infoLayout)  // Текст справа
+                    rowLayout.addView(emptySpace)
+                    rowLayout.addView(ivIcon)
+                    rowLayout.addView(infoLayout)
                 }
 
                 container.addView(rowLayout)
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        } catch (e: Exception) { e.printStackTrace() }
     }
 }
