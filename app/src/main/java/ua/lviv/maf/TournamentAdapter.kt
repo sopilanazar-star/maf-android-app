@@ -1,6 +1,7 @@
 package ua.lviv.maf
 
 import android.content.Intent
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -27,39 +28,42 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val item = items[position]
 
         if (holder is LeagueHeaderViewHolder) {
-            holder.tvLeagueName.text = item.league
-            holder.tvStageName.text = item.stage
-            holder.tvStageName.visibility = if (item.stage.isEmpty()) View.GONE else View.VISIBLE
+            // --- СТИЛІЗАЦІЯ ХЕДЕРА (НАД КАРТКАМИ) ---
+            holder.tvLeagueName.apply {
+                text = item.league
+                textSize = 12f // Маленький шрифт для назви ліги
+                setTextColor(Color.parseColor("#BCBCBC")) // Сірий колір
+            }
+            
+            holder.tvStageName.apply {
+                text = item.stage
+                textSize = 11f // Ще трохи менший
+                setTextColor(Color.parseColor("#E30613")) // ЧЕРВОНИЙ КОЛІР ЕТАПУ
+                visibility = if (item.stage.isEmpty()) View.GONE else View.VISIBLE
+            }
+
         } else if (holder is MatchViewHolder) {
+            // --- ДАНІ КАРТКИ МАТЧУ ---
             holder.tvTeam1.text = item.team1
             holder.tvTeam2.text = item.team2
             
-            // Заповнюємо нові поля у центрі картки
-            holder.tvLeagueName?.text = item.league
-            holder.tvStage?.text = item.stage
-            
+            // Стадіон (вгорі справа за новим XML)
             holder.tvStadium?.text = item.stadium
-            holder.tvReferee?.text = if (item.referee.isNotEmpty()) "Арбітр: ${item.referee}" else ""
             
-            // Видимість полів
-            holder.tvReferee?.visibility = if (item.referee.isNotEmpty()) View.VISIBLE else View.GONE
-            holder.tvStage?.visibility = if (item.stage.isNotEmpty()) View.VISIBLE else View.GONE
-
-            // --- ЛОГІКА РАХУНКУ ---
-            if (item.score.contains(":")) {
-                val parts = item.score.split(":")
-                if (parts.size >= 2) {
-                    holder.tvScore1?.text = parts[0].trim()
-                    holder.tvScore2?.text = parts[1].trim()
-                }
-            } else {
-                holder.tvScore1?.text = ""
-                holder.tvScore2?.text = item.score
+            // Арбітр (внизу зліва за новим XML)
+            holder.tvReferee?.apply {
+                text = if (item.referee.isNotEmpty()) "Арбітр: ${item.referee}" else ""
+                visibility = if (item.referee.isNotEmpty()) View.VISIBLE else View.GONE
             }
 
+            // Рахунок (об'єднуємо в одне поле tvScore, як у твоєму останньому XML)
+            holder.tvScore?.text = item.score
+
+            // Завантаження логотипів
             Glide.with(holder.itemView.context).load(item.logo1).into(holder.ivLogo1)
             Glide.with(holder.itemView.context).load(item.logo2).into(holder.ivLogo2)
 
+            // Перехід на деталі матчу
             holder.itemView.setOnClickListener {
                 val intent = Intent(holder.itemView.context, MatchDetailActivity::class.java).apply {
                     putExtra("id", item.id)
@@ -92,12 +96,8 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val tvTeam1: TextView = view.findViewById(R.id.tvTeam1)
         val tvTeam2: TextView = view.findViewById(R.id.tvTeam2)
         
-        val tvScore1: TextView? = view.findViewById(R.id.tvScore1)
-        val tvScore2: TextView? = view.findViewById(R.id.tvScore2)
-        
-        // Додано tvLeagueName для відображення назви всередині картки
-        val tvLeagueName: TextView? = view.findViewById(R.id.tvLeagueName)
-        val tvStage: TextView? = view.findViewById(R.id.tvStage)
+        // Поля згідно з твоїм оновленим item_match.xml
+        val tvScore: TextView? = view.findViewById(R.id.tvScore)
         val tvStadium: TextView? = view.findViewById(R.id.tvStadium)
         val tvReferee: TextView? = view.findViewById(R.id.tvReferee)
     }
