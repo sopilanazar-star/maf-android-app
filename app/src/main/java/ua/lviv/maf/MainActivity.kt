@@ -8,10 +8,13 @@ import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -37,7 +40,7 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         
-        // Edge-to-Edge
+        // 1. ПРИБИРАЄМО СМУЖКИ (StatusBar та NavigationBar)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = Color.TRANSPARENT
         window.navigationBarColor = Color.parseColor("#121417")
@@ -51,46 +54,49 @@ class MainActivity : AppCompatActivity() {
             layoutParams = FrameLayout.LayoutParams(-1, -1)
         }
 
-        // --- HEADER ---
+        // --- HEADER (БЕЗ КНОПКИ LIVE) ---
         val headerLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, 
                 intArrayOf(Color.parseColor("#450000"), Color.parseColor("#1A1D23")))
-            setPadding(40, 120, 40, 40)
-        }
-
-        // LIVE Button
-        val liveButton = LinearLayout(this).apply {
-            setPadding(20, 10, 20, 10)
-            background = GradientDrawable().apply {
-                cornerRadius = 15f
-                setStroke(3, Color.parseColor("#E30613"))
-            }
-            addView(TextView(context).apply {
-                text = "● LIVE"
-                setTextColor(Color.parseColor("#E30613"))
-                textSize = 12f
-                typeface = Typeface.DEFAULT_BOLD
-            })
+            // setPadding(ліворуч, зверху, праворуч, знизу)
+            setPadding(60, 140, 60, 40) 
         }
 
         titleHeader = TextView(this).apply {
             text = "Новини"
-            textSize = 22f
+            textSize = 28f
             setTextColor(Color.WHITE)
             typeface = Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
         }
 
-        // Spinner з виправленим адаптером
-        seasonSpinner = Spinner(this)
-        val seasons = arrayOf("2026", "2025", "2024")
-        val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, seasons)
-        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        seasonSpinner.adapter = spinnerAdapter
-        seasonSpinner.setSelection(1)
+        // БІЛИЙ СПІНЕР РОКІВ
+        seasonSpinner = Spinner(this).apply {
+            val seasons = arrayOf("2026", "2025", "2024")
+            val adapter = object : ArrayAdapter<String>(this@MainActivity, android.R.layout.simple_spinner_item, seasons) {
+                override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                    val v = super.getView(position, convertView, parent)
+                    (v as TextView).apply {
+                        setTextColor(Color.WHITE) // Рік тепер білий
+                        textSize = 16f
+                        typeface = Typeface.DEFAULT_BOLD
+                    }
+                    return v
+                }
+                override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
+                    val v = super.getDropDownView(position, convertView, parent)
+                    (v as TextView).apply {
+                        setTextColor(Color.WHITE)
+                        setBackgroundColor(Color.parseColor("#252932"))
+                    }
+                    return v
+                }
+            }
+            this.adapter = adapter
+            setSelection(1) // 2025 за замовчуванням
+        }
 
         seasonSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
@@ -103,7 +109,6 @@ class MainActivity : AppCompatActivity() {
             override fun onNothingSelected(p0: AdapterView<*>?) {}
         }
 
-        headerLayout.addView(liveButton)
         headerLayout.addView(titleHeader)
         headerLayout.addView(seasonSpinner)
 
@@ -117,17 +122,20 @@ class MainActivity : AppCompatActivity() {
         dateRecyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
             layoutParams = LinearLayout.LayoutParams(-1, -2)
+            setPadding(20, 0, 20, 0)
+            clipToPadding = false
         }
 
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
-            setPadding(0, 0, 0, 200)
+            setPadding(0, 0, 0, 220) // Відступ знизу під меню
             clipToPadding = false
         }
 
         contentLayout.addView(dateRecyclerView)
         contentLayout.addView(recyclerView)
+
         mainContentContainer.addView(headerLayout)
         mainContentContainer.addView(contentLayout)
 
@@ -149,11 +157,19 @@ class MainActivity : AppCompatActivity() {
                 contentLayout.visibility = if (item.itemId == R.id.nav_matches) View.VISIBLE else View.GONE
                 true
             }
+            selectedItemId = R.id.nav_news
         }
 
         rootFrame.addView(mainContentContainer)
         rootFrame.addView(bottomNav)
         setContentView(rootFrame)
+
+        // Обробка системних відступів (NavigationBar)
+        ViewCompat.setOnApplyWindowInsetsListener(bottomNav) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(0, 0, 0, systemBars.bottom)
+            insets
+        }
 
         loadFromApi(currentYear)
     }
@@ -170,7 +186,6 @@ class MainActivity : AppCompatActivity() {
                     allMatches.clear()
                     for (i in 0 until array.length()) {
                         val m = array.getJSONObject(i)
-                        // Безпечний парсинг, щоб не вилітало
                         allMatches.add(TournamentRow(
                             id = m.optString("id", "0"),
                             team1 = m.optString("team1", ""),
@@ -192,6 +207,8 @@ class MainActivity : AppCompatActivity() {
                         if (dateList.isNotEmpty()) {
                             dateList[0].isSelected = true
                             filterMatches(dateList[0].date)
+                        } else {
+                            recyclerView.adapter = TournamentAdapter(emptyList())
                         }
                     }
                 } catch (e: Exception) { e.printStackTrace() }
@@ -202,7 +219,9 @@ class MainActivity : AppCompatActivity() {
     private fun createDateList(matches: List<TournamentRow>): List<DateModel> {
         val calendarList = mutableListOf<DateModel>()
         try {
-            val uniqueDates = matches.map { it.date }.distinct()
+            val uniqueDates = matches.map { it.date }.distinct().sortedByDescending { 
+                SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).parse(it) 
+            }
             val inputFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
             val dayNameFormat = SimpleDateFormat("EEE", Locale("uk"))
             val dayNumFormat = SimpleDateFormat("dd", Locale.getDefault())
