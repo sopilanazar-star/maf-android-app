@@ -34,15 +34,18 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
             holder.tvTeam1.text = item.team1
             holder.tvTeam2.text = item.team2
             
-            // Нові поля (безпечний виклик через ?)
+            // Заповнюємо нові поля у центрі картки
+            holder.tvLeagueName?.text = item.league
             holder.tvStage?.text = item.stage
+            
             holder.tvStadium?.text = item.stadium
             holder.tvReferee?.text = if (item.referee.isNotEmpty()) "Арбітр: ${item.referee}" else ""
             
-            // Приховуємо арбітра, якщо його немає
+            // Видимість полів
             holder.tvReferee?.visibility = if (item.referee.isNotEmpty()) View.VISIBLE else View.GONE
+            holder.tvStage?.visibility = if (item.stage.isNotEmpty()) View.VISIBLE else View.GONE
 
-            // --- ЛОГІКА РАХУНКУ (tvScore1 та tvScore2) ---
+            // --- ЛОГІКА РАХУНКУ ---
             if (item.score.contains(":")) {
                 val parts = item.score.split(":")
                 if (parts.size >= 2) {
@@ -60,11 +63,16 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
             holder.itemView.setOnClickListener {
                 val intent = Intent(holder.itemView.context, MatchDetailActivity::class.java).apply {
                     putExtra("id", item.id)
-                    putExtra("team1", item.team1); putExtra("team2", item.team2)
-                    putExtra("logo1", item.logo1); putExtra("logo2", item.logo2)
-                    putExtra("score", item.score); putExtra("league", item.league)
-                    putExtra("stage", item.stage); putExtra("date", item.date)
-                    putExtra("stadium", item.stadium); putExtra("referee", item.referee)
+                    putExtra("team1", item.team1)
+                    putExtra("team2", item.team2)
+                    putExtra("logo1", item.logo1)
+                    putExtra("logo2", item.logo2)
+                    putExtra("score", item.score)
+                    putExtra("league", item.league)
+                    putExtra("stage", item.stage)
+                    putExtra("date", item.date)
+                    putExtra("stadium", item.stadium)
+                    putExtra("referee", item.referee)
                 }
                 holder.itemView.context.startActivity(intent)
             }
@@ -84,14 +92,13 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val tvTeam1: TextView = view.findViewById(R.id.tvTeam1)
         val tvTeam2: TextView = view.findViewById(R.id.tvTeam2)
         
-        // ТУТ БУЛА ПОМИЛКА: Тепер ми оголошуємо саме tvScore1 та tvScore2
         val tvScore1: TextView? = view.findViewById(R.id.tvScore1)
         val tvScore2: TextView? = view.findViewById(R.id.tvScore2)
         
-        // Нові поля
+        // Додано tvLeagueName для відображення назви всередині картки
+        val tvLeagueName: TextView? = view.findViewById(R.id.tvLeagueName)
         val tvStage: TextView? = view.findViewById(R.id.tvStage)
         val tvStadium: TextView? = view.findViewById(R.id.tvStadium)
         val tvReferee: TextView? = view.findViewById(R.id.tvReferee)
     }
-    }
-    
+}
