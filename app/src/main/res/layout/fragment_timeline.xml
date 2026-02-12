@@ -5,11 +5,20 @@
     android:background="#1A1D23"
     android:fillViewport="true">
 
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:padding="16dp">
+
+        <View
+            android:id="@+id/centerLine"
+            android:layout_width="1dp"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_alignTop="@+id/timelineContainer"
+            android:layout_alignBottom="@+id/timelineContainer"
+            android:background="#333A45"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/tvTimelineLoading"
@@ -24,7 +33,8 @@
             android:id="@+id/timelineContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical" />
+            android:orientation="vertical"
+            android:divider="@null" />
 
-    </LinearLayout>
+    </RelativeLayout>
 </ScrollView>
