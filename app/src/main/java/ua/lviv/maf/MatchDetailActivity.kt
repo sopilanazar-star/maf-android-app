@@ -77,12 +77,14 @@ class MatchDetailActivity : AppCompatActivity() {
             override fun getItemCount(): Int = 2
 
             override fun createFragment(position: Int): Fragment {
-                return when (position) {
-                    // Передаємо matchId у фрагменти, щоб вони знали, чиї дані качати
-                    0 -> TimelineFragment.newInstance(matchId) 
-                    else -> LineupsFragment.newInstance(matchId)
-                }
-            }
+    return when (position) {
+        // Додаємо другий параметр homeTeamId, щоб TimelineFragment знав, хто господарі
+        0 -> TimelineFragment.newInstance(matchId, homeTeamId) 
+        
+        // Для складів (Lineups) поки залишаємо тільки matchId
+        else -> LineupsFragment.newInstance(matchId)
+    }
+}
         }
 
         TabLayoutMediator(tabs, viewPager) { tab, position ->
