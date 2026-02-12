@@ -12,11 +12,9 @@ import com.bumptech.glide.Glide
 class TournamentAdapter(private val items: List<TournamentRow>) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    // Константи для типів рядків
     private val VIEW_TYPE_LEAGUE = 0
     private val VIEW_TYPE_MATCH = 1
 
-    // Визначаємо, який тип рядка малювати
     override fun getItemViewType(position: Int): Int {
         return if (items[position].isHeader) VIEW_TYPE_LEAGUE else VIEW_TYPE_MATCH
     }
@@ -36,38 +34,21 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val item = items[position]
 
         if (holder is LeagueHeaderViewHolder) {
-            // Малюємо заголовок (Назва ліги + Етап)
             holder.tvLeagueName.text = item.league
             holder.tvStageName.text = item.stage
-            
-            // Приховуємо поле етапу, якщо воно порожнє
             holder.tvStageName.visibility = if (item.stage.isNullOrEmpty()) View.GONE else View.VISIBLE
             
         } else if (holder is MatchViewHolder) {
-            // Малюємо звичайний матч
             holder.tvTeam1.text = item.team1
             holder.tvTeam2.text = item.team2
-
-            // Вивід етапу (туру) в картку
+            
+            // Нові поля для картки
             holder.tvStage.text = item.stage
+            holder.tvStadium.text = item.stadium ?: ""
+            holder.tvReferee.text = if (!item.referee.isNullOrEmpty()) "Арбітр: ${item.referee}" else ""
+            holder.tvReferee.visibility = if (item.referee.isNullOrEmpty()) View.GONE else View.VISIBLE
 
-            // Вивід стадіону
-            if (!item.stadium.isNullOrEmpty()) {
-                holder.tvStadium.text = item.stadium
-                holder.tvStadium.visibility = View.VISIBLE
-            } else {
-                holder.tvStadium.visibility = View.GONE
-            }
-
-            // Вивід арбітра
-            if (!item.referee.isNullOrEmpty()) {
-                holder.tvReferee.text = "Арбітр: ${item.referee}"
-                holder.tvReferee.visibility = View.VISIBLE
-            } else {
-                holder.tvReferee.visibility = View.GONE
-            }
-
-            // Розділяємо рахунок
+            // Рахунок (розділений для tvScore1 та tvScore2)
             if (item.score.contains(":")) {
                 val scores = item.score.split(":")
                 if (scores.size == 2) {
@@ -79,11 +60,10 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                 holder.tvScore2.text = item.score
             }
 
-            // Завантажуємо логотипи
+            // Логотипи
             Glide.with(holder.itemView.context).load(item.logo1).into(holder.ivLogo1)
             Glide.with(holder.itemView.context).load(item.logo2).into(holder.ivLogo2)
 
-            // --- ОБРОБКА КЛІКУ НА МАТЧ ---
             holder.itemView.setOnClickListener {
                 val context = holder.itemView.context
                 val intent = Intent(context, MatchDetailActivity::class.java).apply {
@@ -106,13 +86,11 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
 
     override fun getItemCount() = items.size
 
-    // ViewHolder для заголовка ліги
     class LeagueHeaderViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvLeagueName: TextView = view.findViewById(R.id.tvLeagueName)
         val tvStageName: TextView = view.findViewById(R.id.tvStageName)
     }
 
-    // ViewHolder для самого матчу (Оновлений)
     class MatchViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvTeam1: TextView = view.findViewById(R.id.tvTeam1)
         val tvTeam2: TextView = view.findViewById(R.id.tvTeam2)
@@ -121,7 +99,7 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val tvScore1: TextView = view.findViewById(R.id.tvScore1)
         val tvScore2: TextView = view.findViewById(R.id.tvScore2)
         
-        // Нові поля, які ми додали в XML
+        // Поля, які ми додали для стадіону та арбітра
         val tvStage: TextView = view.findViewById(R.id.tvStage)
         val tvStadium: TextView = view.findViewById(R.id.tvStadium)
         val tvReferee: TextView = view.findViewById(R.id.tvReferee)
