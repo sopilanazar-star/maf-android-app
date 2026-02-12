@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.fragment.app.Fragment
@@ -22,8 +23,8 @@ class TimelineFragment : Fragment() {
         }
     }
 
-    // Правильний спосіб створення View для фрагмента
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        // Переконайся, що у тебе є layout fragment_timeline з LinearLayout (id: timelineContainer)
         return inflater.inflate(R.layout.fragment_timeline, container, false)
     }
 
@@ -75,6 +76,7 @@ class TimelineFragment : Fragment() {
                     text = "Подій поки немає"
                     setTextColor(android.graphics.Color.GRAY)
                     gravity = android.view.Gravity.CENTER
+                    setPadding(0, 50, 0, 0)
                 }
                 container.addView(emptyTv)
                 return
@@ -86,13 +88,79 @@ class TimelineFragment : Fragment() {
                 val playerName = event.optString("player_name")
                 val type = event.optString("type")
 
-                val textView = TextView(context).apply {
-                    text = "$minute' - $playerName ($type)"
+                // Створюємо горизонтальний контейнер для одного рядка події
+                val rowLayout = LinearLayout(context).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    setPadding(20, 25, 20, 25)
+                    gravity = android.view.Gravity.CENTER_VERTICAL
+                }
+
+                // 1. Текст хвилини (наприклад, 25')
+                val tvMin = TextView(context).apply {
+                    text = "$minute'"
+                    setTextColor(android.graphics.Color.parseColor("#BCBCBC"))
+                    textSize = 14f
+                    setTypeface(null, android.graphics.Typeface.BOLD)
+                    layoutParams = LinearLayout.LayoutParams(90, -2)
+                }
+
+                // 2. Іконка події (М'яч, Картка, Заміна)
+                val ivIcon = ImageView(context).apply {
+                    layoutParams = LinearLayout.LayoutParams(45, 45).apply {
+                        setMargins(10, 0, 30, 0)
+                    }
+                }
+
+                // Логіка вибору іконки та кольору залежно від типу події
+                when (type) {
+                    "goal" -> {
+                        ivIcon.setImageResource(android.R.drawable.ic_btn_speak_now) // Схоже на м'яч
+                        ivIcon.setColorFilter(android.graphics.Color.WHITE)
+                    }
+                    "goal_og" -> { // Автогол
+                        ivIcon.setImageResource(android.R.drawable.ic_btn_speak_now)
+                        ivIcon.setColorFilter(android.graphics.Color.RED)
+                    }
+                    "yellow_card" -> {
+                        ivIcon.setImageResource(android.R.drawable.checkbox_on_background) // Прямокутник
+                        ivIcon.setColorFilter(android.graphics.Color.YELLOW)
+                    }
+                    "red_card" -> {
+                        ivIcon.setImageResource(android.R.drawable.checkbox_on_background)
+                        ivIcon.setColorFilter(android.graphics.Color.RED)
+                    }
+                    "substitution" -> {
+                        ivIcon.setImageResource(android.R.drawable.stat_notify_sync) // Стрілочки
+                        ivIcon.setColorFilter(android.graphics.Color.GREEN)
+                    }
+                    else -> {
+                        ivIcon.setImageResource(android.R.drawable.ic_menu_info_details)
+                        ivIcon.setColorFilter(android.graphics.Color.GRAY)
+                    }
+                }
+
+                // 3. Прізвище гравця
+                val tvPlayer = TextView(context).apply {
+                    text = if (type == "goal_og") "$playerName (АГ)" else playerName
                     setTextColor(android.graphics.Color.WHITE)
                     textSize = 16f
-                    setPadding(0, 15, 0, 15)
+                    layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
                 }
-                container.addView(textView)
+
+                // Додаємо всі елементи в рядок
+                rowLayout.addView(tvMin)
+                rowLayout.addView(ivIcon)
+                rowLayout.addView(tvPlayer)
+
+                // Додаємо рядок в основний контейнер
+                container.addView(rowLayout)
+
+                // Додаємо тонку лінію-розділювач між подіями
+                val divider = View(context).apply {
+                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1)
+                    setBackgroundColor(android.graphics.Color.parseColor("#333333"))
+                }
+                container.addView(divider)
             }
         } catch (e: Exception) {
             e.printStackTrace()
