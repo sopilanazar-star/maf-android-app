@@ -12,14 +12,11 @@ import com.bumptech.glide.Glide
 class TournamentAdapter(private val items: List<TournamentRow>) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    private val VIEW_TYPE_LEAGUE = 0
-    private val VIEW_TYPE_MATCH = 1
-
-    override fun getItemViewType(position: Int): Int = if (items[position].isHeader) VIEW_TYPE_LEAGUE else VIEW_TYPE_MATCH
+    override fun getItemViewType(position: Int): Int = if (items[position].isHeader) 0 else 1
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
-        return if (viewType == VIEW_TYPE_LEAGUE) {
+        return if (viewType == 0) {
             LeagueHeaderViewHolder(inflater.inflate(R.layout.item_league_header, parent, false))
         } else {
             MatchViewHolder(inflater.inflate(R.layout.item_match, parent, false))
@@ -33,19 +30,22 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
             holder.tvLeagueName.text = item.league
             holder.tvStageName.text = item.stage
             holder.tvStageName.visibility = if (item.stage.isEmpty()) View.GONE else View.VISIBLE
-            
         } else if (holder is MatchViewHolder) {
             holder.tvTeam1.text = item.team1
             holder.tvTeam2.text = item.team2
-            holder.tvScore.text = item.score
             holder.tvStage.text = item.stage
             holder.tvStadium.text = item.stadium
-            
-            if (item.referee.isNotEmpty()) {
-                holder.tvReferee.text = "Арбітр: ${item.referee}"
-                holder.tvReferee.visibility = View.VISIBLE
+            holder.tvReferee.text = if (item.referee.isNotEmpty()) "Арбітр: ${item.referee}" else ""
+            holder.tvReferee.visibility = if (item.referee.isEmpty()) View.GONE else View.VISIBLE
+
+            // Логіка розділення рахунку
+            if (item.score.contains(":")) {
+                val parts = item.score.split(":")
+                holder.tvScore1.text = parts[0].trim()
+                holder.tvScore2.text = parts[1].trim()
             } else {
-                holder.tvReferee.visibility = View.GONE
+                holder.tvScore1.text = ""
+                holder.tvScore2.text = item.score
             }
 
             Glide.with(holder.itemView.context).load(item.logo1).into(holder.ivLogo1)
@@ -53,11 +53,9 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
 
             holder.itemView.setOnClickListener {
                 val intent = Intent(holder.itemView.context, MatchDetailActivity::class.java).apply {
-                    putExtra("id", item.id)
-                    putExtra("team1", item.team1); putExtra("team2", item.team2)
-                    putExtra("logo1", item.logo1); putExtra("logo2", item.logo2)
-                    putExtra("score", item.score); putExtra("league", item.league)
-                    putExtra("stage", item.stage); putExtra("date", item.date)
+                    putExtra("id", item.id); putExtra("team1", item.team1); putExtra("team2", item.team2)
+                    putExtra("logo1", item.logo1); putExtra("logo2", item.logo2); putExtra("score", item.score)
+                    putExtra("league", item.league); putExtra("stage", item.stage); putExtra("date", item.date)
                     putExtra("stadium", item.stadium); putExtra("referee", item.referee)
                 }
                 holder.itemView.context.startActivity(intent)
@@ -65,7 +63,7 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         }
     }
 
-    override fun getItemCount(): Int = items.size
+    override fun getItemCount() = items.size
 
     class LeagueHeaderViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvLeagueName: TextView = view.findViewById(R.id.tvLeagueName)
@@ -75,7 +73,8 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
     class MatchViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val ivLogo1: ImageView = view.findViewById(R.id.ivLogo1)
         val ivLogo2: ImageView = view.findViewById(R.id.ivLogo2)
-        val tvScore: TextView = view.findViewById(R.id.tvScore)
+        val tvScore1: TextView = view.findViewById(R.id.tvScore1)
+        val tvScore2: TextView = view.findViewById(R.id.tvScore2)
         val tvTeam1: TextView = view.findViewById(R.id.tvTeam1)
         val tvTeam2: TextView = view.findViewById(R.id.tvTeam2)
         val tvStage: TextView = view.findViewById(R.id.tvStage)
