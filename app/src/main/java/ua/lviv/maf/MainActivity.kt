@@ -35,12 +35,14 @@ class MainActivity : AppCompatActivity() {
     private val MAF_API_URL = "https://maf.lviv.ua/wp-json/maf/v2/matches"
     private var currentYear = "2025"
     private var allMatches = mutableListOf<TournamentRow>()
+    
+    // Виносимо масив сюди, щоб він був доступний у всіх методах
+    private val seasons = arrayOf("2026", "2025", "2024")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         
-        // 1. ПРИБИРАЄМО СМУЖКИ (StatusBar та NavigationBar)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = Color.TRANSPARENT
         window.navigationBarColor = Color.parseColor("#121417")
@@ -54,13 +56,11 @@ class MainActivity : AppCompatActivity() {
             layoutParams = FrameLayout.LayoutParams(-1, -1)
         }
 
-        // --- HEADER (БЕЗ КНОПКИ LIVE) ---
         val headerLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, 
                 intArrayOf(Color.parseColor("#450000"), Color.parseColor("#1A1D23")))
-            // setPadding(ліворуч, зверху, праворуч, знизу)
             setPadding(60, 140, 60, 40) 
         }
 
@@ -72,14 +72,12 @@ class MainActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
         }
 
-        // БІЛИЙ СПІНЕР РОКІВ
         seasonSpinner = Spinner(this).apply {
-            val seasons = arrayOf("2026", "2025", "2024")
-            val adapter = object : ArrayAdapter<String>(this@MainActivity, android.R.layout.simple_spinner_item, seasons) {
+            val spinnerAdapter = object : ArrayAdapter<String>(this@MainActivity, android.R.layout.simple_spinner_item, seasons) {
                 override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                     val v = super.getView(position, convertView, parent)
                     (v as TextView).apply {
-                        setTextColor(Color.WHITE) // Рік тепер білий
+                        setTextColor(Color.WHITE)
                         textSize = 16f
                         typeface = Typeface.DEFAULT_BOLD
                     }
@@ -90,17 +88,18 @@ class MainActivity : AppCompatActivity() {
                     (v as TextView).apply {
                         setTextColor(Color.WHITE)
                         setBackgroundColor(Color.parseColor("#252932"))
+                        setPadding(30, 30, 30, 30)
                     }
                     return v
                 }
             }
-            this.adapter = adapter
-            setSelection(1) // 2025 за замовчуванням
+            this.adapter = spinnerAdapter
+            setSelection(1) // 2025
         }
 
         seasonSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val selectedYear = seasons[position]
+                val selectedYear = seasons[position] // Тепер seasons доступний!
                 if (currentYear != selectedYear) {
                     currentYear = selectedYear
                     loadFromApi(currentYear)
@@ -112,7 +111,6 @@ class MainActivity : AppCompatActivity() {
         headerLayout.addView(titleHeader)
         headerLayout.addView(seasonSpinner)
 
-        // --- CONTENT ---
         contentLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
@@ -129,17 +127,15 @@ class MainActivity : AppCompatActivity() {
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
-            setPadding(0, 0, 0, 220) // Відступ знизу під меню
+            setPadding(0, 0, 0, 220)
             clipToPadding = false
         }
 
         contentLayout.addView(dateRecyclerView)
         contentLayout.addView(recyclerView)
-
         mainContentContainer.addView(headerLayout)
         mainContentContainer.addView(contentLayout)
 
-        // Navigation
         val navColors = ColorStateList(
             arrayOf(intArrayOf(android.R.attr.state_selected), intArrayOf(-android.R.attr.state_selected)),
             intArrayOf(Color.parseColor("#E30613"), Color.GRAY)
@@ -164,7 +160,6 @@ class MainActivity : AppCompatActivity() {
         rootFrame.addView(bottomNav)
         setContentView(rootFrame)
 
-        // Обробка системних відступів (NavigationBar)
         ViewCompat.setOnApplyWindowInsetsListener(bottomNav) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(0, 0, 0, systemBars.bottom)
