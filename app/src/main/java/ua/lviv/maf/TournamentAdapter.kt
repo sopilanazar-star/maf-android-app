@@ -18,10 +18,8 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
         return if (viewType == 0) {
-            // Використовуємо твій файл для заголовків ліг
             LeagueHeaderViewHolder(inflater.inflate(R.layout.item_league_header, parent, false))
         } else {
-            // Використовуємо чисту картку без дублів назв
             MatchViewHolder(inflater.inflate(R.layout.item_match, parent, false))
         }
     }
@@ -30,7 +28,6 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val item = items[position]
 
         if (holder is LeagueHeaderViewHolder) {
-            // --- СТИЛІЗАЦІЯ ХЕДЕРА НАД КАРТКАМИ ---
             holder.tvLeagueName.apply {
                 text = item.league
                 textSize = 12f 
@@ -40,19 +37,16 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
             holder.tvStageName.apply {
                 text = item.stage
                 textSize = 11f 
-                setTextColor(Color.parseColor("#E30613")) // ТОЙ САМИЙ ЧЕРВОНИЙ
+                setTextColor(Color.parseColor("#E30613"))
                 visibility = if (item.stage.isNullOrEmpty()) View.GONE else View.VISIBLE
             }
 
         } else if (holder is MatchViewHolder) {
-            // --- ЧИСТА КАРТКА МАТЧУ ---
             holder.tvTeam1.text = item.team1
             holder.tvTeam2.text = item.team2
             
-            // Стадіон (маленький текст зверху справа)
             holder.tvStadium?.text = item.stadium
             
-            // Арбітр (курсив знизу)
             if (item.referee.isNullOrEmpty()) {
                 holder.tvReferee?.visibility = View.GONE
             } else {
@@ -60,21 +54,17 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                 holder.tvReferee?.text = "Арбітр: ${item.referee}"
             }
 
-            // Рахунок (центральне поле)
             holder.tvScore?.text = item.score
 
-            // Завантаження логотипів з Glide + заглушка
+            // ВИПРАВЛЕНО: Прибрали placeholder, який викликав помилку компіляції
             Glide.with(holder.itemView.context)
                 .load(item.logo1)
-                .placeholder(R.drawable.ic_launcher_background) // Заміни на свій логотип-заглушку
                 .into(holder.ivLogo1)
 
             Glide.with(holder.itemView.context)
                 .load(item.logo2)
-                .placeholder(R.drawable.ic_launcher_background)
                 .into(holder.ivLogo2)
 
-            // Перехід на деталі (Timeline, Склад)
             holder.itemView.setOnClickListener {
                 val context = holder.itemView.context
                 val intent = Intent(context, MatchDetailActivity::class.java).apply {
@@ -107,8 +97,6 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val ivLogo2: ImageView = view.findViewById(R.id.ivLogo2)
         val tvTeam1: TextView = view.findViewById(R.id.tvTeam1)
         val tvTeam2: TextView = view.findViewById(R.id.tvTeam2)
-        
-        // Поля згідно з твоїм оновленим XML
         val tvScore: TextView? = view.findViewById(R.id.tvScore)
         val tvStadium: TextView? = view.findViewById(R.id.tvStadium)
         val tvReferee: TextView? = view.findViewById(R.id.tvReferee)
