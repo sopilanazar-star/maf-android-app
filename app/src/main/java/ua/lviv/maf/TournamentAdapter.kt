@@ -1,7 +1,10 @@
 package ua.lviv.maf
 
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Color
+import android.graphics.Typeface
+import android.os.Build
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -29,14 +32,13 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
 
         if (holder is LeagueHeaderViewHolder) {
             holder.tvLeagueName.apply {
-                text = item.league
-                textSize = 12f 
-                setTextColor(Color.parseColor("#BCBCBC")) 
+                text = item.league.uppercase() 
+                textSize = 12f
+                setTextColor(Color.parseColor("#BCBCBC"))
             }
-            
             holder.tvStageName.apply {
                 text = item.stage
-                textSize = 11f 
+                textSize = 11f
                 setTextColor(Color.parseColor("#E30613"))
                 visibility = if (item.stage.isNullOrEmpty()) View.GONE else View.VISIBLE
             }
@@ -44,7 +46,6 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         } else if (holder is MatchViewHolder) {
             holder.tvTeam1.text = item.team1
             holder.tvTeam2.text = item.team2
-            
             holder.tvStadium?.text = item.stadium
             
             if (item.referee.isNullOrEmpty()) {
@@ -54,16 +55,35 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                 holder.tvReferee?.text = "Арбітр: ${item.referee}"
             }
 
-            holder.tvScore?.text = item.score
+            // --- ЛОГІКА РАХУНКУ ТА ГОДИННИКА ---
+            holder.tvScore?.apply {
+                val scoreValue = item.score ?: ""
+                text = scoreValue
 
-            // ВИПРАВЛЕНО: Прибрали placeholder, який викликав помилку компіляції
-            Glide.with(holder.itemView.context)
-                .load(item.logo1)
-                .into(holder.ivLogo1)
+                // Якщо це час (наприклад 11:00)
+                if (scoreValue.contains(":") && scoreValue.length <= 5) {
+                    setTextColor(Color.parseColor("#BCBCBC"))
+                    setTypeface(null, Typeface.NORMAL)
+                    textSize = 14f
+                    
+                    // Додаємо іконку годинника
+                    setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_time, 0, 0, 0)
+                    compoundDrawablePadding = 12
+                    
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        compoundDrawableTintList = ColorStateList.valueOf(Color.parseColor("#BCBCBC"))
+                    }
+                } else {
+                    // Якщо це результат (наприклад 2 : 1)
+                    setTextColor(Color.WHITE)
+                    setTypeface(null, Typeface.BOLD)
+                    textSize = 18f
+                    setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0) // Прибираємо іконку
+                }
+            }
 
-            Glide.with(holder.itemView.context)
-                .load(item.logo2)
-                .into(holder.ivLogo2)
+            Glide.with(holder.itemView.context).load(item.logo1).into(holder.ivLogo1)
+            Glide.with(holder.itemView.context).load(item.logo2).into(holder.ivLogo2)
 
             holder.itemView.setOnClickListener {
                 val context = holder.itemView.context
