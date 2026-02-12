@@ -35,14 +35,21 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
             holder.tvTeam2.text = item.team2
             holder.tvStage.text = item.stage
             holder.tvStadium.text = item.stadium
-            holder.tvReferee.text = if (item.referee.isNotEmpty()) "Арбітр: ${item.referee}" else ""
-            holder.tvReferee.visibility = if (item.referee.isEmpty()) View.GONE else View.VISIBLE
+            
+            if (item.referee.isNotEmpty()) {
+                holder.tvReferee.text = "Арбітр: ${item.referee}"
+                holder.tvReferee.visibility = View.VISIBLE
+            } else {
+                holder.tvReferee.visibility = View.GONE
+            }
 
-            // Логіка розділення рахунку
+            // Розбираємо рахунок "1 : 0" на дві частини
             if (item.score.contains(":")) {
                 val parts = item.score.split(":")
-                holder.tvScore1.text = parts[0].trim()
-                holder.tvScore2.text = parts[1].trim()
+                if (parts.size >= 2) {
+                    holder.tvScore1.text = parts[0].trim()
+                    holder.tvScore2.text = parts[1].trim()
+                }
             } else {
                 holder.tvScore1.text = ""
                 holder.tvScore2.text = item.score
@@ -53,9 +60,11 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
 
             holder.itemView.setOnClickListener {
                 val intent = Intent(holder.itemView.context, MatchDetailActivity::class.java).apply {
-                    putExtra("id", item.id); putExtra("team1", item.team1); putExtra("team2", item.team2)
-                    putExtra("logo1", item.logo1); putExtra("logo2", item.logo2); putExtra("score", item.score)
-                    putExtra("league", item.league); putExtra("stage", item.stage); putExtra("date", item.date)
+                    putExtra("id", item.id)
+                    putExtra("team1", item.team1); putExtra("team2", item.team2)
+                    putExtra("logo1", item.logo1); putExtra("logo2", item.logo2)
+                    putExtra("score", item.score); putExtra("league", item.league)
+                    putExtra("stage", item.stage); putExtra("date", item.date)
                     putExtra("stadium", item.stadium); putExtra("referee", item.referee)
                 }
                 holder.itemView.context.startActivity(intent)
