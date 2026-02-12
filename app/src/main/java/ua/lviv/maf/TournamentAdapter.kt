@@ -42,13 +42,18 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
             holder.tvTeam1.text = item.team1
             holder.tvTeam2.text = item.team2
             
-            // Нові поля для картки
+            // Заповнення нових полів
             holder.tvStage.text = item.stage
             holder.tvStadium.text = item.stadium ?: ""
-            holder.tvReferee.text = if (!item.referee.isNullOrEmpty()) "Арбітр: ${item.referee}" else ""
-            holder.tvReferee.visibility = if (item.referee.isNullOrEmpty()) View.GONE else View.VISIBLE
+            
+            if (!item.referee.isNullOrEmpty()) {
+                holder.tvReferee.text = "Арбітр: ${item.referee}"
+                holder.tvReferee.visibility = View.VISIBLE
+            } else {
+                holder.tvReferee.visibility = View.GONE
+            }
 
-            // Рахунок (розділений для tvScore1 та tvScore2)
+            // Логіка рахунку для tvScore1 та tvScore2
             if (item.score.contains(":")) {
                 val scores = item.score.split(":")
                 if (scores.size == 2) {
@@ -60,7 +65,7 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                 holder.tvScore2.text = item.score
             }
 
-            // Логотипи
+            // Завантаження логотипів
             Glide.with(holder.itemView.context).load(item.logo1).into(holder.ivLogo1)
             Glide.with(holder.itemView.context).load(item.logo2).into(holder.ivLogo2)
 
@@ -92,14 +97,15 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
     }
 
     class MatchViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val tvTeam1: TextView = view.findViewById(R.id.tvTeam1)
-        val tvTeam2: TextView = view.findViewById(R.id.tvTeam2)
+        // Старі поля (ті, на які була помилка)
         val ivLogo1: ImageView = view.findViewById(R.id.ivLogo1)
         val ivLogo2: ImageView = view.findViewById(R.id.ivLogo2)
         val tvScore1: TextView = view.findViewById(R.id.tvScore1)
         val tvScore2: TextView = view.findViewById(R.id.tvScore2)
+        val tvTeam1: TextView = view.findViewById(R.id.tvTeam1)
+        val tvTeam2: TextView = view.findViewById(R.id.tvTeam2)
         
-        // Поля, які ми додали для стадіону та арбітра
+        // Нові поля
         val tvStage: TextView = view.findViewById(R.id.tvStage)
         val tvStadium: TextView = view.findViewById(R.id.tvStadium)
         val tvReferee: TextView = view.findViewById(R.id.tvReferee)
