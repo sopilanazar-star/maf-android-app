@@ -1,14 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:background="#1A1D23">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:text="Тут буде склад команд..."
-        android:textColor="#808080" />
+        android:orientation="horizontal"
+        android:baselineAligned="false"
+        android:padding="8dp">
 
-</FrameLayout>
+        <LinearLayout
+            android:id="@+id/containerHome"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:padding="4dp" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="#333A45"
+            android:layout_marginHorizontal="4dp"/>
+
+        <LinearLayout
+            android:id="@+id/containerAway"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:padding="4dp" />
+
+    </LinearLayout>
+</ScrollView>
