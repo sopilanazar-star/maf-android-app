@@ -25,6 +25,10 @@ class MatchDetailActivity : AppCompatActivity() {
 
         // 2. Отримуємо дані з Intent
         val matchId = intent.getStringExtra("id") ?: ""
+        // ПРАВКА: Отримуємо ID домашньої команди. Переконайтеся, що в адаптері списку матчів 
+        // ви передаєте ID першої команди під ключем "home_team_id"
+        val homeTeamId = intent.getStringExtra("home_team_id") ?: ""
+        
         val team1 = intent.getStringExtra("team1") ?: "Команда 1"
         val team2 = intent.getStringExtra("team2") ?: "Команда 2"
         val logo1 = intent.getStringExtra("logo1")
@@ -62,12 +66,22 @@ class MatchDetailActivity : AppCompatActivity() {
             tvReferee.visibility = View.GONE
         }
 
-        // Завантаження логотипів
+        // Завантаження логотипів з перевіркою на HTTPS для стабільності
         val ivLogo1: ImageView = findViewById(R.id.ivDetailLogo1)
         val ivLogo2: ImageView = findViewById(R.id.ivDetailLogo2)
 
-        Glide.with(this).load(logo1).placeholder(android.R.drawable.ic_menu_gallery).into(ivLogo1)
-        Glide.with(this).load(logo2).placeholder(android.R.drawable.ic_menu_gallery).into(ivLogo2)
+        val secureLogo1 = logo1?.replace("http://", "https://")
+        val secureLogo2 = logo2?.replace("http://", "https://")
+
+        Glide.with(this)
+            .load(secureLogo1)
+            .placeholder(android.R.drawable.ic_menu_gallery)
+            .into(ivLogo1)
+            
+        Glide.with(this)
+            .load(secureLogo2)
+            .placeholder(android.R.drawable.ic_menu_gallery)
+            .into(ivLogo2)
 
         // 4. НАЛАШТУВАННЯ ТАБІВ (Timeline та Склад)
         val tabs: TabLayout = findViewById(R.id.detailTabs)
@@ -77,14 +91,12 @@ class MatchDetailActivity : AppCompatActivity() {
             override fun getItemCount(): Int = 2
 
             override fun createFragment(position: Int): Fragment {
-    return when (position) {
-        // Додаємо другий параметр homeTeamId, щоб TimelineFragment знав, хто господарі
-        0 -> TimelineFragment.newInstance(matchId, homeTeamId) 
-        
-        // Для складів (Lineups) поки залишаємо тільки matchId
-        else -> LineupsFragment.newInstance(matchId)
-    }
-}
+                return when (position) {
+                    // Тепер ми передаємо витягнутий homeTeamId
+                    0 -> TimelineFragment.newInstance(matchId, homeTeamId) 
+                    else -> LineupsFragment.newInstance(matchId)
+                }
+            }
         }
 
         TabLayoutMediator(tabs, viewPager) { tab, position ->
