@@ -31,7 +31,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var titleHeader: TextView
     private lateinit var contentLayout: LinearLayout
     private lateinit var seasonSpinner: Spinner
-    
+    private lateinit var fragmentContainer: FrameLayout // Додаємо контейнер для фрагментів
+
     private val MAF_API_URL = "https://maf.lviv.ua/wp-json/maf/v2/matches"
     private val MAF_NEWS_URL = "https://maf.lviv.ua/wp-json/maf/v2/news"
     
@@ -112,7 +113,7 @@ class MainActivity : AppCompatActivity() {
         headerLayout.addView(titleHeader)
         headerLayout.addView(seasonSpinner)
 
-        // --- CONTENT ---
+        // --- CONTENT LAYOUT (для списків) ---
         contentLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
@@ -129,14 +130,14 @@ class MainActivity : AppCompatActivity() {
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
-            setPadding(0, 0, 0, 220)
+            setPadding(0, 0, 0, 0) // Прибираємо великий паддінг, бо тепер є контейнер
             clipToPadding = false
         }
 
         newsRecyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
-            setPadding(0, 0, 0, 220)
+            setPadding(0, 0, 0, 0)
             clipToPadding = false
             visibility = View.VISIBLE
         }
@@ -144,9 +145,17 @@ class MainActivity : AppCompatActivity() {
         contentLayout.addView(dateRecyclerView)
         contentLayout.addView(recyclerView)
         contentLayout.addView(newsRecyclerView)
+
+        // --- ФРАГМЕНТ КОНТЕЙНЕР (для StandingFragment) ---
+        fragmentContainer = FrameLayout(this).apply {
+            id = View.generateViewId() // Генеруємо ID для фрагмент менеджера
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
+            visibility = View.GONE
+        }
         
         mainContentContainer.addView(headerLayout)
         mainContentContainer.addView(contentLayout)
+        mainContentContainer.addView(fragmentContainer)
 
         // --- NAVIGATION ---
         val navColors = ColorStateList(
@@ -163,19 +172,36 @@ class MainActivity : AppCompatActivity() {
 
             setOnItemSelectedListener { item ->
                 titleHeader.text = item.title
-                contentLayout.visibility = View.VISIBLE
                 
-                if (item.itemId == R.id.nav_matches) {
-                    recyclerView.visibility = View.VISIBLE
-                    dateRecyclerView.visibility = View.VISIBLE
-                    newsRecyclerView.visibility = View.GONE
-                    seasonSpinner.visibility = View.VISIBLE
-                } else if (item.itemId == R.id.nav_news) {
-                    recyclerView.visibility = View.GONE
-                    dateRecyclerView.visibility = View.GONE
-                    newsRecyclerView.visibility = View.VISIBLE
-                    seasonSpinner.visibility = View.GONE
-                    loadNewsFromApi()
+                // Логіка перемикання видимості
+                when (item.itemId) {
+                    R.id.nav_matches -> {
+                        fragmentContainer.visibility = View.GONE
+                        contentLayout.visibility = View.VISIBLE
+                        recyclerView.visibility = View.VISIBLE
+                        dateRecyclerView.visibility = View.VISIBLE
+                        newsRecyclerView.visibility = View.GONE
+                        seasonSpinner.visibility = View.VISIBLE
+                    }
+                    R.id.nav_news -> {
+                        fragmentContainer.visibility = View.GONE
+                        contentLayout.visibility = View.VISIBLE
+                        recyclerView.visibility = View.GONE
+                        dateRecyclerView.visibility = View.GONE
+                        newsRecyclerView.visibility = View.VISIBLE
+                        seasonSpinner.visibility = View.GONE
+                        loadNewsFromApi()
+                    }
+                    R.id.nav_tables -> {
+                        contentLayout.visibility = View.GONE
+                        seasonSpinner.visibility = View.GONE
+                        fragmentContainer.visibility = View.VISIBLE
+                        
+                        // Завантажуємо фрагмент у контейнер
+                        supportFragmentManager.beginTransaction()
+                            .replace(fragmentContainer.id, StandingFragment())
+                            .commit()
+                    }
                 }
                 true
             }
@@ -192,118 +218,8 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        // ОДНОЧАСНИЙ ЗАПУСК
         loadFromApi(currentYear)
         loadNewsFromApi()
     }
 
-    private fun loadNewsFromApi() {
-        val client = OkHttpClient()
-        val request = Request.Builder().url(MAF_NEWS_URL).build()
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) { e.printStackTrace() }
-            override fun onResponse(call: Call, response: Response) {
-                val jsonData = response.body?.string() ?: ""
-                try {
-                    val array = JSONArray(jsonData)
-                    val newsList = mutableListOf<NewsModel>()
-                    for (i in 0 until array.length()) {
-                        val obj = array.getJSONObject(i)
-                        newsList.add(NewsModel(
-                            obj.optString("id", "0"),
-                            obj.optString("title", ""),
-                            obj.optString("preview", ""),
-                            obj.optString("content", ""),
-                            obj.optString("date", "")
-                        ))
-                    }
-                    runOnUiThread {
-                        newsRecyclerView.adapter = NewsAdapter(newsList)
-                    }
-                } catch (e: Exception) { e.printStackTrace() }
-            }
-        })
-    }
-
-    private fun loadFromApi(year: String) {
-        val client = OkHttpClient()
-        val request = Request.Builder().url("$MAF_API_URL?year=$year").build()
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {}
-            override fun onResponse(call: Call, response: Response) {
-                val jsonData = response.body?.string() ?: ""
-                try {
-                    val array = JSONArray(jsonData)
-                    allMatches.clear()
-                    for (i in 0 until array.length()) {
-                        val m = array.getJSONObject(i)
-                        allMatches.add(TournamentRow(
-                            id = m.optString("id", "0"),
-                            team1 = m.optString("team1", ""),
-                            logo1 = m.optString("logo1", ""),
-                            team2 = m.optString("team2", ""),
-                            logo2 = m.optString("logo2", ""),
-                            score = m.optString("score", ""),
-                            date = m.optString("date", ""),
-                            league = m.optString("league", "MAF"),
-                            stage = m.optString("stage", ""),
-                            stadium = m.optString("stadium", ""),
-                            referee = m.optString("referee", ""),
-                            isHeader = false
-                        ))
-                    }
-                    runOnUiThread {
-                        val dateList = createDateList(allMatches)
-                        dateRecyclerView.adapter = DateAdapter(dateList) { filterMatches(it) }
-                        if (dateList.isNotEmpty()) {
-                            dateList[0].isSelected = true
-                            filterMatches(dateList[0].date)
-                        }
-                    }
-                } catch (e: Exception) { e.printStackTrace() }
-            }
-        })
-    }
-
-    private fun createDateList(matches: List<TournamentRow>): List<DateModel> {
-        val calendarList = mutableListOf<DateModel>()
-        try {
-            val uniqueDates = matches.map { it.date }.distinct().sortedByDescending { 
-                SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).parse(it) 
-            }
-            val inputFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
-            val dayNameFormat = SimpleDateFormat("EEE", Locale("uk"))
-            val dayNumFormat = SimpleDateFormat("dd", Locale.getDefault())
-            val monthFormat = SimpleDateFormat("MMM", Locale("uk"))
-
-            uniqueDates.forEach { dateStr ->
-                val date = inputFormat.parse(dateStr)
-                if (date != null) {
-                    calendarList.add(DateModel(dateStr, dayNameFormat.format(date).uppercase(), dayNumFormat.format(date), monthFormat.format(date)))
-                }
-            }
-        } catch (e: Exception) {}
-        return calendarList
-    }
-
-    private fun filterMatches(date: String) {
-        val filtered = allMatches.filter { it.date == date }
-        val grouped = groupMatchesByLeagueAndStage(filtered)
-        runOnUiThread { recyclerView.adapter = TournamentAdapter(grouped) }
-    }
-
-    private fun groupMatchesByLeagueAndStage(matches: List<TournamentRow>): List<TournamentRow> {
-        val result = mutableListOf<TournamentRow>()
-        val grouped = matches.groupBy { "${it.league}|${it.stage}" }
-        for ((key, leagueMatches) in grouped) {
-            val parts = key.split("|")
-            val leagueName = parts[0]
-            val stageName = if (parts.size > 1) parts[1] else ""
-            
-            // СТВОРЮЄМО ХЕДЕР: ТЕПЕР stage ПЕРЕДАЄТЬСЯ ЗАЛІЗОБЕТОННО
-            result.add(TournamentRow("0", "", "", "", "", "", "", leagueName, stageName, "", "", true))
-            result.addAll(leagueMatches)
-        }
-        return result
-    }
-}
+    // ... Твої методи loadNewsFromApi, loadFromApi, createDateList, filterMatches, groupMatchesByLeagueAndStage залишаються без змін ...
