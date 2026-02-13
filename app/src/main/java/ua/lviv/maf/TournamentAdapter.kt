@@ -1,8 +1,10 @@
 package ua.lviv.maf
 
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
+import android.os.Build
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -29,59 +31,47 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val item = items[position]
 
         if (holder is LeagueHeaderViewHolder) {
-            // --- ХЕДЕР ---
-            holder.tvLeagueName.apply {
-                text = item.league.uppercase()
-                textSize = 12f
-                setTextColor(Color.parseColor("#BCBCBC"))
-            }
-
-            holder.tvStageName.apply {
-                text = item.stage
-                textSize = 11f
-                setTextColor(Color.parseColor("#E30613")) // Червоний
-                visibility = if (item.stage.isNullOrEmpty()) View.GONE else View.VISIBLE
-            }
+            // --- ПОВЕРТАЄМО ЕТАП І ЛІГУ ---
+            holder.tvLeagueName.text = item.league.uppercase()
+            holder.tvStageName.text = item.stage
+            holder.tvStageName.visibility = if (item.stage.isEmpty()) View.GONE else View.VISIBLE
 
         } else if (holder is MatchViewHolder) {
-            // --- КАРТКА ---
             holder.tvTeam1.text = item.team1
             holder.tvTeam2.text = item.team2
             holder.tvStadium?.text = item.stadium
             
-            if (item.referee.isNullOrEmpty()) {
+            if (item.referee.isEmpty()) {
                 holder.tvReferee?.visibility = View.GONE
             } else {
                 holder.tvReferee?.visibility = View.VISIBLE
                 holder.tvReferee?.text = "Арбітр: ${item.referee}"
             }
 
-            val scoreValue = item.score ?: ""
-            holder.tvScore?.text = scoreValue
+            // --- ЛОГІКА ГОДИННИКА ТА РАХУНКУ ---
+            holder.tvScore?.apply {
+                val scoreValue = item.score ?: ""
+                text = scoreValue
 
-            // --- ЗАЛІЗОБЕТОННА ПЕРЕВІРКА ---
-            if (scoreValue.contains(" : ")) {
-                // ЦЕ РАХУНОК (2 : 1)
-                holder.tvMatchStatusLabel?.visibility = View.GONE // Ховаємо напис
-                holder.tvScore?.apply {
+                if (scoreValue.contains(" : ")) {
+                    // ЦЕ РАХУНОК (2 : 1)
                     setTextColor(Color.WHITE)
-                    textSize = 18f
                     setTypeface(null, Typeface.BOLD)
-                }
-            } else {
-                // ЦЕ ЧАС (11:00)
-                holder.tvMatchStatusLabel?.visibility = View.VISIBLE // Показуємо "Початок матчу"
-                holder.tvMatchStatusLabel?.text = "Початок матчу"
-                
-                holder.tvScore?.apply {
-                    setTextColor(Color.parseColor("#BCBCBC")) // Час сірим
-                    textSize = 14f
+                    setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0) // Прибрати годинник
+                } else {
+                    // ЦЕ ЧАС (11:00)
+                    setTextColor(Color.parseColor("#BCBCBC"))
                     setTypeface(null, Typeface.NORMAL)
+                    
+                    // Ставимо іконку годинника (ic_time)
+                    setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_time, 0, 0, 0)
+                    compoundDrawablePadding = 10
+                    
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        compoundDrawableTintList = ColorStateList.valueOf(Color.parseColor("#BCBCBC"))
+                    }
                 }
             }
-            
-            // Прибираємо будь-які іконки, про всяк випадок
-            holder.tvScore?.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
 
             Glide.with(holder.itemView.context).load(item.logo1).into(holder.ivLogo1)
             Glide.with(holder.itemView.context).load(item.logo2).into(holder.ivLogo2)
@@ -121,8 +111,6 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val tvScore: TextView? = view.findViewById(R.id.tvScore)
         val tvStadium: TextView? = view.findViewById(R.id.tvStadium)
         val tvReferee: TextView? = view.findViewById(R.id.tvReferee)
-        // Нове поле
-        val tvMatchStatusLabel: TextView? = view.findViewById(R.id.tvMatchStatusLabel)
     }
     }
     
