@@ -23,7 +23,7 @@
         <property
             android:name="android.adservices.AD_SERVICES_CONFIG"
             android:resource="@xml/gma_ad_services_config"
-            tools:replace="android:resource" />
+            android:tools:replace="android:resource" />
 
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
@@ -60,6 +60,12 @@
         <activity
             android:name=".MatchDetailActivity"
             android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
+
+        <activity
+            android:name=".NewsDetailActivity"
+            android:screenOrientation="portrait"
+            android:hardwareAccelerated="true"
             android:theme="@style/Theme.AppCompat.NoActionBar" />
 
         <provider
