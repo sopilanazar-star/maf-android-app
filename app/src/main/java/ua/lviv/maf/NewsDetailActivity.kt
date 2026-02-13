@@ -1,7 +1,6 @@
 package ua.lviv.maf
 
 import android.os.Bundle
-import android.text.Html
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -19,16 +18,13 @@ class NewsDetailActivity : AppCompatActivity() {
         btnBack.setOnClickListener { finish() }
 
         val title = intent.getStringExtra("NEWS_TITLE") ?: ""
-        val rawHtml = intent.getStringExtra("NEWS_CONTENT") ?: ""
+        // Отримуємо вже очищений на сервері текст
+        val cleanContent = intent.getStringExtra("NEWS_CONTENT") ?: ""
         
         tvHeader.text = title
 
-        // Обробка HTML: прибираємо теги, залишаємо іконки та форматування
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-            tvContent.text = Html.fromHtml(rawHtml, Html.FROM_HTML_MODE_COMPACT)
-        } else {
-            @Suppress("DEPRECATION")
-            tvContent.text = Html.fromHtml(rawHtml)
-        }
+        // Тепер просто встановлюємо текст. 
+        // Оскільки в PHP ми додали "\n\n", TextView сам зробить гарні відступи.
+        tvContent.text = cleanContent
     }
 }
