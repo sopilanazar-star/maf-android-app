@@ -4,7 +4,6 @@ import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
-import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -28,14 +27,12 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var dateRecyclerView: RecyclerView
-    // НОВЕ: Список для новин
     private lateinit var newsRecyclerView: RecyclerView
     private lateinit var titleHeader: TextView
     private lateinit var contentLayout: LinearLayout
     private lateinit var seasonSpinner: Spinner
     
     private val MAF_API_URL = "https://maf.lviv.ua/wp-json/maf/v2/matches"
-    // НОВЕ: URL для новин
     private val MAF_NEWS_URL = "https://maf.lviv.ua/wp-json/maf/v2/news"
     
     private var currentYear = "2025"
@@ -136,18 +133,16 @@ class MainActivity : AppCompatActivity() {
             clipToPadding = false
         }
 
-        // НОВЕ: Налаштування списку новин
         newsRecyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
             setPadding(0, 0, 0, 220)
             clipToPadding = false
-            visibility = View.VISIBLE // За замовчуванням новини (бо selectedItemId = nav_news)
+            visibility = View.VISIBLE
         }
 
         contentLayout.addView(dateRecyclerView)
         contentLayout.addView(recyclerView)
-        // Додаємо список новин у контент
         contentLayout.addView(newsRecyclerView)
         
         mainContentContainer.addView(headerLayout)
@@ -171,13 +166,11 @@ class MainActivity : AppCompatActivity() {
                 contentLayout.visibility = View.VISIBLE
                 
                 if (item.itemId == R.id.nav_matches) {
-                    // Показуємо матчі, ховаємо новини та спінер року
                     recyclerView.visibility = View.VISIBLE
                     dateRecyclerView.visibility = View.VISIBLE
                     newsRecyclerView.visibility = View.GONE
                     seasonSpinner.visibility = View.VISIBLE
                 } else if (item.itemId == R.id.nav_news) {
-                    // Показуємо новини, ховаємо матчі та спінер року (якщо треба)
                     recyclerView.visibility = View.GONE
                     dateRecyclerView.visibility = View.GONE
                     newsRecyclerView.visibility = View.VISIBLE
@@ -199,11 +192,11 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
+        // ОДНОЧАСНИЙ ЗАПУСК
         loadFromApi(currentYear)
-        loadNewsFromApi() // Початкове завантаження новин
+        loadNewsFromApi()
     }
 
-    // НОВЕ: Завантаження новин з API
     private fun loadNewsFromApi() {
         val client = OkHttpClient()
         val request = Request.Builder().url(MAF_NEWS_URL).build()
@@ -265,8 +258,6 @@ class MainActivity : AppCompatActivity() {
                         if (dateList.isNotEmpty()) {
                             dateList[0].isSelected = true
                             filterMatches(dateList[0].date)
-                        } else {
-                            recyclerView.adapter = TournamentAdapter(emptyList())
                         }
                     }
                 } catch (e: Exception) { e.printStackTrace() }
@@ -308,6 +299,8 @@ class MainActivity : AppCompatActivity() {
             val parts = key.split("|")
             val leagueName = parts[0]
             val stageName = if (parts.size > 1) parts[1] else ""
+            
+            // СТВОРЮЄМО ХЕДЕР: ТЕПЕР stage ПЕРЕДАЄТЬСЯ ЗАЛІЗОБЕТОННО
             result.add(TournamentRow("0", "", "", "", "", "", "", leagueName, stageName, "", "", true))
             result.addAll(leagueMatches)
         }
