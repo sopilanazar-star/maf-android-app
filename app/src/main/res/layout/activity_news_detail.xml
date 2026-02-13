@@ -25,20 +25,27 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
-            android:layout_toEndOf="@id/btnNewsBack"
             android:layout_marginStart="16dp"
+            android:layout_toEndOf="@id/btnNewsBack"
+            android:ellipsize="end"
+            android:maxLines="1"
             android:text="Новина"
             android:textColor="#FFFFFF"
             android:textSize="18sp"
-            android:textStyle="bold"
-            android:maxLines="1"
-            android:ellipsize="end" />
+            android:textStyle="bold" />
     </RelativeLayout>
 
-    <WebView
-        android:id="@+id/webViewNews"
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#1A1D23" />
+        android:padding="20dp">
 
+        <TextView
+            android:id="@+id/tvFullContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:lineSpacingExtra="6dp"
+            android:textColor="#BCBCBC"
+            android:textSize="16sp" />
+    </ScrollView>
 </LinearLayout>
