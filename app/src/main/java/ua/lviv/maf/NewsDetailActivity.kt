@@ -1,8 +1,7 @@
 package ua.lviv.maf
 
-import android.graphics.Color
 import android.os.Bundle
-import android.webkit.WebView
+import android.text.Html
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -15,47 +14,21 @@ class NewsDetailActivity : AppCompatActivity() {
 
         val btnBack: ImageButton = findViewById(R.id.btnNewsBack)
         val tvHeader: TextView = findViewById(R.id.tvNewsDetailHeader)
-        val webView: WebView = findViewById(R.id.webViewNews)
+        val tvContent: TextView = findViewById(R.id.tvFullContent)
 
         btnBack.setOnClickListener { finish() }
 
-        // Отримуємо дані
-        val title = intent.getStringExtra("NEWS_TITLE") ?: "Новина"
+        val title = intent.getStringExtra("NEWS_TITLE") ?: ""
         val rawHtml = intent.getStringExtra("NEWS_CONTENT") ?: ""
         
         tvHeader.text = title
 
-        // Стилізуємо HTML, щоб він пасував до темної теми додатка
-        val styledHtml = """
-            <html>
-            <head>
-                <style>
-                    body {
-                        background-color: #1A1D23;
-                        color: #FFFFFF;
-                        font-family: sans-serif;
-                        padding: 15px;
-                        line-height: 1.6;
-                    }
-                    h2, h3 { color: #E30613; }
-                    ul { padding-left: 20px; }
-                    li { margin-bottom: 10px; }
-                    strong { color: #FFFFFF; }
-                    .maf-highlight { 
-                        background: #252932; 
-                        border-left: 4px solid #E30613; 
-                        padding: 10px; 
-                        margin: 15px 0; 
-                    }
-                </style>
-            </head>
-            <body>
-                $rawHtml
-            </body>
-            </html>
-        """.trimIndent()
-
-        webView.setBackgroundColor(Color.TRANSPARENT)
-        webView.loadDataWithBaseURL(null, styledHtml, "text/html", "UTF-8", null)
+        // Обробка HTML: прибираємо теги, залишаємо іконки та форматування
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+            tvContent.text = Html.fromHtml(rawHtml, Html.FROM_HTML_MODE_COMPACT)
+        } else {
+            @Suppress("DEPRECATION")
+            tvContent.text = Html.fromHtml(rawHtml)
+        }
     }
 }
