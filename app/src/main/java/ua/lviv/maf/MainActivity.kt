@@ -35,8 +35,6 @@ class MainActivity : AppCompatActivity() {
     private val MAF_API_URL = "https://maf.lviv.ua/wp-json/maf/v2/matches"
     private var currentYear = "2025"
     private var allMatches = mutableListOf<TournamentRow>()
-    
-    // Виносимо масив сюди, щоб він був доступний у всіх методах
     private val seasons = arrayOf("2026", "2025", "2024")
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,6 +54,7 @@ class MainActivity : AppCompatActivity() {
             layoutParams = FrameLayout.LayoutParams(-1, -1)
         }
 
+        // --- HEADER ---
         val headerLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -94,12 +93,12 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             this.adapter = spinnerAdapter
-            setSelection(1) // 2025
+            setSelection(1) 
         }
 
         seasonSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val selectedYear = seasons[position] // Тепер seasons доступний!
+                val selectedYear = seasons[position]
                 if (currentYear != selectedYear) {
                     currentYear = selectedYear
                     loadFromApi(currentYear)
@@ -111,6 +110,7 @@ class MainActivity : AppCompatActivity() {
         headerLayout.addView(titleHeader)
         headerLayout.addView(seasonSpinner)
 
+        // --- CONTENT ---
         contentLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
@@ -136,6 +136,7 @@ class MainActivity : AppCompatActivity() {
         mainContentContainer.addView(headerLayout)
         mainContentContainer.addView(contentLayout)
 
+        // --- NAVIGATION ---
         val navColors = ColorStateList(
             arrayOf(intArrayOf(android.R.attr.state_selected), intArrayOf(-android.R.attr.state_selected)),
             intArrayOf(Color.parseColor("#E30613"), Color.GRAY)
@@ -238,12 +239,34 @@ class MainActivity : AppCompatActivity() {
         runOnUiThread { recyclerView.adapter = TournamentAdapter(grouped) }
     }
 
+    // --- ОСЬ ЦЕЙ МЕТОД Я ВИПРАВИВ ---
     private fun groupMatchesByLeagueAndStage(matches: List<TournamentRow>): List<TournamentRow> {
         val result = mutableListOf<TournamentRow>()
+        // Групуємо за унікальною парою "Ліга + Етап"
         val grouped = matches.groupBy { "${it.league}|${it.stage}" }
+        
         for ((key, leagueMatches) in grouped) {
             val parts = key.split("|")
-            result.add(TournamentRow("0", "", "", "", "", "", "", parts[0], parts.getOrNull(1) ?: "", "", "", true))
+            val leagueName = parts[0]
+            val stageName = if (parts.size > 1) parts[1] else ""
+
+            // Додаємо заголовок (Header)
+            result.add(TournamentRow(
+                id = "0",
+                team1 = "",
+                logo1 = "",
+                team2 = "",
+                logo2 = "",
+                score = "",
+                date = "",
+                league = leagueName, // Назва турніру
+                stage = stageName,   // ЕТАП (ТЕПЕР ПЕРЕДАЄТЬСЯ ПРАВИЛЬНО!)
+                stadium = "",
+                referee = "",
+                isHeader = true
+            ))
+            
+            // Додаємо самі матчі під цей заголовок
             result.addAll(leagueMatches)
         }
         return result
