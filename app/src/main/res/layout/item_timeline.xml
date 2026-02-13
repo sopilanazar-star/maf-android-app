@@ -3,29 +3,66 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:padding="12dp"
+    android:paddingVertical="8dp"
+    android:paddingHorizontal="12dp"
     android:gravity="center_vertical"
     android:background="#1A1D23">
 
-    <TextView
-        android:id="@+id/tvEventMinute"
-        android:layout_width="45dp"
-        android:layout_height="wrap_content"
-        android:textColor="#BCBCBC"
-        android:textSize="14sp"
-        android:textStyle="bold" />
-
-    <ImageView
-        android:id="@+id/ivEventType"
-        android:layout_width="20dp"
-        android:layout_height="20dp"
-        android:layout_marginHorizontal="12dp" />
-
-    <TextView
-        android:id="@+id/tvEventDescription"
+    <LinearLayout
+        android:id="@+id/layoutLeft"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:textColor="#FFFFFF"
-        android:textSize="15sp" />
+        android:gravity="end"
+        android:orientation="horizontal"
+        android:visibility="invisible">
+
+        <TextView
+            android:id="@+id/tvDescriptionLeft"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:gravity="end"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp" />
+
+        <ImageView
+            android:id="@+id/ivTypeLeft"
+            android:layout_width="18dp"
+            android:layout_height="18dp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvEventMinute"
+        android:layout_width="50dp"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textColor="#BCBCBC"
+        android:textSize="12sp"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:id="@+id/layoutRight"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="start"
+        android:orientation="horizontal"
+        android:visibility="invisible">
+
+        <ImageView
+            android:id="@+id/ivTypeRight"
+            android:layout_width="18dp"
+            android:layout_height="18dp" />
+
+        <TextView
+            android:id="@+id/tvDescriptionRight"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:gravity="start"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp" />
+    </LinearLayout>
+
 </LinearLayout>
