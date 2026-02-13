@@ -13,14 +13,14 @@ class TimelineAdapter(private val events: List<TimelineEvent>) :
     RecyclerView.Adapter<TimelineAdapter.TimelineViewHolder>() {
 
     class TimelineViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        // Тепер використовуємо ID, які ми прописали в новому XML
         val tvMinute: TextView = view.findViewById(R.id.tvEventMinute)
+        val ivCenterIcon: ImageView = view.findViewById(R.id.ivCenterIcon)
+        
         val layoutLeft: LinearLayout = view.findViewById(R.id.layoutLeft)
         val layoutRight: LinearLayout = view.findViewById(R.id.layoutRight)
         
-        val ivTypeLeft: ImageView = view.findViewById(R.id.ivTypeLeft)
         val tvDescriptionLeft: TextView = view.findViewById(R.id.tvDescriptionLeft)
-        
-        val ivTypeRight: ImageView = view.findViewById(R.id.ivTypeRight)
         val tvDescriptionRight: TextView = view.findViewById(R.id.tvDescriptionRight)
     }
 
@@ -31,56 +31,60 @@ class TimelineAdapter(private val events: List<TimelineEvent>) :
 
     override fun onBindViewHolder(holder: TimelineViewHolder, position: Int) {
         val event = events[position]
+        
+        // Встановлюємо хвилину
         holder.tvMinute.text = "${event.minute}'"
 
-        val description = if (!event.playerOutName.isNullOrEmpty()) {
-            "${event.playerName} (замість ${event.playerOutName})"
+        // Формуємо опис (гравець + заміна, якщо є)
+        val description = if (!event.player_out_name.isNullOrEmpty()) {
+            "${event.player_name}\n(замість ${event.player_out_name})"
         } else {
-            event.playerName
+            event.player_name
         }
 
+        // Логіка розведення сторін (left/right тепер береться з твого JSON)
         if (event.side == "left") {
             holder.layoutLeft.visibility = View.VISIBLE
-            holder.layoutRight.visibility = View.GONE
-            setupEventView(holder.ivTypeLeft, holder.tvDescriptionLeft, event, description)
+            holder.layoutRight.visibility = View.INVISIBLE 
+            holder.tvDescriptionLeft.text = description
         } else {
             holder.layoutRight.visibility = View.VISIBLE
-            holder.layoutLeft.visibility = View.GONE
-            setupEventView(holder.ivTypeRight, holder.tvDescriptionRight, event, description)
+            holder.layoutLeft.visibility = View.INVISIBLE
+            holder.tvDescriptionRight.text = description
         }
+
+        // Оновлюємо центральну іконку (твій новий м'яч ic_ball)
+        setupCenterIcon(holder.ivCenterIcon, event)
     }
 
-    private fun setupEventView(imageView: ImageView, textView: TextView, event: TimelineEvent, description: String) {
-        textView.text = description
+    private fun setupCenterIcon(imageView: ImageView, event: TimelineEvent) {
         imageView.clearColorFilter()
         
         when (event.type) {
             "goal" -> {
-                // ВИПРАВЛЕНО: Використовуємо твій новий м'яч
-                imageView.setImageResource(R.drawable.ic_ball) 
-                imageView.setColorFilter(null) // Прибираємо фільтр, якщо іконка вже біла
+                imageView.setImageResource(R.drawable.ic_ball)
             }
             "goal_og" -> {
                 imageView.setImageResource(R.drawable.ic_ball)
-                imageView.setColorFilter(Color.RED) // Червоний м'яч для автогола
-                textView.text = "$description (автогол)"
+                imageView.setColorFilter(Color.RED) // Автогол підсвітимо червоним
             }
             "yellow_card" -> {
-                // ВИПРАВЛЕНО: Спеціальна іконка картки
-                imageView.setImageResource(R.drawable.ic_card)
-                imageView.setColorFilter(Color.parseColor("#FFD700")) // Золотистий/Жовтий
+                // Якщо у тебе є ic_card, використовуй його, або ic_ball як заглушку
+                imageView.setImageResource(R.drawable.ic_ball) 
+                imageView.setColorFilter(Color.parseColor("#FFD700"))
             }
             "red_card" -> {
-                imageView.setImageResource(R.drawable.ic_card)
+                imageView.setImageResource(R.drawable.ic_ball)
                 imageView.setColorFilter(Color.RED)
             }
             "substitution" -> {
-                // ВИПРАВЛЕНО: Стрілочки заміни
-                imageView.setImageResource(R.drawable.ic_substitution)
-                imageView.setColorFilter(null)
+                // Тут можна додати іконку заміни (стрілочки)
+                imageView.setImageResource(R.drawable.ic_ball)
+                imageView.setColorFilter(Color.GREEN)
             }
         }
     }
 
     override fun getItemCount() = events.size
-}
+    }
+    
