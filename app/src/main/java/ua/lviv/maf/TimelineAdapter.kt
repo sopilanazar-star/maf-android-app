@@ -13,13 +13,10 @@ class TimelineAdapter(private val events: List<TimelineEvent>) :
     RecyclerView.Adapter<TimelineAdapter.TimelineViewHolder>() {
 
     class TimelineViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        // Тепер використовуємо ID, які ми прописали в новому XML
         val tvMinute: TextView = view.findViewById(R.id.tvEventMinute)
         val ivCenterIcon: ImageView = view.findViewById(R.id.ivCenterIcon)
-        
         val layoutLeft: LinearLayout = view.findViewById(R.id.layoutLeft)
         val layoutRight: LinearLayout = view.findViewById(R.id.layoutRight)
-        
         val tvDescriptionLeft: TextView = view.findViewById(R.id.tvDescriptionLeft)
         val tvDescriptionRight: TextView = view.findViewById(R.id.tvDescriptionRight)
     }
@@ -31,18 +28,16 @@ class TimelineAdapter(private val events: List<TimelineEvent>) :
 
     override fun onBindViewHolder(holder: TimelineViewHolder, position: Int) {
         val event = events[position]
-        
-        // Встановлюємо хвилину
         holder.tvMinute.text = "${event.minute}'"
 
-        // Формуємо опис (гравець + заміна, якщо є)
+        // ВИПРАВЛЕНО: Використовуємо змінні з маленькими літерами (snake_case)
         val description = if (!event.player_out_name.isNullOrEmpty()) {
             "${event.player_name}\n(замість ${event.player_out_name})"
         } else {
             event.player_name
         }
 
-        // Логіка розведення сторін (left/right тепер береться з твого JSON)
+        // Логіка розведення сторін
         if (event.side == "left") {
             holder.layoutLeft.visibility = View.VISIBLE
             holder.layoutRight.visibility = View.INVISIBLE 
@@ -53,33 +48,27 @@ class TimelineAdapter(private val events: List<TimelineEvent>) :
             holder.tvDescriptionRight.text = description
         }
 
-        // Оновлюємо центральну іконку (твій новий м'яч ic_ball)
         setupCenterIcon(holder.ivCenterIcon, event)
     }
 
     private fun setupCenterIcon(imageView: ImageView, event: TimelineEvent) {
         imageView.clearColorFilter()
-        
         when (event.type) {
-            "goal" -> {
-                imageView.setImageResource(R.drawable.ic_ball)
-            }
+            "goal" -> imageView.setImageResource(R.id.ic_ball)
             "goal_og" -> {
-                imageView.setImageResource(R.drawable.ic_ball)
-                imageView.setColorFilter(Color.RED) // Автогол підсвітимо червоним
+                imageView.setImageResource(R.id.ic_ball)
+                imageView.setColorFilter(Color.RED)
             }
             "yellow_card" -> {
-                // Якщо у тебе є ic_card, використовуй його, або ic_ball як заглушку
-                imageView.setImageResource(R.drawable.ic_ball) 
+                imageView.setImageResource(R.id.ic_ball) // Тут може бути ic_card
                 imageView.setColorFilter(Color.parseColor("#FFD700"))
             }
             "red_card" -> {
-                imageView.setImageResource(R.drawable.ic_ball)
+                imageView.setImageResource(R.id.ic_ball)
                 imageView.setColorFilter(Color.RED)
             }
             "substitution" -> {
-                // Тут можна додати іконку заміни (стрілочки)
-                imageView.setImageResource(R.drawable.ic_ball)
+                imageView.setImageResource(R.id.ic_ball)
                 imageView.setColorFilter(Color.GREEN)
             }
         }
