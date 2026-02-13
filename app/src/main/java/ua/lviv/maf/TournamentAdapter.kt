@@ -29,23 +29,25 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val item = items[position]
 
         if (holder is LeagueHeaderViewHolder) {
-            // --- ХЕДЕР: ЛІГА + ЕТАП ---
+            // --- ХЕДЕР: ЛІГА + ЕТАП (ТУР) ---
             holder.tvLeagueName.text = item.league.uppercase()
             
+            // Ось тут ми повертаємо маленьку червону назву туру
             if (item.stage.isNotEmpty()) {
                 holder.tvStageName.visibility = View.VISIBLE
                 holder.tvStageName.text = item.stage
-                holder.tvStageName.setTextColor(Color.parseColor("#E30613"))
+                holder.tvStageName.setTextColor(Color.parseColor("#E30613")) // Червоний колір
+                holder.tvStageName.textSize = 12f // Робимо маленьким
             } else {
                 holder.tvStageName.visibility = View.GONE
             }
 
         } else if (holder is MatchViewHolder) {
-            // --- КАРТКА МАТЧУ: Команди ---
+            // --- КАРТКА МАТЧУ ---
             holder.tvTeam1.text = item.team1
             holder.tvTeam2.text = item.team2
             
-            // ПОВЕРТАЄМО СТАДІОН
+            // Стадіон
             if (item.stadium.isNotEmpty()) {
                 holder.tvStadium?.visibility = View.VISIBLE
                 holder.tvStadium?.text = item.stadium
@@ -53,7 +55,7 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                 holder.tvStadium?.visibility = View.GONE
             }
 
-            // ПОВЕРТАЄМО АРБІТРА
+            // Арбітр
             if (item.referee.isNotEmpty()) {
                 holder.tvReferee?.visibility = View.VISIBLE
                 holder.tvReferee?.text = "Арбітр: ${item.referee}"
@@ -66,7 +68,7 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
             holder.tvScore?.text = scoreValue
 
             if (scoreValue.contains(" : ")) {
-                // МАТЧ ЗІГРАНО (2 : 1)
+                // МАТЧ ЗІГРАНО (рахунок білий та жирний)
                 holder.ivTimeIcon?.visibility = View.GONE
                 holder.tvScore?.apply {
                     setTextColor(Color.WHITE)
@@ -74,8 +76,8 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                     setTypeface(null, Typeface.BOLD)
                 }
             } else {
-                // МАТЧ НЕ ПОЧАВСЯ (11:00)
-                holder.ivTimeIcon?.visibility = View.VISIBLE // ОСЬ ТВІЙ ГОДИННИК!
+                // МАТЧ НЕ ПОЧАВСЯ (час сірий + годинник)
+                holder.ivTimeIcon?.visibility = View.VISIBLE 
                 holder.tvScore?.apply {
                     setTextColor(Color.parseColor("#BCBCBC"))
                     textSize = 14f
@@ -83,10 +85,11 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                 }
             }
 
-            // Логотипи
+            // Логотипи команд
             Glide.with(holder.itemView.context).load(item.logo1).into(holder.ivLogo1)
             Glide.with(holder.itemView.context).load(item.logo2).into(holder.ivLogo2)
 
+            // Перехід до деталей матчу
             holder.itemView.setOnClickListener {
                 val context = holder.itemView.context
                 val intent = Intent(context, MatchDetailActivity::class.java).apply {
@@ -124,5 +127,4 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val tvReferee: TextView? = view.findViewById(R.id.tvReferee)
         val ivTimeIcon: ImageView? = view.findViewById(R.id.ivTimeIcon)
     }
-    }
-    
+}
