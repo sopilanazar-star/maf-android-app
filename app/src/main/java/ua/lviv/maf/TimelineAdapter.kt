@@ -14,16 +14,12 @@ class TimelineAdapter(private val events: List<TimelineEvent>) :
 
     class TimelineViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvMinute: TextView = view.findViewById(R.id.tvEventMinute)
-        
-        // Контейнери сторін (мають бути в item_timeline.xml)
         val layoutLeft: LinearLayout = view.findViewById(R.id.layoutLeft)
         val layoutRight: LinearLayout = view.findViewById(R.id.layoutRight)
         
-        // Поля лівої сторони
         val ivTypeLeft: ImageView = view.findViewById(R.id.ivTypeLeft)
         val tvDescriptionLeft: TextView = view.findViewById(R.id.tvDescriptionLeft)
         
-        // Поля правої сторони
         val ivTypeRight: ImageView = view.findViewById(R.id.ivTypeRight)
         val tvDescriptionRight: TextView = view.findViewById(R.id.tvDescriptionRight)
     }
@@ -37,14 +33,12 @@ class TimelineAdapter(private val events: List<TimelineEvent>) :
         val event = events[position]
         holder.tvMinute.text = "${event.minute}'"
 
-        // Визначаємо текст опису (додаємо гравця, що вийшов, якщо це заміна)
         val description = if (!event.playerOutName.isNullOrEmpty()) {
             "${event.playerName} (замість ${event.playerOutName})"
         } else {
             event.playerName
         }
 
-        // Скидаємо видимість обох сторін перед налаштуванням
         if (event.side == "left") {
             holder.layoutLeft.visibility = View.VISIBLE
             holder.layoutRight.visibility = View.GONE
@@ -62,25 +56,28 @@ class TimelineAdapter(private val events: List<TimelineEvent>) :
         
         when (event.type) {
             "goal" -> {
-                imageView.setImageResource(android.R.drawable.ic_btn_speak_now) // Тимчасово, поки немає своїх іконок
-                imageView.setColorFilter(Color.WHITE)
+                // ВИПРАВЛЕНО: Використовуємо твій новий м'яч
+                imageView.setImageResource(R.drawable.ic_ball) 
+                imageView.setColorFilter(null) // Прибираємо фільтр, якщо іконка вже біла
             }
             "goal_og" -> {
-                imageView.setImageResource(android.R.drawable.ic_btn_speak_now)
-                imageView.setColorFilter(Color.RED)
+                imageView.setImageResource(R.drawable.ic_ball)
+                imageView.setColorFilter(Color.RED) // Червоний м'яч для автогола
                 textView.text = "$description (автогол)"
             }
             "yellow_card" -> {
-                imageView.setImageResource(android.R.drawable.checkbox_on_background)
-                imageView.setColorFilter(Color.YELLOW)
+                // ВИПРАВЛЕНО: Спеціальна іконка картки
+                imageView.setImageResource(R.drawable.ic_card)
+                imageView.setColorFilter(Color.parseColor("#FFD700")) // Золотистий/Жовтий
             }
             "red_card" -> {
-                imageView.setImageResource(android.R.drawable.checkbox_on_background)
+                imageView.setImageResource(R.drawable.ic_card)
                 imageView.setColorFilter(Color.RED)
             }
             "substitution" -> {
-                imageView.setImageResource(android.R.drawable.stat_notify_sync)
-                imageView.setColorFilter(Color.GREEN)
+                // ВИПРАВЛЕНО: Стрілочки заміни
+                imageView.setImageResource(R.drawable.ic_substitution)
+                imageView.setColorFilter(null)
             }
         }
     }
