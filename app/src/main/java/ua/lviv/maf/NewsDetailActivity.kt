@@ -1,6 +1,8 @@
 package ua.lviv.maf
 
+import android.os.Build
 import android.os.Bundle
+import android.text.Html
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -17,14 +19,18 @@ class NewsDetailActivity : AppCompatActivity() {
 
         btnBack.setOnClickListener { finish() }
 
-        val title = intent.getStringExtra("NEWS_TITLE") ?: ""
-        // Отримуємо вже очищений на сервері текст
-        val cleanContent = intent.getStringExtra("NEWS_CONTENT") ?: ""
+        // ПЕРЕВІР: Ключі "NEWS_TITLE" та "NEWS_CONTENT" мають бути такими ж в адаптері!
+        val title = intent.getStringExtra("NEWS_TITLE") ?: "Новина"
+        val content = intent.getStringExtra("NEWS_CONTENT") ?: ""
         
         tvHeader.text = title
 
-        // Тепер просто встановлюємо текст. 
-        // Оскільки в PHP ми додали "\n\n", TextView сам зробить гарні відступи.
-        tvContent.text = cleanContent
+        // Використовуємо FromHtml, щоб \n\n або залишки тегів <b> відображалися красиво
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            tvContent.text = Html.fromHtml(content, Html.FROM_HTML_MODE_COMPACT)
+        } else {
+            @Suppress("DEPRECATION")
+            tvContent.text = Html.fromHtml(content)
+        }
     }
 }
