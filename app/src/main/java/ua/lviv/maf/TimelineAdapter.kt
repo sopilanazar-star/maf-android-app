@@ -30,7 +30,7 @@ class TimelineAdapter(private val events: List<TimelineEvent>) :
         val event = events[position]
         holder.tvMinute.text = "${event.minute}'"
 
-        // ВИПРАВЛЕНО: Використовуємо змінні з маленькими літерами (snake_case)
+        // ПРАВИЛЬНІ НАЗВИ ЗМІННИХ (player_name та player_out_name)
         val description = if (!event.player_out_name.isNullOrEmpty()) {
             "${event.player_name}\n(замість ${event.player_out_name})"
         } else {
@@ -53,22 +53,26 @@ class TimelineAdapter(private val events: List<TimelineEvent>) :
 
     private fun setupCenterIcon(imageView: ImageView, event: TimelineEvent) {
         imageView.clearColorFilter()
+        
+        // ВИПРАВЛЕНО: Звертаємося до drawable, а не до id
         when (event.type) {
-            "goal" -> imageView.setImageResource(R.id.ic_ball)
+            "goal" -> {
+                imageView.setImageResource(R.drawable.ic_ball)
+            }
             "goal_og" -> {
-                imageView.setImageResource(R.id.ic_ball)
+                imageView.setImageResource(R.drawable.ic_ball)
                 imageView.setColorFilter(Color.RED)
             }
             "yellow_card" -> {
-                imageView.setImageResource(R.id.ic_ball) // Тут може бути ic_card
+                imageView.setImageResource(R.drawable.ic_ball) 
                 imageView.setColorFilter(Color.parseColor("#FFD700"))
             }
             "red_card" -> {
-                imageView.setImageResource(R.id.ic_ball)
+                imageView.setImageResource(R.drawable.ic_ball)
                 imageView.setColorFilter(Color.RED)
             }
             "substitution" -> {
-                imageView.setImageResource(R.id.ic_ball)
+                imageView.setImageResource(R.drawable.ic_ball)
                 imageView.setColorFilter(Color.GREEN)
             }
         }
