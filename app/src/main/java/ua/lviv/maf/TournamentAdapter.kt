@@ -29,15 +29,14 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val item = items[position]
 
         if (holder is LeagueHeaderViewHolder) {
-            // --- ХЕДЕР: ЛІГА + ЕТАП (ТУР) ---
+            // --- ПРАВКА №1: ХЕДЕР (ЛІГА + ЧЕРВОНИЙ ЕТАП) ---
             holder.tvLeagueName.text = item.league.uppercase()
             
-            // Ось тут ми повертаємо маленьку червону назву туру
             if (item.stage.isNotEmpty()) {
                 holder.tvStageName.visibility = View.VISIBLE
                 holder.tvStageName.text = item.stage
                 holder.tvStageName.setTextColor(Color.parseColor("#E30613")) // Червоний колір
-                holder.tvStageName.textSize = 12f // Робимо маленьким
+                holder.tvStageName.textSize = 12f // Маленький розмір
             } else {
                 holder.tvStageName.visibility = View.GONE
             }
@@ -63,13 +62,13 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                 holder.tvReferee?.visibility = View.GONE
             }
 
-            // --- РАХУНОК / ЧАС + ГОДИННИК ---
+            // --- ПРАВКА №2: РАХУНОК / ЧАС + ГОДИННИК ---
             val scoreValue = item.score ?: ""
             holder.tvScore?.text = scoreValue
 
             if (scoreValue.contains(" : ")) {
                 // МАТЧ ЗІГРАНО (рахунок білий та жирний)
-                holder.ivTimeIcon?.visibility = View.GONE
+                holder.ivTimeIcon?.visibility = View.GONE // Ховаємо годинник
                 holder.tvScore?.apply {
                     setTextColor(Color.WHITE)
                     textSize = 18f
@@ -77,7 +76,7 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                 }
             } else {
                 // МАТЧ НЕ ПОЧАВСЯ (час сірий + годинник)
-                holder.ivTimeIcon?.visibility = View.VISIBLE 
+                holder.ivTimeIcon?.visibility = View.VISIBLE // ПОКАЗУЄМО ГОДИННИК! 🕒
                 holder.tvScore?.apply {
                     setTextColor(Color.parseColor("#BCBCBC"))
                     textSize = 14f
