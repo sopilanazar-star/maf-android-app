@@ -1,10 +1,8 @@
 package ua.lviv.maf
 
 import android.content.Intent
-import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
-import android.os.Build
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -31,45 +29,43 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val item = items[position]
 
         if (holder is LeagueHeaderViewHolder) {
-            // --- ПОВЕРТАЄМО ЕТАП І ЛІГУ ---
+            // --- ПОВЕРТАЄМО ЕТАП НА МІСЦЕ ---
             holder.tvLeagueName.text = item.league.uppercase()
-            holder.tvStageName.text = item.stage
-            holder.tvStageName.visibility = if (item.stage.isEmpty()) View.GONE else View.VISIBLE
+            holder.tvStageName.apply {
+                text = item.stage
+                setTextColor(Color.parseColor("#E30613")) // Червоний
+                visibility = if (item.stage.isNullOrEmpty()) View.GONE else View.VISIBLE
+            }
 
         } else if (holder is MatchViewHolder) {
             holder.tvTeam1.text = item.team1
             holder.tvTeam2.text = item.team2
             holder.tvStadium?.text = item.stadium
             
-            if (item.referee.isEmpty()) {
-                holder.tvReferee?.visibility = View.GONE
-            } else {
-                holder.tvReferee?.visibility = View.VISIBLE
-                holder.tvReferee?.text = "Арбітр: ${item.referee}"
+            holder.tvReferee?.apply {
+                text = if (item.referee.isNotEmpty()) "Арбітр: ${item.referee}" else ""
+                visibility = if (item.referee.isNotEmpty()) View.VISIBLE else View.GONE
             }
 
-            // --- ЛОГІКА ГОДИННИКА ТА РАХУНКУ ---
-            holder.tvScore?.apply {
-                val scoreValue = item.score ?: ""
-                text = scoreValue
+            // --- ЛОГІКА ГОДИННИКА ПО ЦЕНТРУ ---
+            val scoreValue = item.score ?: ""
+            holder.tvScore?.text = scoreValue
 
-                if (scoreValue.contains(" : ")) {
-                    // ЦЕ РАХУНОК (2 : 1)
+            if (scoreValue.contains(" : ")) {
+                // Це РАХУНОК
+                holder.ivTimeIcon?.visibility = View.GONE
+                holder.tvScore?.apply {
                     setTextColor(Color.WHITE)
+                    textSize = 18f
                     setTypeface(null, Typeface.BOLD)
-                    setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0) // Прибрати годинник
-                } else {
-                    // ЦЕ ЧАС (11:00)
+                }
+            } else {
+                // Це ЧАС
+                holder.ivTimeIcon?.visibility = View.VISIBLE // ПОКАЗУЄМО ГОДИННИК НАД ЧАСОМ
+                holder.tvScore?.apply {
                     setTextColor(Color.parseColor("#BCBCBC"))
+                    textSize = 14f
                     setTypeface(null, Typeface.NORMAL)
-                    
-                    // Ставимо іконку годинника (ic_time)
-                    setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_time, 0, 0, 0)
-                    compoundDrawablePadding = 10
-                    
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        compoundDrawableTintList = ColorStateList.valueOf(Color.parseColor("#BCBCBC"))
-                    }
                 }
             }
 
@@ -111,6 +107,7 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val tvScore: TextView? = view.findViewById(R.id.tvScore)
         val tvStadium: TextView? = view.findViewById(R.id.tvStadium)
         val tvReferee: TextView? = view.findViewById(R.id.tvReferee)
+        val ivTimeIcon: ImageView? = view.findViewById(R.id.ivTimeIcon)
     }
     }
     
