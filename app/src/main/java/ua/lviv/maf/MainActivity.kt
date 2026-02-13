@@ -28,11 +28,16 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var dateRecyclerView: RecyclerView
+    // НОВЕ: Список для новин
+    private lateinit var newsRecyclerView: RecyclerView
     private lateinit var titleHeader: TextView
     private lateinit var contentLayout: LinearLayout
     private lateinit var seasonSpinner: Spinner
     
     private val MAF_API_URL = "https://maf.lviv.ua/wp-json/maf/v2/matches"
+    // НОВЕ: URL для новин
+    private val MAF_NEWS_URL = "https://maf.lviv.ua/wp-json/maf/v2/news"
+    
     private var currentYear = "2025"
     private var allMatches = mutableListOf<TournamentRow>()
     private val seasons = arrayOf("2026", "2025", "2024")
@@ -131,8 +136,20 @@ class MainActivity : AppCompatActivity() {
             clipToPadding = false
         }
 
+        // НОВЕ: Налаштування списку новин
+        newsRecyclerView = RecyclerView(this).apply {
+            layoutManager = LinearLayoutManager(this@MainActivity)
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
+            setPadding(0, 0, 0, 220)
+            clipToPadding = false
+            visibility = View.VISIBLE // За замовчуванням новини (бо selectedItemId = nav_news)
+        }
+
         contentLayout.addView(dateRecyclerView)
         contentLayout.addView(recyclerView)
+        // Додаємо список новин у контент
+        contentLayout.addView(newsRecyclerView)
+        
         mainContentContainer.addView(headerLayout)
         mainContentContainer.addView(contentLayout)
 
@@ -151,7 +168,22 @@ class MainActivity : AppCompatActivity() {
 
             setOnItemSelectedListener { item ->
                 titleHeader.text = item.title
-                contentLayout.visibility = if (item.itemId == R.id.nav_matches) View.VISIBLE else View.GONE
+                contentLayout.visibility = View.VISIBLE
+                
+                if (item.itemId == R.id.nav_matches) {
+                    // Показуємо матчі, ховаємо новини та спінер року
+                    recyclerView.visibility = View.VISIBLE
+                    dateRecyclerView.visibility = View.VISIBLE
+                    newsRecyclerView.visibility = View.GONE
+                    seasonSpinner.visibility = View.VISIBLE
+                } else if (item.itemId == R.id.nav_news) {
+                    // Показуємо новини, ховаємо матчі та спінер року (якщо треба)
+                    recyclerView.visibility = View.GONE
+                    dateRecyclerView.visibility = View.GONE
+                    newsRecyclerView.visibility = View.VISIBLE
+                    seasonSpinner.visibility = View.GONE
+                    loadNewsFromApi()
+                }
                 true
             }
             selectedItemId = R.id.nav_news
@@ -168,6 +200,36 @@ class MainActivity : AppCompatActivity() {
         }
 
         loadFromApi(currentYear)
+        loadNewsFromApi() // Початкове завантаження новин
+    }
+
+    // НОВЕ: Завантаження новин з API
+    private fun loadNewsFromApi() {
+        val client = OkHttpClient()
+        val request = Request.Builder().url(MAF_NEWS_URL).build()
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) { e.printStackTrace() }
+            override fun onResponse(call: Call, response: Response) {
+                val jsonData = response.body?.string() ?: ""
+                try {
+                    val array = JSONArray(jsonData)
+                    val newsList = mutableListOf<NewsModel>()
+                    for (i in 0 until array.length()) {
+                        val obj = array.getJSONObject(i)
+                        newsList.add(NewsModel(
+                            obj.optString("id", "0"),
+                            obj.optString("title", ""),
+                            obj.optString("preview", ""),
+                            obj.optString("content", ""),
+                            obj.optString("date", "")
+                        ))
+                    }
+                    runOnUiThread {
+                        newsRecyclerView.adapter = NewsAdapter(newsList)
+                    }
+                } catch (e: Exception) { e.printStackTrace() }
+            }
+        })
     }
 
     private fun loadFromApi(year: String) {
@@ -239,34 +301,14 @@ class MainActivity : AppCompatActivity() {
         runOnUiThread { recyclerView.adapter = TournamentAdapter(grouped) }
     }
 
-    // --- ОСЬ ЦЕЙ МЕТОД Я ВИПРАВИВ ---
     private fun groupMatchesByLeagueAndStage(matches: List<TournamentRow>): List<TournamentRow> {
         val result = mutableListOf<TournamentRow>()
-        // Групуємо за унікальною парою "Ліга + Етап"
         val grouped = matches.groupBy { "${it.league}|${it.stage}" }
-        
         for ((key, leagueMatches) in grouped) {
             val parts = key.split("|")
             val leagueName = parts[0]
             val stageName = if (parts.size > 1) parts[1] else ""
-
-            // Додаємо заголовок (Header)
-            result.add(TournamentRow(
-                id = "0",
-                team1 = "",
-                logo1 = "",
-                team2 = "",
-                logo2 = "",
-                score = "",
-                date = "",
-                league = leagueName, // Назва турніру
-                stage = stageName,   // ЕТАП (ТЕПЕР ПЕРЕДАЄТЬСЯ ПРАВИЛЬНО!)
-                stadium = "",
-                referee = "",
-                isHeader = true
-            ))
-            
-            // Додаємо самі матчі під цей заголовок
+            result.add(TournamentRow("0", "", "", "", "", "", "", leagueName, stageName, "", "", true))
             result.addAll(leagueMatches)
         }
         return result
