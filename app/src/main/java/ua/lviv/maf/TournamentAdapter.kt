@@ -29,44 +29,34 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val item = items[position]
 
         if (holder is LeagueHeaderViewHolder) {
-            // --- ТУТ ЕТАП ПІД НАЗВОЮ ТУРНІРУ ---
+            // --- ЗАЛІЗОБЕТОННИЙ ХЕДЕР ---
             holder.tvLeagueName.text = item.league.uppercase()
             
-            if (!item.stage.isNullOrEmpty()) {
+            // Тепер етап точно буде показуватись
+            if (item.stage.isNotEmpty()) {
                 holder.tvStageName.visibility = View.VISIBLE
                 holder.tvStageName.text = item.stage
+                holder.tvStageName.setTextColor(Color.parseColor("#E30613")) // Червоний
             } else {
                 holder.tvStageName.visibility = View.GONE
             }
 
         } else if (holder is MatchViewHolder) {
-            // --- КАРТКА МАТЧУ ---
+            // --- КАРТКА МАТЧУ В СПИСКУ ---
             holder.tvTeam1.text = item.team1
             holder.tvTeam2.text = item.team2
-            holder.tvStadium?.text = item.stadium
             
-            if (item.referee.isEmpty()) {
-                holder.tvReferee?.visibility = View.GONE
-            } else {
-                holder.tvReferee?.visibility = View.VISIBLE
-                holder.tvReferee?.text = "Арбітр: ${item.referee}"
-            }
-
-            // --- ГОДИННИК ПО ЦЕНТРУ НАД ЦИФРАМИ ---
             val scoreValue = item.score ?: ""
             holder.tvScore?.text = scoreValue
 
             if (scoreValue.contains(" : ")) {
-                // РАХУНОК (Матч завершено)
-                holder.ivTimeIcon?.visibility = View.GONE
                 holder.tvScore?.apply {
                     setTextColor(Color.WHITE)
                     textSize = 18f
                     setTypeface(null, Typeface.BOLD)
                 }
             } else {
-                // ЧАС (Матч не почався)
-                holder.ivTimeIcon?.visibility = View.VISIBLE // Годинник зверху
+                // Якщо матчу не було — просто час сірим, БЕЗ ГОДИННИКА (він тепер у деталях)
                 holder.tvScore?.apply {
                     setTextColor(Color.parseColor("#BCBCBC"))
                     textSize = 14f
@@ -110,9 +100,6 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val tvTeam1: TextView = view.findViewById(R.id.tvTeam1)
         val tvTeam2: TextView = view.findViewById(R.id.tvTeam2)
         val tvScore: TextView? = view.findViewById(R.id.tvScore)
-        val tvStadium: TextView? = view.findViewById(R.id.tvStadium)
-        val tvReferee: TextView? = view.findViewById(R.id.tvReferee)
-        val ivTimeIcon: ImageView? = view.findViewById(R.id.ivTimeIcon)
     }
     }
     
