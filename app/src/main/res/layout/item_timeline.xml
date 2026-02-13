@@ -4,65 +4,65 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:paddingVertical="8dp"
-    android:paddingHorizontal="12dp"
-    android:gravity="center_vertical"
-    android:background="#1A1D23">
+    android:paddingHorizontal="4dp"
+    android:weightSum="3">
 
     <LinearLayout
         android:id="@+id/layoutLeft"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
+        android:layout_weight="1.2"
         android:gravity="end"
-        android:orientation="horizontal"
-        android:visibility="invisible">
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/tvDescriptionLeft"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:gravity="end"
             android:textColor="#FFFFFF"
-            android:textSize="14sp" />
-
-        <ImageView
-            android:id="@+id/ivTypeLeft"
-            android:layout_width="18dp"
-            android:layout_height="18dp" />
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:gravity="end" />
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/tvEventMinute"
-        android:layout_width="50dp"
+    <LinearLayout
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_weight="0.6"
         android:gravity="center"
-        android:textColor="#BCBCBC"
-        android:textSize="12sp"
-        android:textStyle="bold" />
+        android:orientation="vertical">
+
+        <ImageView
+            android:id="@+id/ivCenterIcon"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:src="@drawable/ic_ball" />
+
+        <TextView
+            android:id="@+id/tvEventMinute"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#BCBCBC"
+            android:textSize="11sp"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/layoutRight"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
+        android:layout_weight="1.2"
         android:gravity="start"
-        android:orientation="horizontal"
-        android:visibility="invisible">
-
-        <ImageView
-            android:id="@+id/ivTypeRight"
-            android:layout_width="18dp"
-            android:layout_height="18dp" />
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/tvDescriptionRight"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:gravity="start"
             android:textColor="#FFFFFF"
-            android:textSize="14sp" />
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:gravity="start" />
     </LinearLayout>
 
 </LinearLayout>
