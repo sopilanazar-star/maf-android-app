@@ -20,7 +20,6 @@ class StandingAdapter(private var items: List<StandingRow>) :
         private const val TYPE_TEAM = 1
     }
 
-    // Визначаємо, чи це заголовок групи, чи команда
     override fun getItemViewType(position: Int): Int {
         return if (items[position].is_group_header) TYPE_HEADER else TYPE_TEAM
     }
@@ -32,7 +31,7 @@ class StandingAdapter(private var items: List<StandingRow>) :
         val tvGames: TextView = view.findViewById(R.id.tvGames)
         val tvGoalsDiff: TextView = view.findViewById(R.id.tvGoalsDiff)
         val tvPoints: TextView = view.findViewById(R.id.tvPoints)
-        val layoutForm: LinearLayout = view.findViewById(R.id.layoutForm) // Контейнер для кружечків
+        val layoutForm: LinearLayout = view.findViewById(R.id.layoutForm)
 
         val tvWins: TextView? = view.findViewById(R.id.tvWins)
         val tvDraws: TextView? = view.findViewById(R.id.tvDraws)
@@ -44,12 +43,11 @@ class StandingAdapter(private var items: List<StandingRow>) :
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        val inflater = LayoutInflater.from(parent.context)
         return if (viewType == TYPE_HEADER) {
-            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_standing_header, parent, false)
-            HeaderViewHolder(view)
+            HeaderViewHolder(inflater.inflate(R.layout.item_standing_header, parent, false))
         } else {
-            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_standing, parent, false)
-            TeamViewHolder(view)
+            TeamViewHolder(inflater.inflate(R.layout.item_standing, parent, false))
         }
     }
 
@@ -69,7 +67,7 @@ class StandingAdapter(private var items: List<StandingRow>) :
             holder.tvDraws?.text = item.draw.toString()
             holder.tvLosses?.text = item.loss.toString()
 
-            // Малюємо форму (В-Н-П)
+            // Відображаємо форму
             drawForm(holder.layoutForm, item.form ?: emptyList())
 
             Glide.with(holder.itemView.context)
@@ -79,7 +77,8 @@ class StandingAdapter(private var items: List<StandingRow>) :
 
             holder.itemView.setOnClickListener {
                 val intent = Intent(it.context, TeamPlayersActivity::class.java).apply {
-                    putExtra("team_id", item.team_id)
+                    // Передаємо як Int, бо в моделі StandingRow це Int
+                    putExtra("team_id", item.team_id) 
                     putExtra("team_name", item.team_name)
                 }
                 it.context.startActivity(intent)
@@ -89,18 +88,22 @@ class StandingAdapter(private var items: List<StandingRow>) :
 
     private fun drawForm(layout: LinearLayout, formList: List<String>) {
         layout.removeAllViews()
+        val density = layout.context.resources.displayMetrics.density
+        val size = (12 * density).toInt()
+        val margin = (2 * density).toInt()
+
         formList.forEach { result ->
             val circle = View(layout.context)
-            val size = (12 * layout.context.resources.displayMetrics.density).toInt()
-            val params = LinearLayout.LayoutParams(size, size)
-            params.setMargins(4, 0, 4, 0)
+            val params = LinearLayout.LayoutParams(size, size).apply {
+                setMargins(margin, 0, margin, 0)
+            }
             circle.layoutParams = params
             circle.background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 setColor(when (result) {
-                    "W" -> Color.parseColor("#4CAF50") // Зелений
-                    "D" -> Color.parseColor("#9E9E9E") // Сірий
-                    "L" -> Color.parseColor("#F44336") // Червоний
+                    "W" -> Color.parseColor("#4CAF50")
+                    "D" -> Color.parseColor("#9E9E9E")
+                    "L" -> Color.parseColor("#F44336")
                     else -> Color.TRANSPARENT
                 })
             }
