@@ -57,37 +57,37 @@ class TimelineAdapter(private val events: List<TimelineEvent>) :
     }
 
     private fun setupCenterIcon(imageView: ImageView, event: TimelineEvent) {
-    imageView.clearColorFilter() // Очищуємо старі кольори перед встановленням нових
+    imageView.clearColorFilter()
 
     when (event.type) {
         "goal" -> {
             imageView.setImageResource(R.drawable.ic_ball)
         }
-        "goal_og" -> { // Автогол
+        "goal_og" -> {
             imageView.setImageResource(R.drawable.ic_ball)
             imageView.setColorFilter(Color.RED)
         }
         "yellow_card" -> {
-            // ЗМІНЕНО: тепер використовуємо іконку картки
-            imageView.setImageResource(R.id.ic_card) 
-            imageView.setColorFilter(Color.parseColor("#FFD700"))
+            // ТУТ БУЛА ПОМИЛКА: змінено на R.drawable
+            imageView.setImageResource(R.drawable.ic_card)
+            imageView.setColorFilter(Color.parseColor("#FFEB3B"))
         }
         "red_card" -> {
-            // ЗМІНЕНО: тепер використовуємо іконку картки
-            imageView.setImageResource(R.id.ic_card)
+            // ТУТ БУЛА ПОМИЛКА: змінено на R.drawable
+            imageView.setImageResource(R.drawable.ic_card)
             imageView.setColorFilter(Color.RED)
         }
         "second_yellow" -> {
-            // ДОДАНО: іконка другої жовтої
             imageView.setImageResource(R.drawable.ic_second_yellow)
         }
         "substitution" -> {
-            // ЗМІНЕНО: використовуємо іконку заміни, а не м'яч
             imageView.setImageResource(R.drawable.ic_substitution)
         }
         "penalty_goal" -> {
-            // ДОДАНО: м'яч з літерою P
             imageView.setImageResource(R.drawable.ic_penalty_goal)
+        }
+        "penalty_missed" -> {
+            imageView.setImageResource(R.drawable.ic_penalty_missed)
         }
         else -> {
             imageView.setImageResource(R.drawable.ic_ball)
