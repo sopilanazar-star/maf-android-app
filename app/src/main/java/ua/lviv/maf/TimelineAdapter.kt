@@ -37,14 +37,14 @@ class TimelineAdapter(private val events: List<TimelineEvent>) :
             event.player_name
         }
 
-        // Логіка розведення сторін
+        // Логіка розведення сторін (Версія 2.0)
         if (event.side == "left") {
             holder.layoutLeft.visibility = View.VISIBLE
-            holder.layoutRight.visibility = View.INVISIBLE 
+            holder.layoutRight.visibility = View.GONE  // Змінюємо тут
             holder.tvDescriptionLeft.text = description
         } else {
             holder.layoutRight.visibility = View.VISIBLE
-            holder.layoutLeft.visibility = View.INVISIBLE
+            holder.layoutLeft.visibility = View.GONE   // І тут
             holder.tvDescriptionRight.text = description
         }
 
