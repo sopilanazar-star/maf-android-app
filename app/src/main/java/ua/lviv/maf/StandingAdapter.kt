@@ -1,63 +1,110 @@
 package ua.lviv.maf
 
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide // Переконайся, що Glide доданий у build.gradle
+import com.bumptech.glide.Glide
 
 class StandingAdapter(private var items: List<StandingRow>) :
-    RecyclerView.Adapter<StandingAdapter.StandingViewHolder>() {
+    RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    class StandingViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+    companion object {
+        private const val TYPE_HEADER = 0
+        private const val TYPE_TEAM = 1
+    }
+
+    // Визначаємо, чи це заголовок групи, чи команда
+    override fun getItemViewType(position: Int): Int {
+        return if (items[position].is_group_header) TYPE_HEADER else TYPE_TEAM
+    }
+
+    class TeamViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvPosition: TextView = view.findViewById(R.id.tvPosition)
         val ivTeamLogo: ImageView = view.findViewById(R.id.ivTeamLogo)
         val tvTeamName: TextView = view.findViewById(R.id.tvTeamName)
         val tvGames: TextView = view.findViewById(R.id.tvGames)
         val tvGoalsDiff: TextView = view.findViewById(R.id.tvGoalsDiff)
         val tvPoints: TextView = view.findViewById(R.id.tvPoints)
+        val layoutForm: LinearLayout = view.findViewById(R.id.layoutForm) // Контейнер для кружечків
 
-        // Ці поля є тільки в layout-land, тому робимо їх опціональними
         val tvWins: TextView? = view.findViewById(R.id.tvWins)
         val tvDraws: TextView? = view.findViewById(R.id.tvDraws)
         val tvLosses: TextView? = view.findViewById(R.id.tvLosses)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): StandingViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_standing, parent, false)
-        return StandingViewHolder(view)
+    class HeaderViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val tvGroupName: TextView = view.findViewById(R.id.tvGroupName)
     }
 
-    override fun onBindViewHolder(holder: StandingViewHolder, position: Int) {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        return if (viewType == TYPE_HEADER) {
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_standing_header, parent, false)
+            HeaderViewHolder(view)
+        } else {
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_standing, parent, false)
+            TeamViewHolder(view)
+        }
+    }
+
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val item = items[position]
 
-        holder.tvPosition.text = "${item.position}."
-        holder.tvTeamName.text = item.team_name
-        holder.tvGames.text = item.games.toString()
-        holder.tvGoalsDiff.text = "${item.goals_for}-${item.goals_against}"
-        holder.tvPoints.text = item.points.toString()
+        if (holder is HeaderViewHolder) {
+            holder.tvGroupName.text = item.group_name
+        } else if (holder is TeamViewHolder) {
+            holder.tvPosition.text = "${item.position}."
+            holder.tvTeamName.text = item.team_name
+            holder.tvGames.text = item.games.toString()
+            holder.tvGoalsDiff.text = "${item.goals_for}-${item.goals_against}"
+            holder.tvPoints.text = item.points.toString()
 
-        // Заповнюємо додаткові поля для горизонтального режиму, якщо вони існують
-        holder.tvWins?.text = item.win.toString()
-        holder.tvDraws?.text = item.draw.toString()
-        holder.tvLosses?.text = item.loss.toString()
+            holder.tvWins?.text = item.win.toString()
+            holder.tvDraws?.text = item.draw.toString()
+            holder.tvLosses?.text = item.loss.toString()
 
-        // Завантаження логотипа через Glide
-        Glide.with(holder.itemView.context)
-            .load(item.logo)
-            .placeholder(R.drawable.ic_ball) // Заглушка, поки вантажиться
-            .into(holder.ivTeamLogo)
+            // Малюємо форму (В-Н-П)
+            drawForm(holder.layoutForm, item.form ?: emptyList())
 
-        // Клік по команді — перехід до списку гравців
-        holder.itemView.setOnClickListener {
-            val intent = Intent(it.context, TeamPlayersActivity::class.java).apply {
-                putExtra("team_id", item.team_id)
-                putExtra("team_name", item.team_name)
+            Glide.with(holder.itemView.context)
+                .load(item.logo)
+                .placeholder(R.drawable.ic_ball)
+                .into(holder.ivTeamLogo)
+
+            holder.itemView.setOnClickListener {
+                val intent = Intent(it.context, TeamPlayersActivity::class.java).apply {
+                    putExtra("team_id", item.team_id)
+                    putExtra("team_name", item.team_name)
+                }
+                it.context.startActivity(intent)
             }
-            it.context.startActivity(intent)
+        }
+    }
+
+    private fun drawForm(layout: LinearLayout, formList: List<String>) {
+        layout.removeAllViews()
+        formList.forEach { result ->
+            val circle = View(layout.context)
+            val size = (12 * layout.context.resources.displayMetrics.density).toInt()
+            val params = LinearLayout.LayoutParams(size, size)
+            params.setMargins(4, 0, 4, 0)
+            circle.layoutParams = params
+            circle.background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(when (result) {
+                    "W" -> Color.parseColor("#4CAF50") // Зелений
+                    "D" -> Color.parseColor("#9E9E9E") // Сірий
+                    "L" -> Color.parseColor("#F44336") // Червоний
+                    else -> Color.TRANSPARENT
+                })
+            }
+            layout.addView(circle)
         }
     }
 
