@@ -67,7 +67,7 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
             holder.tvScore?.text = scoreValue
 
             if (scoreValue.contains(" : ")) {
-                // МАТЧ ЗІГРАНО (рахунок білий та жирний)
+                // === МАТЧ ЗІГРАНО (рахунок білий та жирний) ===
                 holder.ivTimeIcon?.visibility = View.GONE // Ховаємо годинник
                 holder.tvScore?.apply {
                     setTextColor(Color.WHITE)
@@ -75,8 +75,8 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                     setTypeface(null, Typeface.BOLD)
                 }
             } else {
-                // МАТЧ НЕ ПОЧАВСЯ (час сірий + годинник)
-                holder.ivTimeIcon?.visibility = View.VISIBLE // ПОКАЗУЄМО ГОДИННИК! 🕒
+                // === МАТЧ НЕ ПОЧАВСЯ (час сірий + ПОВЕРТАЄМО ГОДИННИК! 🕒) ===
+                holder.ivTimeIcon?.visibility = View.VISIBLE 
                 holder.tvScore?.apply {
                     setTextColor(Color.parseColor("#BCBCBC"))
                     textSize = 14f
