@@ -1,5 +1,6 @@
 package ua.lviv.maf
 
+import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -20,7 +21,6 @@ class StandingFragment : Fragment() {
     private lateinit var adapter: StandingAdapter
     private var competitions = mutableListOf<Competition>()
     
-    // Твої посилання для API
     private val COMPS_URL = "https://maf.lviv.ua/wp-json/maf/v2/competitions"
     private val STANDING_URL = "https://maf.lviv.ua/wp-json/maf/v2/standing"
 
@@ -35,7 +35,7 @@ class StandingFragment : Fragment() {
         recyclerView.adapter = adapter
 
         setupTabListener()
-        loadCompetitions() // Крок 1: вантажимо список ліг
+        loadCompetitions()
         
         return view
     }
@@ -46,7 +46,7 @@ class StandingFragment : Fragment() {
         
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                activity?.runOnUiThread { Toast.makeText(context, "Помилка мережі", Toast.LENGTH_SHORT).show() }
+                activity?.runOnUiThread { Toast.makeText(context, "Помилка завантаження ліг", Toast.LENGTH_SHORT).show() }
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -92,7 +92,10 @@ class StandingFragment : Fragment() {
         val request = Request.Builder().url("$STANDING_URL?competition_id=$compId").build()
 
         client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {}
+            override fun onFailure(call: Call, e: IOException) {
+                activity?.runOnUiThread { Toast.makeText(context, "Помилка таблиці", Toast.LENGTH_SHORT).show() }
+            }
+
             override fun onResponse(call: Call, response: Response) {
                 val jsonData = response.body?.string() ?: ""
                 try {
@@ -100,22 +103,36 @@ class StandingFragment : Fragment() {
                     val standingList = mutableListOf<StandingRow>()
                     for (i in 0 until array.length()) {
                         val obj = array.getJSONObject(i)
+                        
+                        val formArray = obj.optJSONArray("form")
+                        val formList = mutableListOf<String>()
+                        if (formArray != null) {
+                            for (j in 0 until formArray.length()) {
+                                formList.add(formArray.getString(j))
+                            }
+                        }
+
                         standingList.add(StandingRow(
-                            obj.getString("team_id"),
-                            obj.getInt("position"),
-                            obj.getString("team_name"),
-                            obj.getString("logo"),
-                            obj.getInt("games"),
-                            obj.getInt("win"),
-                            obj.getInt("draw"),
-                            obj.getInt("loss"),
-                            obj.getInt("goals_for"),
-                            obj.getInt("goals_against"),
-                            obj.getInt("points")
+                            team_id = obj.optString("team_id", "0").toInt(), 
+                            position = obj.optInt("position", 0),
+                            team_name = obj.optString("team_name", ""),
+                            logo = obj.optString("logo", ""),
+                            games = obj.optInt("games", 0),
+                            win = obj.optInt("win", 0),
+                            draw = obj.optInt("draw", 0),
+                            loss = obj.optInt("loss", 0),
+                            goals_for = obj.optInt("goals_for", 0),
+                            goals_against = obj.optInt("goals_against", 0),
+                            points = obj.optInt("points", 0),
+                            is_group_header = obj.optBoolean("is_group_header", false),
+                            group_name = obj.optString("group_name", ""),
+                            form = formList
                         ))
                     }
                     activity?.runOnUiThread { adapter.updateData(standingList) }
-                } catch (e: Exception) { e.printStackTrace() }
+                } catch (e: Exception) { 
+                    e.printStackTrace() 
+                }
             }
         })
     }
