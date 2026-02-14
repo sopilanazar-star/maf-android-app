@@ -52,31 +52,45 @@ class TimelineAdapter(private val events: List<TimelineEvent>) :
     }
 
     private fun setupCenterIcon(imageView: ImageView, event: TimelineEvent) {
-        imageView.clearColorFilter()
+    imageView.clearColorFilter()
+    
+    when (event.type) {
+        "goal" -> imageView.setImageResource(R.drawable.ic_ball)
         
-        // ВИПРАВЛЕНО: Звертаємося до drawable, а не до id
-        when (event.type) {
-            "goal" -> {
-                imageView.setImageResource(R.drawable.ic_ball)
-            }
-            "goal_og" -> {
-                imageView.setImageResource(R.drawable.ic_ball)
-                imageView.setColorFilter(Color.RED)
-            }
-            "yellow_card" -> {
-                imageView.setImageResource(R.drawable.ic_ball) 
-                imageView.setColorFilter(Color.parseColor("#FFD700"))
-            }
-            "red_card" -> {
-                imageView.setImageResource(R.drawable.ic_ball)
-                imageView.setColorFilter(Color.RED)
-            }
-            "substitution" -> {
-                imageView.setImageResource(R.drawable.ic_ball)
-                imageView.setColorFilter(Color.GREEN)
-            }
+        "goal_og" -> {
+            imageView.setImageResource(R.drawable.ic_ball)
+            imageView.setColorFilter(Color.RED)
         }
+        
+        "yellow_card" -> {
+            imageView.setImageResource(R.drawable.ic_card)
+            imageView.setColorFilter(Color.parseColor("#FFD700"))
+        }
+        
+        "second_yellow" -> {
+            imageView.setImageResource(R.drawable.ic_second_yellow)
+        }
+        
+        "red_card" -> {
+            imageView.setImageResource(R.drawable.ic_card)
+            imageView.setColorFilter(Color.RED)
+        }
+        
+        "substitution" -> {
+            imageView.setImageResource(R.drawable.ic_substitution)
+        }
+        
+        "penalty_goal" -> {
+            imageView.setImageResource(R.drawable.ic_penalty_goal)
+        }
+        
+        "penalty_missed" -> {
+            imageView.setImageResource(R.drawable.ic_penalty_missed)
+        }
+        
+        else -> imageView.setImageResource(R.drawable.ic_ball)
     }
+}
 
     override fun getItemCount() = events.size
     }
