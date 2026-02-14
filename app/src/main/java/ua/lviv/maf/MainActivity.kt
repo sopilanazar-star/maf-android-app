@@ -312,15 +312,26 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun groupMatchesByLeagueAndStage(matches: List<TournamentRow>): List<TournamentRow> {
-        val result = mutableListOf<TournamentRow>()
-        val grouped = matches.groupBy { "${it.league}|${it.stage}" }
-        for ((key, leagueMatches) in grouped) {
-            val parts = key.split("|")
-            val leagueName = parts[0]
-            val stageName = if (parts.size > 1) parts[1] else ""
-            result.add(TournamentRow("0", "", "", "", "", "", "", leagueName, stageName, "", "", true))
-            result.addAll(leagueMatches)
-        }
-        return result
+    val result = mutableListOf<TournamentRow>()
+    
+    // Групуємо матчі за унікальною комбінацією Ліга + Етап
+    val grouped = matches.groupBy { "${it.league}|${it.stage}" }
+    
+    for ((key, leagueMatches) in grouped) {
+        val parts = key.split("|")
+        val leagueName = parts[0]
+        val stageName = if (parts.size > 1) parts[1] else ""
+        
+        // Створюємо Header. Явно кажемо: в поле league пиши leagueName, в stage - stageName
+        result.add(TournamentRow(
+            league = leagueName, 
+            stage = stageName, 
+            isHeader = true
+        ))
+        
+        // Додаємо самі матчі під цей заголовок
+        result.addAll(leagueMatches)
     }
+    return result
+}
 }
