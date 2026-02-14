@@ -57,30 +57,43 @@ class TimelineAdapter(private val events: List<TimelineEvent>) :
     }
 
     private fun setupCenterIcon(imageView: ImageView, event: TimelineEvent) {
-        imageView.clearColorFilter()
+    imageView.clearColorFilter() // Очищуємо старі кольори перед встановленням нових
 
-        when (event.type) {
-            "goal" -> {
-                imageView.setImageResource(R.drawable.ic_ball)
-            }
-            "goal_og" -> {
-                imageView.setImageResource(R.drawable.ic_ball)
-                imageView.setColorFilter(Color.RED)
-            }
-            "yellow_card" -> {
-                imageView.setImageResource(R.drawable.ic_ball)
-                imageView.setColorFilter(Color.parseColor("#FFD700"))
-            }
-            "red_card" -> {
-                imageView.setImageResource(R.drawable.ic_ball)
-                imageView.setColorFilter(Color.RED)
-            }
-            "substitution" -> {
-                imageView.setImageResource(R.drawable.ic_ball)
-                imageView.setColorFilter(Color.GREEN)
-            }
+    when (event.type) {
+        "goal" -> {
+            imageView.setImageResource(R.drawable.ic_ball)
+        }
+        "goal_og" -> { // Автогол
+            imageView.setImageResource(R.drawable.ic_ball)
+            imageView.setColorFilter(Color.RED)
+        }
+        "yellow_card" -> {
+            // ЗМІНЕНО: тепер використовуємо іконку картки
+            imageView.setImageResource(R.id.ic_card) 
+            imageView.setColorFilter(Color.parseColor("#FFD700"))
+        }
+        "red_card" -> {
+            // ЗМІНЕНО: тепер використовуємо іконку картки
+            imageView.setImageResource(R.id.ic_card)
+            imageView.setColorFilter(Color.RED)
+        }
+        "second_yellow" -> {
+            // ДОДАНО: іконка другої жовтої
+            imageView.setImageResource(R.drawable.ic_second_yellow)
+        }
+        "substitution" -> {
+            // ЗМІНЕНО: використовуємо іконку заміни, а не м'яч
+            imageView.setImageResource(R.drawable.ic_substitution)
+        }
+        "penalty_goal" -> {
+            // ДОДАНО: м'яч з літерою P
+            imageView.setImageResource(R.drawable.ic_penalty_goal)
+        }
+        else -> {
+            imageView.setImageResource(R.drawable.ic_ball)
         }
     }
+}
 
     override fun getItemCount() = events.size
 }
