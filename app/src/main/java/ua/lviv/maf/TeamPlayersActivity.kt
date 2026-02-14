@@ -15,6 +15,9 @@ import com.google.gson.reflect.TypeToken
 import okhttp3.*
 import java.io.IOException
 
+// ПРАВИЛЬНИЙ ІМПОРТ: тепер ми беремо модель з папки models
+import ua.lviv.maf.models.Player 
+
 class TeamPlayersActivity : AppCompatActivity() {
 
     private var teamId: Int = 0
@@ -30,7 +33,6 @@ class TeamPlayersActivity : AppCompatActivity() {
         teamId = intent.getIntExtra("team_id", 0)
         teamName = intent.getStringExtra("team_name") ?: "Команда"
 
-        // --- СТВОРЕННЯ UI ПРОГРАМНО ---
         val rootLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.parseColor("#1A1D23"))
@@ -40,7 +42,6 @@ class TeamPlayersActivity : AppCompatActivity() {
             )
         }
 
-        // Заголовок
         val tvTitle = TextView(this).apply {
             text = teamName
             setTextColor(Color.WHITE)
@@ -50,12 +51,10 @@ class TeamPlayersActivity : AppCompatActivity() {
             setTypeface(null, android.graphics.Typeface.BOLD)
         }
 
-        // Індикатор завантаження
         progressBar = ProgressBar(this).apply {
             visibility = android.view.View.VISIBLE
         }
 
-        // Список (RecyclerView)
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@TeamPlayersActivity)
             layoutParams = LinearLayout.LayoutParams(
@@ -70,7 +69,6 @@ class TeamPlayersActivity : AppCompatActivity() {
 
         setContentView(rootLayout)
 
-        // Запуск завантаження
         if (teamId != 0) {
             loadPlayers(teamId)
         } else {
@@ -96,6 +94,7 @@ class TeamPlayersActivity : AppCompatActivity() {
             override fun onResponse(call: Call, response: Response) {
                 val json = response.body?.string()
                 if (response.isSuccessful && json != null) {
+                    // Тут Gson тепер точно знає, що Player — це ua.lviv.maf.models.Player
                     val playerType = object : TypeToken<List<Player>>() {}.type
                     val players: List<Player> = Gson().fromJson(json, playerType)
 
