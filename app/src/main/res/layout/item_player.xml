@@ -9,24 +9,25 @@
 
     <TextView
         android:id="@+id/tvPlayerNumber"
-        android:layout_width="30dp"
+        android:layout_width="35dp"
         android:layout_height="wrap_content"
         android:textColor="#E30613"
         android:textStyle="bold"
-        android:textSize="16sp"
+        android:textSize="18sp"
         android:text="10" />
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/ivPlayerPhoto"
-        android:layout_width="45dp"
-        android:layout_height="45dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:layout_marginEnd="12dp"
         android:scaleType="centerCrop"
-        android:background="#252932" />
+        android:src="@drawable/ic_player_placeholder" />
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_weight="1"
         android:orientation="vertical">
 
         <TextView
@@ -42,6 +43,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="#BCBCBC"
-            android:textSize="13sp" />
+            android:textSize="12sp"
+            android:textAllCaps="true" />
     </LinearLayout>
 </LinearLayout>
