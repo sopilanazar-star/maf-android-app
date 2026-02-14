@@ -59,39 +59,43 @@ class TimelineAdapter(private val events: List<TimelineEvent>) :
     private fun setupCenterIcon(imageView: ImageView, event: TimelineEvent) {
     imageView.clearColorFilter()
 
-    when (event.type) {
-        "goal" -> {
-            imageView.setImageResource(R.drawable.ic_ball)
-        }
-        "goal_og" -> {
-            imageView.setImageResource(R.drawable.ic_ball)
-            imageView.setColorFilter(Color.RED)
-        }
-        "yellow_card" -> {
-            // ТУТ БУЛА ПОМИЛКА: змінено на R.drawable
-            imageView.setImageResource(R.drawable.ic_card)
-            imageView.setColorFilter(Color.parseColor("#FFEB3B"))
-        }
-        "red_card" -> {
-            // ТУТ БУЛА ПОМИЛКА: змінено на R.drawable
-            imageView.setImageResource(R.drawable.ic_card)
-            imageView.setColorFilter(Color.RED)
-        }
-        "second_yellow" -> {
-            imageView.setImageResource(R.drawable.ic_second_yellow)
-        }
-        "substitution" -> {
-            imageView.setImageResource(R.drawable.ic_substitution)
-        }
-        "penalty_goal" -> {
-            imageView.setImageResource(R.drawable.ic_penalty_goal)
-        }
-        "penalty_missed" -> {
-            imageView.setImageResource(R.drawable.ic_penalty_missed)
-        }
-        else -> {
-            imageView.setImageResource(R.drawable.ic_ball)
-        }
+   when (event.type) {
+    "goal" -> {
+        imageView.setImageResource(R.drawable.ic_ball)
+        imageView.colorFilter = null // Очищуємо фільтр, щоб м'яч не був червоним/жовтим
+    }
+    "goal_og" -> {
+        imageView.setImageResource(R.drawable.ic_ball)
+        imageView.setColorFilter(Color.RED) // Автогол фарбуємо в червоний
+    }
+    "yellow_card" -> {
+        imageView.setImageResource(R.drawable.ic_card)
+        imageView.setColorFilter(Color.parseColor("#FFEB3B"))
+    }
+    "red_card" -> {
+        imageView.setImageResource(R.drawable.ic_card)
+        imageView.setColorFilter(Color.RED)
+    }
+    "second_yellow" -> {
+        imageView.setImageResource(R.drawable.ic_second_yellow)
+        imageView.colorFilter = null // Використовуємо кольори самого XML
+    }
+    "substitution" -> {
+        imageView.setImageResource(R.drawable.ic_substitution)
+        imageView.colorFilter = null // Використовуємо червону/зелену стрілки з XML
+    }
+    "penalty_goal" -> {
+        imageView.setImageResource(R.drawable.ic_penalty_goal)
+        imageView.colorFilter = null // Використовуємо чорний м'яч і червону P з XML
+    }
+    "penalty_missed" -> {
+        imageView.setImageResource(R.drawable.ic_penalty_missed)
+        imageView.colorFilter = null
+    }
+    else -> {
+        imageView.setImageResource(R.drawable.ic_ball)
+        imageView.colorFilter = null
+    }
     }
 }
 
