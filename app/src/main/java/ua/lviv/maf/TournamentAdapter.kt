@@ -29,14 +29,14 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val item = items[position]
 
         if (holder is LeagueHeaderViewHolder) {
-            // --- ХЕДЕР: ЛІГА + ЧЕРВОНИЙ ЕТАП ---
+            // --- ПРАВКА №1: ХЕДЕР (ЛІГА + ЧЕРВОНИЙ ЕТАП) ---
             holder.tvLeagueName.text = item.league.uppercase()
             
             if (item.stage.isNotEmpty()) {
                 holder.tvStageName.visibility = View.VISIBLE
                 holder.tvStageName.text = item.stage
-                holder.tvStageName.setTextColor(Color.parseColor("#E30613"))
-                holder.tvStageName.textSize = 12f
+                holder.tvStageName.setTextColor(Color.parseColor("#E30613")) // Червоний колір
+                holder.tvStageName.textSize = 12f // Маленький розмір
             } else {
                 holder.tvStageName.visibility = View.GONE
             }
@@ -62,26 +62,25 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                 holder.tvReferee?.visibility = View.GONE
             }
 
-            // --- ЛОГІКА РАХУНКУ / VS + ГОДИННИК ---
+            // --- ПРАВКА №2: РАХУНОК / ЧАС + ГОДИННИК ---
             val scoreValue = item.score ?: ""
+            holder.tvScore?.text = scoreValue
 
             if (scoreValue.contains(" : ")) {
-                // === МАТЧ ЗІГРАНО (рахунок 2 : 1) ===
+                // === МАТЧ ЗІГРАНО (рахунок білий та жирний) ===
                 holder.ivTimeIcon?.visibility = View.GONE // Ховаємо годинник
-                holder.tvScore?.text = scoreValue
                 holder.tvScore?.apply {
                     setTextColor(Color.WHITE)
                     textSize = 18f
                     setTypeface(null, Typeface.BOLD)
                 }
             } else {
-                // === МАТЧ МАЙБУТНІЙ (ставимо VS і ГОДИННИК) ===
-                holder.ivTimeIcon?.visibility = View.VISIBLE // ПОВЕРТАЄМО ГОДИННИК НАД ТЕКСТОМ 🕒
-                holder.tvScore?.text = "VS" // ЗАМІСТЬ ЧАСУ СТАВИМО VS
+                // === МАТЧ НЕ ПОЧАВСЯ (час сірий + ПОВЕРТАЄМО ГОДИННИК! 🕒) ===
+                holder.ivTimeIcon?.visibility = View.VISIBLE 
                 holder.tvScore?.apply {
                     setTextColor(Color.parseColor("#BCBCBC"))
-                    textSize = 16f
-                    setTypeface(null, Typeface.BOLD)
+                    textSize = 14f
+                    setTypeface(null, Typeface.NORMAL)
                 }
             }
 
@@ -89,7 +88,7 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
             Glide.with(holder.itemView.context).load(item.logo1).into(holder.ivLogo1)
             Glide.with(holder.itemView.context).load(item.logo2).into(holder.ivLogo2)
 
-            // Перехід до деталей
+            // Перехід до деталей матчу
             holder.itemView.setOnClickListener {
                 val context = holder.itemView.context
                 val intent = Intent(context, MatchDetailActivity::class.java).apply {
