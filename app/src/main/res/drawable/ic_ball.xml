@@ -1,27 +1,25 @@
-<vector
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:name="vector"
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
+
     <path
-        android:name="path"
-        android:pathData="M 12 12 M 2 12 C 2 9.349 3.054 6.804 4.929 4.929 C 6.804 3.054 9.349 2 12 2 C 14.651 2 17.196 3.054 19.071 4.929 C 20.946 6.804 22 9.349 22 12 C 22 14.651 20.946 17.196 19.071 19.071 C 17.196 20.946 14.651 22 12 22 C 9.349 22 6.804 20.946 4.929 19.071 C 3.054 17.196 2 14.651 2 12"
-        android:fillColor="#FFFFFF"/>
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2z" />
+
     <path
-        android:name="path_1"
-        android:pathData="M 12 12 M 2 12 C 2 9.349 3.054 6.804 4.929 4.929 C 6.804 3.054 9.349 2 12 2 C 14.651 2 17.196 3.054 19.071 4.929 C 20.946 6.804 22 9.349 22 12 C 22 14.651 20.946 17.196 19.071 19.071 C 17.196 20.946 14.651 22 12 22 C 9.349 22 6.804 20.946 4.929 19.071 C 3.054 17.196 2 14.651 2 12"
         android:strokeColor="#000000"
-        android:strokeWidth="2"/>
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:pathData="M12,12 L12,2 M12,12 L21.5,8.9 M12,12 L17.9,20.1 M12,12 L6.1,20.1 M12,12 L2.5,8.9" />
+
     <path
-        android:name="path_2"
-        android:pathData="M 12 12 L 12 2 M 12 12 L 21.5 8.9 M 12 12 L 17.9 20.1 M 12 12 L 6.1 20.1 M 12 12 L 2.5 8.9"
+        android:fillColor="#000000"
+        android:pathData="M12,7.5 L16.3,10.7 L14.7,15.8 L9.3,15.8 L7.7,10.7 Z" />
+
+    <path
         android:strokeColor="#000000"
-        android:strokeWidth="2"
-        android:strokeLineCap="round"/>
-    <path
-        android:name="path_3"
-        android:pathData="M 12 7.5 L 16.3 10.7 L 14.7 15.8 L 9.3 15.8 L 7.7 10.7 Z"
-        android:fillColor="#000000"/>
+        android:strokeWidth="1.2"
+        android:pathData="M12,2A10,10 0,1 0,22 12,10 10,0 0,0 12,2Z" />
 </vector>
