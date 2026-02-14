@@ -25,7 +25,8 @@ class NewsAdapter(private val newsList: List<NewsModel>) :
         val news = newsList[position]
         holder.tvTitle.text = news.title
         holder.tvPreview.text = news.preview
-        holder.tvDate.text = news.date
+        holder.tvDate.visibility = View.GONE
+        //holder.tvDate.text = news.date
 
         holder.itemView.setOnClickListener {
             val context = holder.itemView.context
