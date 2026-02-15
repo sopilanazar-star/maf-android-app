@@ -2,7 +2,6 @@ package ua.lviv.maf
 
 import android.graphics.Color
 import android.os.Bundle
-import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -18,30 +17,29 @@ import ua.lviv.maf.models.Player
 
 class TeamPlayersActivity : AppCompatActivity() {
 
-    private var teamId: Int = 0
+    private var teamId: String = "0"
     private var teamName: String = ""
 
     private lateinit var recyclerView: RecyclerView
-    private lateinit var adapter: PlayersAdapter
     private lateinit var progressBar: ProgressBar
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        teamId = intent.getIntExtra("team_id", 0)
+        teamId = intent.getStringExtra("team_id") ?: "0"
         teamName = intent.getStringExtra("team_name") ?: "Команда"
 
-        val rootLayout = LinearLayout(this).apply {
+        val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.parseColor("#1A1D23"))
         }
 
-        val tvTitle = TextView(this).apply {
+        val title = TextView(this).apply {
             text = teamName
-            setTextColor(Color.WHITE)
             textSize = 22f
+            setTextColor(Color.WHITE)
             setPadding(0, 40, 0, 20)
-            gravity = Gravity.CENTER
+            gravity = android.view.Gravity.CENTER
         }
 
         progressBar = ProgressBar(this)
@@ -50,24 +48,24 @@ class TeamPlayersActivity : AppCompatActivity() {
             layoutManager = LinearLayoutManager(this@TeamPlayersActivity)
         }
 
-        rootLayout.addView(tvTitle)
-        rootLayout.addView(progressBar)
-        rootLayout.addView(recyclerView)
+        root.addView(title)
+        root.addView(progressBar)
+        root.addView(recyclerView)
 
-        setContentView(rootLayout)
+        setContentView(root)
 
-        if (teamId == 0) {
-            Toast.makeText(this, "Помилка ID команди", Toast.LENGTH_SHORT).show()
-            return
+        if (teamId != "0") {
+            loadPlayers()
+        } else {
+            Toast.makeText(this, "ID команди = 0", Toast.LENGTH_SHORT).show()
         }
-
-        loadPlayers(teamId)
     }
 
-    private fun loadPlayers(id: Int) {
-        val client = OkHttpClient()
-        val url = "https://maf.lviv.ua/wp-json/maf/v2/team-players?id=$id"
+    private fun loadPlayers() {
 
+        val url = "https://maf.lviv.ua/wp-json/maf/v2/team-players?id=$teamId"
+
+        val client = OkHttpClient()
         val request = Request.Builder().url(url).build()
 
         client.newCall(request).enqueue(object : Callback {
@@ -83,25 +81,33 @@ class TeamPlayersActivity : AppCompatActivity() {
 
                 val json = response.body?.string()
 
-                runOnUiThread {
-                    progressBar.visibility = ProgressBar.GONE
+                if (!response.isSuccessful || json.isNullOrEmpty()) {
+                    runOnUiThread {
+                        progressBar.visibility = ProgressBar.GONE
+                        Toast.makeText(this@TeamPlayersActivity, "Нема складу", Toast.LENGTH_SHORT).show()
+                    }
+                    return
                 }
 
-                if (!response.isSuccessful || json.isNullOrEmpty()) return
-
                 try {
-                    val playerType = object : TypeToken<List<Player>>() {}.type
-                    val players: List<Player> = Gson().fromJson(json, playerType)
+                    val type = object : TypeToken<List<Player>>() {}.type
+                    val players: List<Player> = Gson().fromJson(json, type)
 
                     runOnUiThread {
-                        adapter = PlayersAdapter(players)
-                        recyclerView.adapter = adapter
+                        progressBar.visibility = ProgressBar.GONE
+
+                        if (players.isEmpty()) {
+                            Toast.makeText(this@TeamPlayersActivity, "Склад пустий", Toast.LENGTH_SHORT).show()
+                        }
+
+                        recyclerView.adapter = PlayersAdapter(players)
                     }
 
                 } catch (e: Exception) {
                     e.printStackTrace()
                     runOnUiThread {
-                        Toast.makeText(this@TeamPlayersActivity, "Нема складу", Toast.LENGTH_SHORT).show()
+                        progressBar.visibility = ProgressBar.GONE
+                        Toast.makeText(this@TeamPlayersActivity, "Помилка JSON", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
