@@ -24,12 +24,11 @@ class MatchDetailActivity : AppCompatActivity() {
         val btnBack: ImageButton = findViewById(R.id.btnBack)
         btnBack.setOnClickListener { finish() }
 
-        // 1. ОТРИМУЄМО ДАНІ (Додали away_team_id)
+        // 1. ОТРИМУЄМО ДАНІ
         val matchId = intent.getStringExtra("id") ?: ""
         
-        // Важливо: перетворюємо в Int, бо TeamPlayersActivity чекає Int
         val homeTeamIdStr = intent.getStringExtra("home_team_id") ?: "0"
-        val awayTeamIdStr = intent.getStringExtra("away_team_id") ?: "0" // Перевір, чи передаєш ти це з адаптера!
+        val awayTeamIdStr = intent.getStringExtra("away_team_id") ?: "0"
         
         val homeTeamId = homeTeamIdStr.toIntOrNull() ?: 0
         val awayTeamId = awayTeamIdStr.toIntOrNull() ?: 0
@@ -47,7 +46,6 @@ class MatchDetailActivity : AppCompatActivity() {
         // 2. ЗНАХОДИМО VIEW ДЛЯ КОМАНД
         val tvTeam1: TextView = findViewById(R.id.tvDetailTeam1)
         val ivLogo1: ImageView = findViewById(R.id.ivDetailLogo1)
-        
         val tvTeam2: TextView = findViewById(R.id.tvDetailTeam2)
         val ivLogo2: ImageView = findViewById(R.id.ivDetailLogo2)
 
@@ -64,7 +62,6 @@ class MatchDetailActivity : AppCompatActivity() {
         tvStadium.text = stadium
         tvStadium.visibility = if (stadium.isNotEmpty()) View.VISIBLE else View.GONE
 
-        // Логіка рахунку/часу
         val tvScore: TextView = findViewById(R.id.tvDetailScore)
         val tvTime: TextView = findViewById(R.id.tvDetailDateTime)
 
@@ -91,36 +88,31 @@ class MatchDetailActivity : AppCompatActivity() {
         Glide.with(this).load(logo1?.replace("http://", "https://")).into(ivLogo1)
         Glide.with(this).load(logo2?.replace("http://", "https://")).into(ivLogo2)
 
-        // --- 4. НАВІГАЦІЯ: РОБИМО КЛІКИ ПО КОМАНДАХ ---
-        
-        // Функція для відкриття екрану команди
+        // --- 4. НАВІГАЦІЯ ---
         fun openTeamDetails(id: Int, name: String) {
-    if (id != 0) { // Перевіряємо, що ID не нульовий
-        try {
-            val intent = Intent(this, TeamPlayersActivity::class.java)
-            intent.putExtra("team_id", id)
-            intent.putExtra("team_name", name)
-            startActivity(intent)
-        } catch (e: Exception) {
-            // Якщо Activity не знайдена в Маніфесті, додаток не впаде
-            android.widget.Toast.makeText(this, "Помилка: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+            if (id != 0) {
+                try {
+                    val intent = Intent(this, TeamPlayersActivity::class.java)
+                    intent.putExtra("team_id", id)
+                    intent.putExtra("team_name", name)
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    android.widget.Toast.makeText(this, "Помилка: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                android.widget.Toast.makeText(this, "ID команди не знайдено", android.widget.Toast.LENGTH_SHORT).show()
+            }
         }
-    } else {
-        android.widget.Toast.makeText(this, "ID команди не знайдено", android.widget.Toast.LENGTH_SHORT).show()
-    }
-}
 
-        // Клік по господарях (назва або лого)
         val homeClickListener = View.OnClickListener { openTeamDetails(homeTeamId, team1Name) }
         tvTeam1.setOnClickListener(homeClickListener)
         ivLogo1.setOnClickListener(homeClickListener)
 
-        // Клік по гостях (назва або лого)
         val awayClickListener = View.OnClickListener { openTeamDetails(awayTeamId, team2Name) }
         tvTeam2.setOnClickListener(awayClickListener)
         ivLogo2.setOnClickListener(awayClickListener)
 
-        // 5. ТАБИ
+        // 5. ТАБИ (ОСЬ ТУТ ОСНОВНА ПРАВКА)
         val tabs: TabLayout = findViewById(R.id.detailTabs)
         val viewPager: ViewPager2 = findViewById(R.id.detailViewPager)
 
@@ -128,6 +120,7 @@ class MatchDetailActivity : AppCompatActivity() {
             override fun getItemCount(): Int = 2
             override fun createFragment(position: Int): Fragment {
                 return when (position) {
+                    // Передаємо homeTeamIdStr у TimelineFragment
                     0 -> TimelineFragment.newInstance(matchId, homeTeamIdStr) 
                     else -> LineupsFragment.newInstance(matchId)
                 }
