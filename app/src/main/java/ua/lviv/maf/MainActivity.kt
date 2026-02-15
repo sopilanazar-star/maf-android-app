@@ -31,23 +31,27 @@ class MainActivity : AppCompatActivity() {
     private lateinit var newsRecyclerView: RecyclerView
     private lateinit var titleHeader: TextView
     private lateinit var contentLayout: LinearLayout
-    private lateinit var seasonSpinner: Spinner
     private lateinit var fragmentContainer: FrameLayout
 
     private val MAF_API_URL = "https://maf.lviv.ua/wp-json/maf/v2/matches"
     private val MAF_NEWS_URL = "https://maf.lviv.ua/wp-json/maf/v2/news"
-
-    private val seasons = arrayOf("2026", "2025", "2024")
-    private var currentYear = seasons[0]
+    
+    // Повертаємо фіксований 2025 рік
+    private var currentYear = "2025"
     private var allMatches = mutableListOf<TournamentRow>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-
+        
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = Color.TRANSPARENT
-        window.navigationBarColor = Color.TRANSPARENT
+        window.navigationBarColor = Color.TRANSPARENT 
+
+        androidx.core.view.WindowInsetsControllerCompat(window, window.decorView).apply {
+            isAppearanceLightStatusBars = false 
+            isAppearanceLightNavigationBars = false 
+        }
 
         val rootFrame = FrameLayout(this).apply {
             setBackgroundColor(Color.parseColor("#1A1D23"))
@@ -58,14 +62,13 @@ class MainActivity : AppCompatActivity() {
             layoutParams = FrameLayout.LayoutParams(-1, -1)
         }
 
+        // --- HEADER (БЕЗ СПІНЕРА) ---
         val headerLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            background = GradientDrawable(
-                GradientDrawable.Orientation.TOP_BOTTOM,
-                intArrayOf(Color.parseColor("#450000"), Color.parseColor("#1A1D23"))
-            )
-            setPadding(60, 140, 60, 40)
+            background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, 
+                intArrayOf(Color.parseColor("#450000"), Color.parseColor("#1A1D23")))
+            setPadding(60, 140, 60, 40) 
         }
 
         titleHeader = TextView(this).apply {
@@ -73,34 +76,41 @@ class MainActivity : AppCompatActivity() {
             textSize = 28f
             setTextColor(Color.WHITE)
             typeface = Typeface.DEFAULT_BOLD
-            layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
+            layoutParams = LinearLayout.LayoutParams(-1, -2)
         }
-
-        seasonSpinner = Spinner(this)
-        seasonSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, seasons)
-
         headerLayout.addView(titleHeader)
-        headerLayout.addView(seasonSpinner)
 
+        // --- CONTENT LAYOUT ---
         contentLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
+            visibility = View.GONE 
         }
 
         dateRecyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
+            layoutParams = LinearLayout.LayoutParams(-1, -2)
+            setPadding(20, 0, 20, 0)
+            clipToPadding = false
         }
 
         viewPager = ViewPager2(this).apply {
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
+            post {
+                if (childCount > 0) {
+                    getChildAt(0).overScrollMode = RecyclerView.OVER_SCROLL_NEVER
+                }
+            }
         }
 
         newsRecyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
+            visibility = View.VISIBLE
         }
 
         contentLayout.addView(dateRecyclerView)
-        contentLayout.addView(viewPager)
+        contentLayout.addView(viewPager) 
         contentLayout.addView(newsRecyclerView)
 
         fragmentContainer = FrameLayout(this).apply {
@@ -108,20 +118,64 @@ class MainActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
             visibility = View.GONE
         }
-
+        
         mainContentContainer.addView(headerLayout)
         mainContentContainer.addView(contentLayout)
         mainContentContainer.addView(fragmentContainer)
 
+        // --- NAVIGATION ---
+        val navColors = ColorStateList(
+            arrayOf(intArrayOf(android.R.attr.state_selected), intArrayOf(-android.R.attr.state_selected)),
+            intArrayOf(Color.parseColor("#E30613"), Color.GRAY)
+        )
+
         val bottomNav = BottomNavigationView(this).apply {
             inflateMenu(R.menu.bottom_nav_menu)
             setBackgroundColor(Color.parseColor("#121417"))
+            itemIconTintList = navColors
+            itemTextColor = navColors
             layoutParams = FrameLayout.LayoutParams(-1, -2).apply { gravity = Gravity.BOTTOM }
+
+            setOnItemSelectedListener { item ->
+                titleHeader.text = item.title
+                when (item.itemId) {
+                    R.id.nav_matches -> {
+                        fragmentContainer.visibility = View.GONE
+                        contentLayout.visibility = View.VISIBLE
+                        viewPager.visibility = View.VISIBLE
+                        dateRecyclerView.visibility = View.VISIBLE
+                        newsRecyclerView.visibility = View.GONE
+                    }
+                    R.id.nav_news -> {
+                        fragmentContainer.visibility = View.GONE
+                        contentLayout.visibility = View.VISIBLE
+                        viewPager.visibility = View.GONE
+                        dateRecyclerView.visibility = View.GONE
+                        newsRecyclerView.visibility = View.VISIBLE
+                        loadNewsFromApi()
+                    }
+                    R.id.nav_tables -> {
+                        contentLayout.visibility = View.GONE
+                        fragmentContainer.visibility = View.VISIBLE
+                        supportFragmentManager.beginTransaction()
+                            .replace(fragmentContainer.id, StandingFragment())
+                            .commit()
+                    }
+                }
+                true
+            }
+            selectedItemId = R.id.nav_news
         }
 
         rootFrame.addView(mainContentContainer)
         rootFrame.addView(bottomNav)
         setContentView(rootFrame)
+
+        ViewCompat.setOnApplyWindowInsetsListener(bottomNav) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(0, 0, 0, systemBars.bottom)
+            insets
+        }
 
         loadFromApi(currentYear)
         loadNewsFromApi()
@@ -131,26 +185,24 @@ class MainActivity : AppCompatActivity() {
         val client = OkHttpClient()
         val request = Request.Builder().url(MAF_NEWS_URL).build()
         client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {}
+            override fun onFailure(call: Call, e: IOException) { e.printStackTrace() }
             override fun onResponse(call: Call, response: Response) {
                 val jsonData = response.body?.string() ?: ""
-                val array = JSONArray(jsonData)
-                val newsList = mutableListOf<NewsModel>()
-                for (i in 0 until array.length()) {
-                    val obj = array.getJSONObject(i)
-                    newsList.add(
-                        NewsModel(
-                            obj.optString("id"),
-                            obj.optString("title"),
-                            obj.optString("preview"),
-                            obj.optString("content"),
-                            obj.optString("date")
-                        )
-                    )
-                }
-                runOnUiThread {
-                    newsRecyclerView.adapter = NewsAdapter(newsList)
-                }
+                try {
+                    val array = JSONArray(jsonData)
+                    val newsList = mutableListOf<NewsModel>()
+                    for (i in 0 until array.length()) {
+                        val obj = array.getJSONObject(i)
+                        newsList.add(NewsModel(
+                            obj.optString("id", "0"),
+                            obj.optString("title", ""),
+                            obj.optString("preview", ""),
+                            obj.optString("content", ""),
+                            obj.optString("date", "")
+                        ))
+                    }
+                    runOnUiThread { newsRecyclerView.adapter = NewsAdapter(newsList) }
+                } catch (e: Exception) { e.printStackTrace() }
             }
         })
     }
@@ -158,95 +210,107 @@ class MainActivity : AppCompatActivity() {
     private fun loadFromApi(year: String) {
         val client = OkHttpClient()
         val request = Request.Builder().url("$MAF_API_URL?year=$year").build()
-
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {}
-
             override fun onResponse(call: Call, response: Response) {
                 val jsonData = response.body?.string() ?: ""
-                val array = JSONArray(jsonData)
-
-                allMatches.clear()
-
-                for (i in 0 until array.length()) {
-                    val m = array.getJSONObject(i)
-                    allMatches.add(
-                        TournamentRow(
-                            id = m.optString("id"),
-                            home_team_id = m.optString("home_team_id"),
-                            away_team_id = m.optString("away_team_id"),
-                            team1 = m.optString("team1"),
-                            logo1 = m.optString("logo1"),
-                            team2 = m.optString("team2"),
-                            logo2 = m.optString("logo2"),
-                            score = m.optString("score"),
-                            date = m.optString("date"),
-                            league = m.optString("league"),
-                            stage = m.optString("stage"),
-                            stadium = m.optString("stadium"),
-                            referee = m.optString("referee"),
+                try {
+                    val array = JSONArray(jsonData)
+                    allMatches.clear()
+                    for (i in 0 until array.length()) {
+                        val m = array.getJSONObject(i)
+                        allMatches.add(TournamentRow(
+                            id = m.optString("id", "0"),
+                            home_team_id = m.optString("home_team_id", "0"),
+                            away_team_id = m.optString("away_team_id", "0"),
+                            team1 = m.optString("team1", ""),
+                            logo1 = m.optString("logo1", ""),
+                            team2 = m.optString("team2", ""),
+                            logo2 = m.optString("logo2", ""),
+                            score = m.optString("score", ""),
+                            date = m.optString("date", ""),
+                            league = m.optString("league", "MAF"),
+                            stage = m.optString("stage", ""),
+                            stadium = m.optString("stadium", ""),
+                            referee = m.optString("referee", ""),
                             isHeader = false
-                        )
-                    )
-                }
+                        ))
+                    }
+                    runOnUiThread {
+                        val dateList = createDateList(allMatches)
+                        val swipeAdapter = MatchSwipeAdapter(dateList)
+                        viewPager.adapter = swipeAdapter
 
-                runOnUiThread {
-                    val dateList = createDateList(allMatches)
-                    viewPager.adapter = MatchSwipeAdapter(dateList)
-                }
+                        dateRecyclerView.adapter = DateAdapter(dateList) { selectedDate ->
+                            val pos = dateList.indexOfFirst { it.date == selectedDate }
+                            if (pos != -1) viewPager.setCurrentItem(pos, true)
+                        }
+
+                        viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+                            override fun onPageSelected(position: Int) {
+                                dateList.forEach { it.isSelected = false }
+                                dateList[position].isSelected = true
+                                dateRecyclerView.adapter?.notifyDataSetChanged()
+                                dateRecyclerView.scrollToPosition(position)
+                            }
+                        })
+                    }
+                } catch (e: Exception) { e.printStackTrace() }
             }
         })
     }
 
     private fun createDateList(matches: List<TournamentRow>): List<DateModel> {
-        val list = mutableListOf<DateModel>()
-        val unique = matches.map { it.date }.distinct()
+        val calendarList = mutableListOf<DateModel>()
+        try {
+            val uniqueDates = matches.map { it.date }.distinct().sortedByDescending { 
+                SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).parse(it) 
+            }
+            val inputFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+            val dayNameFormat = SimpleDateFormat("EEE", Locale("uk"))
+            val dayNumFormat = SimpleDateFormat("dd", Locale.getDefault())
+            val monthFormat = SimpleDateFormat("MMM", Locale("uk"))
 
-        for (d in unique) {
-            list.add(DateModel(d, "", "", ""))
-        }
-        return list
+            uniqueDates.forEach { dateStr ->
+                val date = inputFormat.parse(dateStr)
+                if (date != null) {
+                    calendarList.add(DateModel(dateStr, dayNameFormat.format(date).uppercase(), dayNumFormat.format(date), monthFormat.format(date)))
+                }
+            }
+        } catch (e: Exception) {}
+        return calendarList
     }
 
     private fun groupMatchesByLeagueAndStage(matches: List<TournamentRow>): List<TournamentRow> {
         val result = mutableListOf<TournamentRow>()
         val grouped = matches.groupBy { "${it.league}|${it.stage}" }
-
         for ((key, leagueMatches) in grouped) {
             val parts = key.split("|")
-            result.add(TournamentRow(league = parts[0], stage = parts.getOrElse(1) { "" }, isHeader = true))
+            result.add(TournamentRow(league = parts[0], stage = if (parts.size > 1) parts[1] else "", isHeader = true))
             result.addAll(leagueMatches)
         }
         return result
     }
 
-    // 🔥 ВАЖЛИВО: АДАПТЕР ВСЕРЕДИНІ MainActivity
-    inner class MatchSwipeAdapter(private val dates: List<DateModel>) :
-        RecyclerView.Adapter<MatchSwipeAdapter.ViewHolder>() {
-
+    // ВНУТРІШНІЙ КЛАС ТЕПЕР ТОЧНО ПОЗА МЕТОДАМИ
+    inner class MatchSwipeAdapter(private val dates: List<DateModel>) : RecyclerView.Adapter<MatchSwipeAdapter.ViewHolder>() {
         class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val rvMatches: RecyclerView = RecyclerView(view.context).apply {
                 layoutManager = LinearLayoutManager(view.context)
                 layoutParams = ViewGroup.LayoutParams(-1, -1)
             }
-
-            init {
-                (view as FrameLayout).addView(rvMatches)
-            }
+            init { (view as FrameLayout).addView(rvMatches) }
         }
-
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val frame = FrameLayout(parent.context)
+            val frame = FrameLayout(parent.context).apply { layoutParams = ViewGroup.LayoutParams(-1, -1) }
             return ViewHolder(frame)
         }
-
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val date = dates[position].date
             val filtered = allMatches.filter { it.date == date }
             val grouped = groupMatchesByLeagueAndStage(filtered)
             holder.rvMatches.adapter = TournamentAdapter(grouped)
         }
-
         override fun getItemCount(): Int = dates.size
     }
 }
