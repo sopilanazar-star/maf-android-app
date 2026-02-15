@@ -9,12 +9,15 @@ data class TimelineEvent(
     @SerializedName("type")
     val type: String,
 
-    @SerializedName("player_name") // Це зв'язує JSON з кодом
-    val player_name: String,       // Тепер адаптер знайде цю змінну
+    @SerializedName("player_name")
+    val player_name: String,
 
     @SerializedName("player_out_name")
-    val player_out_name: String?,  // Знак питання важливий!
+    val player_out_name: String?,
 
     @SerializedName("side")
-    val side: String               // Саме це відповідає за "left" або "right"
+    val side: String,
+
+    @SerializedName("team_id") // Нове поле
+    val team_id: Int           // ID команди, яка створила подію
 )
