@@ -12,8 +12,11 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-class TimelineAdapter(private val events: List<TimelineEvent>) :
-    RecyclerView.Adapter<TimelineAdapter.TimelineViewHolder>() {
+// Додаємо homeTeamId як константу для порівняння
+class TimelineAdapter(
+    private val events: List<TimelineEvent>,
+    private val homeTeamId: Int 
+) : RecyclerView.Adapter<TimelineAdapter.TimelineViewHolder>() {
 
     class TimelineViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvMinute: TextView = view.findViewById(R.id.tvEventMinute)
@@ -35,54 +38,37 @@ class TimelineAdapter(private val events: List<TimelineEvent>) :
 
         holder.tvMinute.text = "${event.minute}'"
 
-        // 🔥 ОПИС ПОДІЇ
+        // Логіка формування тексту (заміни, голи тощо) залишається твоєю
         val description: CharSequence = when (event.type) {
-
             "substitution" -> {
                 val sb = SpannableStringBuilder()
-
-                // ↑ гравець зайшов
                 val inText = "↑ ${event.player_name}"
                 sb.append(inText)
-                sb.setSpan(
-                    ForegroundColorSpan(Color.parseColor("#00E676")),
-                    0,
-                    inText.length,
-                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
+                sb.setSpan(ForegroundColorSpan(Color.parseColor("#00E676")), 0, inText.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
 
-                // ↓ кого замінили
                 if (!event.player_out_name.isNullOrBlank()) {
                     sb.append("\n")
-
                     val start = sb.length
                     val outText = "↓ ${event.player_out_name}"
                     sb.append(outText)
-
-                    sb.setSpan(
-                        ForegroundColorSpan(Color.parseColor("#FF5252")),
-                        start,
-                        start + outText.length,
-                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
+                    sb.setSpan(ForegroundColorSpan(Color.parseColor("#FF5252")), start, start + outText.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                 }
-
                 sb
             }
-
             else -> event.player_name
         }
 
-        // reset
-        holder.layoutLeft.visibility = View.INVISIBLE
-        holder.layoutRight.visibility = View.INVISIBLE
+        // Очищення перед відлюванням
+        holder.layoutLeft.visibility = View.GONE // Використовуємо GONE, щоб не займало місце
+        holder.layoutRight.visibility = View.GONE
         holder.tvDescriptionLeft.text = ""
         holder.tvDescriptionRight.text = ""
 
-        if (event.side == "left") {
+        // 🔥 НОВА ЛОГІКА: порівнюємо ID команди події з ID господарів
+        if (event.team_id == homeTeamId) {
             holder.layoutLeft.visibility = View.VISIBLE
             holder.tvDescriptionLeft.text = description
-        } else if (event.side == "right") {
+        } else {
             holder.layoutRight.visibility = View.VISIBLE
             holder.tvDescriptionRight.text = description
         }
@@ -91,37 +77,27 @@ class TimelineAdapter(private val events: List<TimelineEvent>) :
     }
 
     private fun setupCenterIcon(imageView: ImageView, event: TimelineEvent) {
-
         imageView.setImageDrawable(null)
         imageView.clearColorFilter()
-        imageView.imageTintList = null
         imageView.visibility = View.VISIBLE
 
         when (event.type) {
-
             "goal" -> imageView.setImageResource(R.drawable.ic_ball)
-
             "goal_pen" -> imageView.setImageResource(R.drawable.ic_penalty_goal)
-
             "goal_og" -> {
                 imageView.setImageResource(R.drawable.ic_ball)
                 imageView.setColorFilter(Color.RED)
             }
-
             "yellow_card" -> {
                 imageView.setImageResource(R.drawable.ic_card)
                 imageView.setColorFilter(Color.parseColor("#FFEB3B"))
             }
-
             "red_card" -> {
                 imageView.setImageResource(R.drawable.ic_card)
                 imageView.setColorFilter(Color.RED)
             }
-
             "yellow_red" -> imageView.setImageResource(R.drawable.ic_second_yellow)
-
             "substitution" -> imageView.setImageResource(R.drawable.ic_substitution)
-
             else -> imageView.visibility = View.INVISIBLE
         }
     }
