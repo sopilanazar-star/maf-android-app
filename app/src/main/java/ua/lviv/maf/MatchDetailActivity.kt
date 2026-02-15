@@ -1,5 +1,6 @@
 package ua.lviv.maf
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.View
@@ -20,16 +21,21 @@ class MatchDetailActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_match_detail)
 
-        // 1. Кнопка "Назад"
         val btnBack: ImageButton = findViewById(R.id.btnBack)
         btnBack.setOnClickListener { finish() }
 
-        // 2. Отримуємо дані з Intent
+        // 1. ОТРИМУЄМО ДАНІ (Додали away_team_id)
         val matchId = intent.getStringExtra("id") ?: ""
-        val homeTeamId = intent.getStringExtra("home_team_id") ?: ""
         
-        val team1 = intent.getStringExtra("team1") ?: "Команда 1"
-        val team2 = intent.getStringExtra("team2") ?: "Команда 2"
+        // Важливо: перетворюємо в Int, бо TeamPlayersActivity чекає Int
+        val homeTeamIdStr = intent.getStringExtra("home_team_id") ?: "0"
+        val awayTeamIdStr = intent.getStringExtra("away_team_id") ?: "0" // Перевір, чи передаєш ти це з адаптера!
+        
+        val homeTeamId = homeTeamIdStr.toIntOrNull() ?: 0
+        val awayTeamId = awayTeamIdStr.toIntOrNull() ?: 0
+
+        val team1Name = intent.getStringExtra("team1") ?: "Команда 1"
+        val team2Name = intent.getStringExtra("team2") ?: "Команда 2"
         val logo1 = intent.getStringExtra("logo1")
         val logo2 = intent.getStringExtra("logo2")
         val score = intent.getStringExtra("score") ?: ""
@@ -38,41 +44,42 @@ class MatchDetailActivity : AppCompatActivity() {
         val stadium = intent.getStringExtra("stadium") ?: ""
         val referee = intent.getStringExtra("referee") ?: ""
 
-        // 3. Заповнюємо Header (Команди та назва ліги)
-        findViewById<TextView>(R.id.tvDetailTeam1).text = team1
-        findViewById<TextView>(R.id.tvDetailTeam2).text = team2
+        // 2. ЗНАХОДИМО VIEW ДЛЯ КОМАНД
+        val tvTeam1: TextView = findViewById(R.id.tvDetailTeam1)
+        val ivLogo1: ImageView = findViewById(R.id.ivDetailLogo1)
+        
+        val tvTeam2: TextView = findViewById(R.id.tvDetailTeam2)
+        val ivLogo2: ImageView = findViewById(R.id.ivDetailLogo2)
+
+        // 3. ЗАПОВНЮЄМО ДАНІ
+        tvTeam1.text = team1Name
+        tvTeam2.text = team2Name
         findViewById<TextView>(R.id.tvDetailLeague).text = league.uppercase()
         
-        // Етап (Тур) — Червоний
         val tvStage: TextView = findViewById(R.id.tvStageName)
         tvStage.text = stage
         tvStage.visibility = if (stage.isNotEmpty()) View.VISIBLE else View.GONE
 
-        // Стадіон — Білий, по центру
         val tvStadium: TextView = findViewById(R.id.tvDetailStadium)
         tvStadium.text = stadium
         tvStadium.visibility = if (stadium.isNotEmpty()) View.VISIBLE else View.GONE
 
-        // --- ЛОГІКА VS ТА ЧАСУ ---
+        // Логіка рахунку/часу
         val tvScore: TextView = findViewById(R.id.tvDetailScore)
         val tvTime: TextView = findViewById(R.id.tvDetailDateTime)
 
         if (score.contains(" : ")) {
-            // МАТЧ ЗІГРАНО: показуємо рахунок, ховаємо годинник/час (або ставимо туди дату)
             tvScore.text = score
             tvScore.textSize = 38f
             tvScore.setTextColor(Color.WHITE)
-            tvTime.text = intent.getStringExtra("date") ?: "" // Можна дату лишити
+            tvTime.text = intent.getStringExtra("date") ?: ""
         } else {
-            // МАТЧ МАЙБУТНІЙ: замість рахунку пишемо VS, час — під стадіон
             tvScore.text = "VS"
             tvScore.textSize = 32f
-            tvScore.setTextColor(Color.parseColor("#BCBCBC")) // Сірий для VS
-            
-            tvTime.text = score // Тут буде час (наприклад 11:00)
+            tvScore.setTextColor(Color.parseColor("#BCBCBC"))
+            tvTime.text = score
         }
 
-        // Арбітр
         val tvReferee: TextView = findViewById(R.id.tvDetailReferee)
         if (referee.isNotEmpty()) {
             tvReferee.text = "Арбітр: $referee"
@@ -81,14 +88,32 @@ class MatchDetailActivity : AppCompatActivity() {
             tvReferee.visibility = View.GONE
         }
 
-        // Завантаження логотипів
-        val ivLogo1: ImageView = findViewById(R.id.ivDetailLogo1)
-        val ivLogo2: ImageView = findViewById(R.id.ivDetailLogo2)
-
         Glide.with(this).load(logo1?.replace("http://", "https://")).into(ivLogo1)
         Glide.with(this).load(logo2?.replace("http://", "https://")).into(ivLogo2)
 
-        // 4. ТАБИ (Timeline та Склад)
+        // --- 4. НАВІГАЦІЯ: РОБИМО КЛІКИ ПО КОМАНДАХ ---
+        
+        // Функція для відкриття екрану команди
+        fun openTeamDetails(id: Int, name: String) {
+            if (id > 0) {
+                val intent = Intent(this, TeamPlayersActivity::class.java)
+                intent.putExtra("team_id", id)
+                intent.putExtra("team_name", name)
+                startActivity(intent)
+            }
+        }
+
+        // Клік по господарях (назва або лого)
+        val homeClickListener = View.OnClickListener { openTeamDetails(homeTeamId, team1Name) }
+        tvTeam1.setOnClickListener(homeClickListener)
+        ivLogo1.setOnClickListener(homeClickListener)
+
+        // Клік по гостях (назва або лого)
+        val awayClickListener = View.OnClickListener { openTeamDetails(awayTeamId, team2Name) }
+        tvTeam2.setOnClickListener(awayClickListener)
+        ivLogo2.setOnClickListener(awayClickListener)
+
+        // 5. ТАБИ
         val tabs: TabLayout = findViewById(R.id.detailTabs)
         val viewPager: ViewPager2 = findViewById(R.id.detailViewPager)
 
@@ -96,7 +121,7 @@ class MatchDetailActivity : AppCompatActivity() {
             override fun getItemCount(): Int = 2
             override fun createFragment(position: Int): Fragment {
                 return when (position) {
-                    0 -> TimelineFragment.newInstance(matchId, homeTeamId) 
+                    0 -> TimelineFragment.newInstance(matchId, homeTeamIdStr) 
                     else -> LineupsFragment.newInstance(matchId)
                 }
             }
