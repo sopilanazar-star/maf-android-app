@@ -114,9 +114,9 @@ class TimelineFragment : Fragment() {
                     // ЛОГІКА ЗАМІНИ: якщо тип заміна, додаємо текст у дужках
                     text = when {
                         (type == "substitution" || type == "sub") && playerOutName.isNotEmpty() -> 
-                            "$playerName\n(замість $playerOutName)"
-                        type == "goal_og" -> "$playerName (АГ)"
-                        else -> playerName
+            "$playerName\n$playerOutName"
+        type == "goal_og" -> "$playerName (АГ)"
+        else -> playerName
                     }
                     setTextColor(Color.WHITE)
                     textSize = 14f
