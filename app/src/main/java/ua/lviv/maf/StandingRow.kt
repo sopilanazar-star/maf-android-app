@@ -1,7 +1,7 @@
 package ua.lviv.maf
 
 data class StandingRow(
-    val team_id: String,
+    val team_id: String,       // String, як у твоєму новому JSON ("32")
     val position: Int,
     val team_name: String,
     val logo: String,
@@ -15,5 +15,5 @@ data class StandingRow(
 
     val is_group_header: Boolean = false,
     val group_name: String? = null,
-    val form: List<String>? = null
+    val form: List<String> = emptyList() // За замовчуванням порожній список
 )
