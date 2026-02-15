@@ -20,55 +20,75 @@ class StandingFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: StandingAdapter
     private var competitions = mutableListOf<Competition>()
-    
+
     private val COMPS_URL = "https://maf.lviv.ua/wp-json/maf/v2/competitions"
     private val STANDING_URL = "https://maf.lviv.ua/wp-json/maf/v2/standing"
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+
         val view = inflater.inflate(R.layout.fragment_standing, container, false)
-        
+
         tabLayout = view.findViewById(R.id.tabLayoutCompetitions)
         recyclerView = view.findViewById(R.id.rvStanding)
-        
+
         recyclerView.layoutManager = LinearLayoutManager(context)
         adapter = StandingAdapter(listOf())
         recyclerView.adapter = adapter
 
         setupTabListener()
         loadCompetitions()
-        
+
         return view
     }
 
     private fun loadCompetitions() {
         val client = OkHttpClient()
         val request = Request.Builder().url(COMPS_URL).build()
-        
+
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                activity?.runOnUiThread { Toast.makeText(context, "Помилка завантаження ліг", Toast.LENGTH_SHORT).show() }
+                activity?.runOnUiThread {
+                    Toast.makeText(context, "Помилка завантаження ліг", Toast.LENGTH_SHORT).show()
+                }
             }
 
             override fun onResponse(call: Call, response: Response) {
                 val jsonData = response.body?.string() ?: ""
+
                 try {
                     val array = JSONArray(jsonData)
                     competitions.clear()
+
                     for (i in 0 until array.length()) {
                         val obj = array.getJSONObject(i)
-                        competitions.add(Competition(obj.getString("id"), obj.getString("title")))
+                        competitions.add(
+                            Competition(
+                                obj.getString("id"),
+                                obj.getString("title")
+                            )
+                        )
                     }
+
                     activity?.runOnUiThread { updateTabs() }
-                } catch (e: Exception) { e.printStackTrace() }
+
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         })
     }
 
     private fun updateTabs() {
         tabLayout.removeAllTabs()
+
         for (comp in competitions) {
             tabLayout.addTab(tabLayout.newTab().setText(comp.title))
         }
+
         if (competitions.isNotEmpty()) {
             loadStanding(competitions[0].id)
         }
@@ -82,56 +102,77 @@ class StandingFragment : Fragment() {
                     loadStanding(competitions[pos].id)
                 }
             }
+
             override fun onTabUnselected(tab: TabLayout.Tab?) {}
             override fun onTabReselected(tab: TabLayout.Tab?) {}
         })
     }
 
     private fun loadStanding(compId: String) {
+
         val client = OkHttpClient()
-        val request = Request.Builder().url("$STANDING_URL?competition_id=$compId").build()
+        val request = Request.Builder()
+            .url("$STANDING_URL?competition_id=$compId")
+            .build()
 
         client.newCall(request).enqueue(object : Callback {
+
             override fun onFailure(call: Call, e: IOException) {
-                activity?.runOnUiThread { Toast.makeText(context, "Помилка таблиці", Toast.LENGTH_SHORT).show() }
+                activity?.runOnUiThread {
+                    Toast.makeText(context, "Помилка таблиці", Toast.LENGTH_SHORT).show()
+                }
             }
 
             override fun onResponse(call: Call, response: Response) {
+
                 val jsonData = response.body?.string() ?: ""
+
                 try {
                     val array = JSONArray(jsonData)
                     val standingList = mutableListOf<StandingRow>()
+
                     for (i in 0 until array.length()) {
+
                         val obj = array.getJSONObject(i)
-                        
+
                         val formArray = obj.optJSONArray("form")
                         val formList = mutableListOf<String>()
+
                         if (formArray != null) {
                             for (j in 0 until formArray.length()) {
                                 formList.add(formArray.getString(j))
                             }
                         }
 
-                        standingList.add(StandingRow(
-                            team_id = obj.optString("team_id", "0").toInt(), 
-                            position = obj.optInt("position", 0),
-                            team_name = obj.optString("team_name", ""),
-                            logo = obj.optString("logo", ""),
-                            games = obj.optInt("games", 0),
-                            win = obj.optInt("win", 0),
-                            draw = obj.optInt("draw", 0),
-                            loss = obj.optInt("loss", 0),
-                            goals_for = obj.optInt("goals_for", 0),
-                            goals_against = obj.optInt("goals_against", 0),
-                            points = obj.optInt("points", 0),
-                            is_group_header = obj.optBoolean("is_group_header", false),
-                            group_name = obj.optString("group_name", ""),
-                            form = formList
-                        ))
+                        // 🔥 ГОЛОВНИЙ FIX
+                        val teamIdString = obj.optString("team_id", "0")
+
+                        standingList.add(
+                            StandingRow(
+                                team_id = teamIdString,   // ← ТЕПЕР STRING
+                                position = obj.optInt("position", 0),
+                                team_name = obj.optString("team_name", ""),
+                                logo = obj.optString("logo", ""),
+                                games = obj.optInt("games", 0),
+                                win = obj.optInt("win", 0),
+                                draw = obj.optInt("draw", 0),
+                                loss = obj.optInt("loss", 0),
+                                goals_for = obj.optInt("goals_for", 0),
+                                goals_against = obj.optInt("goals_against", 0),
+                                points = obj.optInt("points", 0),
+                                is_group_header = obj.optBoolean("is_group_header", false),
+                                group_name = obj.optString("group_name", ""),
+                                form = formList
+                            )
+                        )
                     }
-                    activity?.runOnUiThread { adapter.updateData(standingList) }
-                } catch (e: Exception) { 
-                    e.printStackTrace() 
+
+                    activity?.runOnUiThread {
+                        adapter.updateData(standingList)
+                    }
+
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
         })
