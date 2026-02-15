@@ -95,13 +95,20 @@ class MatchDetailActivity : AppCompatActivity() {
         
         // Функція для відкриття екрану команди
         fun openTeamDetails(id: Int, name: String) {
-            if (id > 0) {
-                val intent = Intent(this, TeamPlayersActivity::class.java)
-                intent.putExtra("team_id", id)
-                intent.putExtra("team_name", name)
-                startActivity(intent)
-            }
+    if (id != 0) { // Перевіряємо, що ID не нульовий
+        try {
+            val intent = Intent(this, TeamPlayersActivity::class.java)
+            intent.putExtra("team_id", id)
+            intent.putExtra("team_name", name)
+            startActivity(intent)
+        } catch (e: Exception) {
+            // Якщо Activity не знайдена в Маніфесті, додаток не впаде
+            android.widget.Toast.makeText(this, "Помилка: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
         }
+    } else {
+        android.widget.Toast.makeText(this, "ID команди не знайдено", android.widget.Toast.LENGTH_SHORT).show()
+    }
+}
 
         // Клік по господарях (назва або лого)
         val homeClickListener = View.OnClickListener { openTeamDetails(homeTeamId, team1Name) }
