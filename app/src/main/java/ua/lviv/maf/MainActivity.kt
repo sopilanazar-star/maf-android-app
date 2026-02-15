@@ -22,10 +22,11 @@ import org.json.JSONArray
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.viewpager2.widget.ViewPager2
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var recyclerView: RecyclerView
+    private lateinit var viewPager: ViewPager2
     private lateinit var dateRecyclerView: RecyclerView
     private lateinit var newsRecyclerView: RecyclerView
     private lateinit var titleHeader: TextView
@@ -127,11 +128,9 @@ class MainActivity : AppCompatActivity() {
             clipToPadding = false
         }
 
-        recyclerView = RecyclerView(this).apply {
-            layoutManager = LinearLayoutManager(this@MainActivity)
+        viewPager = ViewPager2(this).apply {
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
-            setPadding(0, 0, 0, 0)
-            clipToPadding = false
+            getChildAt(0).overScrollMode = RecyclerView.OVER_SCROLL_NEVER 
         }
 
         newsRecyclerView = RecyclerView(this).apply {
@@ -143,7 +142,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         contentLayout.addView(dateRecyclerView)
-        contentLayout.addView(recyclerView)
+        contentLayout.addView(viewPager) // Додаємо ViewPager
         contentLayout.addView(newsRecyclerView)
 
         // --- FRAGMENT CONTAINER ---
@@ -176,7 +175,7 @@ class MainActivity : AppCompatActivity() {
                     R.id.nav_matches -> {
                         fragmentContainer.visibility = View.GONE
                         contentLayout.visibility = View.VISIBLE
-                        recyclerView.visibility = View.VISIBLE
+                        viewPager.visibility = View.VISIBLE
                         dateRecyclerView.visibility = View.VISIBLE
                         newsRecyclerView.visibility = View.GONE
                         seasonSpinner.visibility = View.VISIBLE
@@ -184,7 +183,7 @@ class MainActivity : AppCompatActivity() {
                     R.id.nav_news -> {
                         fragmentContainer.visibility = View.GONE
                         contentLayout.visibility = View.VISIBLE
-                        recyclerView.visibility = View.GONE
+                        viewPager.visibility = View.GONE
                         dateRecyclerView.visibility = View.GONE
                         newsRecyclerView.visibility = View.VISIBLE
                         seasonSpinner.visibility = View.GONE
@@ -255,30 +254,49 @@ class MainActivity : AppCompatActivity() {
                     val array = JSONArray(jsonData)
                     allMatches.clear()
                     for (i in 0 until array.length()) {
-    val m = array.getJSONObject(i)
-    allMatches.add(TournamentRow(
-        id = m.optString("id", "0"),
-        home_team_id = m.optString("home_team_id", "0"),
-        away_team_id = m.optString("away_team_id", "0"),
-        team1 = m.optString("team1", ""),
-        logo1 = m.optString("logo1", ""),
-        team2 = m.optString("team2", ""),
-        logo2 = m.optString("logo2", ""),
-        score = m.optString("score", ""),
-        date = m.optString("date", ""),
-        league = m.optString("league", "MAF"),
-        stage = m.optString("stage", ""),
-        stadium = m.optString("stadium", ""),
-        referee = m.optString("referee", ""),
-        isHeader = false
-    ))
-}
+                        val m = array.getJSONObject(i)
+                        allMatches.add(TournamentRow(
+                            id = m.optString("id", "0"),
+                            home_team_id = m.optString("home_team_id", "0"),
+                            away_team_id = m.optString("away_team_id", "0"),
+                            team1 = m.optString("team1", ""),
+                            logo1 = m.optString("logo1", ""),
+                            team2 = m.optString("team2", ""),
+                            logo2 = m.optString("logo2", ""),
+                            score = m.optString("score", ""),
+                            date = m.optString("date", ""),
+                            league = m.optString("league", "MAF"),
+                            stage = m.optString("stage", ""),
+                            stadium = m.optString("stadium", ""),
+                            referee = m.optString("referee", ""),
+                            isHeader = false
+                        ))
+                    }
                     runOnUiThread {
                         val dateList = createDateList(allMatches)
-                        dateRecyclerView.adapter = DateAdapter(dateList) { filterMatches(it) }
+                        
+                        val swipeAdapter = MatchSwipeAdapter(dateList)
+                        viewPager.adapter = swipeAdapter
+
+                        dateRecyclerView.adapter = DateAdapter(dateList) { selectedDate ->
+                            val pos = dateList.indexOfFirst { it.date == selectedDate }
+                            if (pos != -1) {
+                                viewPager.setCurrentItem(pos, true)
+                            }
+                        }
+
+                        viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+                            override fun onPageSelected(position: Int) {
+                                dateList.forEach { it.isSelected = false }
+                                dateList[position].isSelected = true
+                                dateRecyclerView.adapter?.notifyDataSetChanged()
+                                dateRecyclerView.scrollToPosition(position)
+                            }
+                        })
+
                         if (dateList.isNotEmpty()) {
                             dateList[0].isSelected = true
-                            filterMatches(dateList[0].date)
+                            viewPager.setCurrentItem(0, false)
                         }
                     }
                 } catch (e: Exception) { e.printStackTrace() }
@@ -307,33 +325,35 @@ class MainActivity : AppCompatActivity() {
         return calendarList
     }
 
-    private fun filterMatches(date: String) {
-        val filtered = allMatches.filter { it.date == date }
-        val grouped = groupMatchesByLeagueAndStage(filtered)
-        runOnUiThread { recyclerView.adapter = TournamentAdapter(grouped) }
+    private fun groupMatchesByLeagueAndStage(matches: List<TournamentRow>): List<TournamentRow> {
+        val result = mutableListOf<TournamentRow>()
+        val grouped = matches.groupBy { "${it.league}|${it.stage}" }
+        for ((key, leagueMatches) in grouped) {
+            val parts = key.split("|")
+            result.add(TournamentRow(league = parts[0], stage = if (parts.size > 1) parts[1] else "", isHeader = true))
+            result.addAll(leagueMatches)
+        }
+        return result
     }
 
-    private fun groupMatchesByLeagueAndStage(matches: List<TournamentRow>): List<TournamentRow> {
-    val result = mutableListOf<TournamentRow>()
-    
-    // Групуємо матчі за унікальною комбінацією Ліга + Етап
-    val grouped = matches.groupBy { "${it.league}|${it.stage}" }
-    
-    for ((key, leagueMatches) in grouped) {
-        val parts = key.split("|")
-        val leagueName = parts[0]
-        val stageName = if (parts.size > 1) parts[1] else ""
-        
-        // Створюємо Header. Явно кажемо: в поле league пиши leagueName, в stage - stageName
-        result.add(TournamentRow(
-            league = leagueName, 
-            stage = stageName, 
-            isHeader = true
-        ))
-        
-        // Додаємо самі матчі під цей заголовок
-        result.addAll(leagueMatches)
+    inner class MatchSwipeAdapter(private val dates: List<DateModel>) : RecyclerView.Adapter<MatchSwipeAdapter.ViewHolder>() {
+        class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+            val rvMatches: RecyclerView = RecyclerView(view.context).apply {
+                layoutManager = LinearLayoutManager(view.context)
+                layoutParams = ViewGroup.LayoutParams(-1, -1)
+            }
+            init { (view as FrameLayout).addView(rvMatches) }
+        }
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val frame = FrameLayout(parent.context).apply { layoutParams = ViewGroup.LayoutParams(-1, -1) }
+            return ViewHolder(frame)
+        }
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val date = dates[position].date
+            val filtered = allMatches.filter { it.date == date }
+            val grouped = groupMatchesByLeagueAndStage(filtered)
+            holder.rvMatches.adapter = TournamentAdapter(grouped)
+        }
+        override fun getItemCount(): Int = dates.size
     }
-    return result
-}
 }
