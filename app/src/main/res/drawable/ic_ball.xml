@@ -1,32 +1,17 @@
-<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-  <!-- круг -->
-  <circle cx="100" cy="100" r="95" fill="#ffffff" stroke="#000" stroke-width="4"/>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="18dp"
+    android:height="18dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
 
-  <!-- центральний п'ятикутник -->
-  <polygon points="100,55 120,70 112,95 88,95 80,70"
-           fill="#000"/>
+    <!-- зовнішнє коло -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M50,5
+            A45,45 0 1,1 49.9,5" />
 
-  <!-- верх -->
-  <polygon points="100,55 140,35 160,65 120,70"
-           fill="#000"/>
-
-  <!-- правий -->
-  <polygon points="120,70 160,65 170,105 135,115"
-           fill="#000"/>
-
-  <!-- низ правий -->
-  <polygon points="135,115 170,105 145,150 110,135"
-           fill="#000"/>
-
-  <!-- низ лівий -->
-  <polygon points="110,135 145,150 80,165 75,120"
-           fill="#000"/>
-
-  <!-- лівий -->
-  <polygon points="75,120 80,70 40,65 30,105"
-           fill="#000"/>
-
-  <!-- верх лівий -->
-  <polygon points="80,70 40,65 60,35 100,55"
-           fill="#000"/>
-</svg>
+    <!-- центральний п'ятикутник -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M50,35 L65,45 L60,65 L40,65 L35,45 Z"/>
+</vector>
