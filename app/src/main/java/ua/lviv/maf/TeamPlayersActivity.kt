@@ -24,20 +24,20 @@ class TeamPlayersActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 🔥 ПРАВКА ТУТ:
-        // Спочатку пробуємо отримати як число (Int), бо саме Int ми передавали з MatchDetailActivity
+        // 1. ВИПРАВЛЕННЯ ID:
+        // Спочатку пробуємо дістати як число (бо MatchDetailActivity передає Int)
         val idInt = intent.getIntExtra("team_id", 0)
 
         if (idInt != 0) {
             teamId = idInt.toString()
         } else {
-            // Якщо раптом передали як стрічку (String)
+            // Якщо раптом десь передали як рядок
             teamId = intent.getStringExtra("team_id") ?: ""
         }
 
         teamName = intent.getStringExtra("team_name") ?: "Команда"
 
-        // Створення UI кодом (без XML)
+        // Створення інтерфейсу (UI) кодом
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.parseColor("#1A1D23"))
@@ -57,7 +57,8 @@ class TeamPlayersActivity : AppCompatActivity() {
         }
 
         progressBar = ProgressBar(this).apply {
-            indeterminateTintList = android.content.res.ColorStateList.valueOf(Color.WHITE) // Білий колір
+            // Робимо спіннер білим, щоб його було видно на темному фоні
+            indeterminateTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
         }
 
         recyclerView = RecyclerView(this).apply {
@@ -74,24 +75,21 @@ class TeamPlayersActivity : AppCompatActivity() {
 
         setContentView(root)
 
-        // Перевірка
+        // Перевірка, чи ми таки знайшли ID
         if (teamId.isNotEmpty() && teamId != "0") {
             loadPlayers()
         } else {
             progressBar.visibility = ProgressBar.GONE
-            Toast.makeText(this, "Помилка: team_id втрачено ($teamId)", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Помилка: ID команди не знайдено", Toast.LENGTH_LONG).show()
         }
     }
 
     private fun loadPlayers() {
-
         val url = "https://maf.lviv.ua/wp-json/maf/v2/team-players?id=$teamId"
-
         val client = OkHttpClient()
         val request = Request.Builder().url(url).build()
 
         client.newCall(request).enqueue(object : Callback {
-
             override fun onFailure(call: Call, e: IOException) {
                 runOnUiThread {
                     progressBar.visibility = ProgressBar.GONE
@@ -100,31 +98,41 @@ class TeamPlayersActivity : AppCompatActivity() {
             }
 
             override fun onResponse(call: Call, response: Response) {
-
                 val json = response.body?.string()
 
                 if (!response.isSuccessful || json.isNullOrEmpty()) {
                     runOnUiThread {
                         progressBar.visibility = ProgressBar.GONE
-                        Toast.makeText(this@TeamPlayersActivity, "Склад порожній або помилка", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@TeamPlayersActivity, "Дані відсутні", Toast.LENGTH_SHORT).show()
                     }
                     return
                 }
 
                 try {
-                    val type = object : TypeToken<List<Player>>() {}.type
-                    val players: List<Player> = Gson().fromJson(json, type)
+                    // 2. ЗАХИСТ ВІД ЗБОЮ JSON:
+                    // Перевіряємо, чи сервер повернув масив (починається з "[")
+                    // Якщо сервер повертає "false" або "null", ми просто покажемо пустий список
+                    if (json.trim().startsWith("[")) {
+                        val type = object : TypeToken<List<Player>>() {}.type
+                        val players: List<Player> = Gson().fromJson(json, type)
 
-                    runOnUiThread {
-                        progressBar.visibility = ProgressBar.GONE
-                        // Передаємо адаптер
-                        recyclerView.adapter = PlayersAdapter(players)
+                        runOnUiThread {
+                            progressBar.visibility = ProgressBar.GONE
+                            recyclerView.adapter = PlayersAdapter(players)
+                        }
+                    } else {
+                        // Це не помилка JSON, це просто відсутність гравців
+                        runOnUiThread {
+                            progressBar.visibility = ProgressBar.GONE
+                            Toast.makeText(this@TeamPlayersActivity, "Список гравців порожній", Toast.LENGTH_SHORT).show()
+                        }
                     }
-
                 } catch (e: Exception) {
                     runOnUiThread {
                         progressBar.visibility = ProgressBar.GONE
-                        Toast.makeText(this@TeamPlayersActivity, "Помилка обробки даних (JSON)", Toast.LENGTH_SHORT).show()
+                        // Логування для тебе, щоб бачити реальну причину, якщо щось піде не так
+                        android.util.Log.e("TeamPlayers", "JSON Error: ${e.message}")
+                        Toast.makeText(this@TeamPlayersActivity, "Помилка обробки даних", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
