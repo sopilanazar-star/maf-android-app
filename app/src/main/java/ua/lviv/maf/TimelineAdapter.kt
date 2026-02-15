@@ -35,16 +35,15 @@ class TimelineAdapter(private val events: List<TimelineEvent>) :
         val description = if (!event.player_out_name.isNullOrEmpty()) {
             "${event.player_name}\n(замість ${event.player_out_name})"
         } else {
-            event.player_name
+            event.player_name ?: ""
         }
 
-        // 🔴 ВАЖЛИВО: повний reset стану (через RecyclerView recycling)
-        holder.layoutLeft.visibility = View.GONE
-        holder.layoutRight.visibility = View.GONE
+        // 🔴 ПОВНИЙ RESET (RecyclerView reuse)
+        holder.layoutLeft.visibility = View.INVISIBLE
+        holder.layoutRight.visibility = View.INVISIBLE
         holder.tvDescriptionLeft.text = ""
         holder.tvDescriptionRight.text = ""
 
-        // Логіка розведення сторін
         if (event.side == "left") {
             holder.layoutLeft.visibility = View.VISIBLE
             holder.tvDescriptionLeft.text = description
@@ -57,50 +56,53 @@ class TimelineAdapter(private val events: List<TimelineEvent>) :
     }
 
     private fun setupCenterIcon(imageView: ImageView, event: TimelineEvent) {
-    imageView.clearColorFilter()
 
-   when (event.type) {
-    "goal" -> {
-        imageView.setImageResource(R.drawable.ic_ball)
-        imageView.colorFilter = null
-    }
+        // дуже важливо
+        imageView.clearColorFilter()
 
-    "goal_og" -> {
-        imageView.setImageResource(R.drawable.ic_ball)
-        imageView.setColorFilter(Color.RED)
-    }
+        when (event.type) {
 
-    "goal_pen" -> {
-        imageView.setImageResource(R.drawable.ic_penalty_goal)
-        imageView.colorFilter = null
-    }
+            "goal" -> {
+                imageView.setImageResource(R.drawable.ic_ball)
+                imageView.clearColorFilter()
+            }
 
-    "yellow_card" -> {
-        imageView.setImageResource(R.drawable.ic_card)
-        imageView.setColorFilter(Color.parseColor("#FFEB3B"))
-    }
+            "goal_og" -> {
+                imageView.setImageResource(R.drawable.ic_ball)
+                imageView.setColorFilter(Color.RED)
+            }
 
-    "red_card" -> {
-        imageView.setImageResource(R.drawable.ic_card)
-        imageView.setColorFilter(Color.RED)
-    }
+            "goal_pen" -> {
+                imageView.setImageResource(R.drawable.ic_penalty_goal)
+                imageView.clearColorFilter()
+            }
 
-    "yellow_red" -> {
-        imageView.setImageResource(R.drawable.ic_second_yellow)
-        imageView.colorFilter = null
-    }
+            "yellow_card" -> {
+                imageView.setImageResource(R.drawable.ic_card)
+                imageView.setColorFilter(Color.parseColor("#FFEB3B"))
+            }
 
-    "substitution" -> {
-        imageView.setImageResource(R.drawable.ic_substitution)
-        imageView.colorFilter = null
-    }
+            "red_card" -> {
+                imageView.setImageResource(R.drawable.ic_card)
+                imageView.setColorFilter(Color.RED)
+            }
 
-    else -> {
-        imageView.setImageResource(R.drawable.ic_ball)
-        imageView.colorFilter = null
+            "yellow_red" -> {
+                imageView.setImageResource(R.drawable.ic_second_yellow)
+                imageView.clearColorFilter()
+            }
+
+            "substitution" -> {
+                imageView.setImageResource(R.drawable.ic_substitution)
+                imageView.clearColorFilter()
+            }
+
+            else -> {
+                imageView.setImageResource(R.drawable.ic_ball)
+                imageView.clearColorFilter()
+            }
+        }
     }
-}
-}
 
     override fun getItemCount() = events.size
 }
