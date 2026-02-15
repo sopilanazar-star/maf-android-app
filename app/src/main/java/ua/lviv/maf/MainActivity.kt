@@ -37,9 +37,10 @@ class MainActivity : AppCompatActivity() {
     private val MAF_API_URL = "https://maf.lviv.ua/wp-json/maf/v2/matches"
     private val MAF_NEWS_URL = "https://maf.lviv.ua/wp-json/maf/v2/news"
     
-    private var currentYear = "2025"
-    private var allMatches = mutableListOf<TournamentRow>()
+    // ВСТАНОВЛЮЄМО АКТИВНИЙ СЕЗОН (2026)
     private val seasons = arrayOf("2026", "2025", "2024")
+    private var currentYear = seasons[0]
+    private var allMatches = mutableListOf<TournamentRow>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -47,7 +48,12 @@ class MainActivity : AppCompatActivity() {
         
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = Color.TRANSPARENT
-        window.navigationBarColor = Color.parseColor("#121417")
+        window.navigationBarColor = Color.TRANSPARENT 
+
+        androidx.core.view.WindowInsetsControllerCompat(window, window.decorView).apply {
+            isAppearanceLightStatusBars = false 
+            isAppearanceLightNavigationBars = false 
+        }
 
         val rootFrame = FrameLayout(this).apply {
             setBackgroundColor(Color.parseColor("#1A1D23"))
@@ -58,7 +64,6 @@ class MainActivity : AppCompatActivity() {
             layoutParams = FrameLayout.LayoutParams(-1, -1)
         }
 
-        // --- HEADER ---
         val headerLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -97,7 +102,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             this.adapter = spinnerAdapter
-            setSelection(1) 
+            setSelection(0) 
         }
 
         seasonSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -114,7 +119,6 @@ class MainActivity : AppCompatActivity() {
         headerLayout.addView(titleHeader)
         headerLayout.addView(seasonSpinner)
 
-        // --- CONTENT LAYOUT ---
         contentLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
@@ -142,10 +146,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         contentLayout.addView(dateRecyclerView)
-        contentLayout.addView(viewPager) // Додаємо ViewPager
+        contentLayout.addView(viewPager) 
         contentLayout.addView(newsRecyclerView)
 
-        // --- FRAGMENT CONTAINER ---
         fragmentContainer = FrameLayout(this).apply {
             id = View.generateViewId()
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
@@ -156,7 +159,6 @@ class MainActivity : AppCompatActivity() {
         mainContentContainer.addView(contentLayout)
         mainContentContainer.addView(fragmentContainer)
 
-        // --- NAVIGATION ---
         val navColors = ColorStateList(
             arrayOf(intArrayOf(android.R.attr.state_selected), intArrayOf(-android.R.attr.state_selected)),
             intArrayOf(Color.parseColor("#E30613"), Color.GRAY)
@@ -274,7 +276,6 @@ class MainActivity : AppCompatActivity() {
                     }
                     runOnUiThread {
                         val dateList = createDateList(allMatches)
-                        
                         val swipeAdapter = MatchSwipeAdapter(dateList)
                         viewPager.adapter = swipeAdapter
 
