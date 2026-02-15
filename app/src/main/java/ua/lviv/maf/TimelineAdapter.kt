@@ -32,19 +32,22 @@ class TimelineAdapter(private val events: List<TimelineEvent>) :
 
         holder.tvMinute.text = "${event.minute}'"
 
-        val description = if (!event.player_out_name.isNullOrEmpty()) {
-            "${event.player_name}\n(замість ${event.player_out_name})"
+        // --- ЛОГІКА ВІДОБРАЖЕННЯ ЗАМІНИ ---
+        val description = if (event.type == "substitution" && !event.player_out_name.isNullOrEmpty()) {
+            // Виводимо гравця, що вийшов, а під ним — замість кого
+            "${event.player_name}\n(вийшов замість ${event.player_out_name})"
         } else {
+            // Для всіх інших подій (голи, картки) — просто ім'я
             event.player_name
         }
 
-        // reset
+        // Скидання видимості перед заповненням
         holder.layoutLeft.visibility = View.INVISIBLE
         holder.layoutRight.visibility = View.INVISIBLE
         holder.tvDescriptionLeft.text = ""
         holder.tvDescriptionRight.text = ""
 
-        // side
+        // Розподіл по сторонах (ліва/права команда)
         if (event.side == "left") {
             holder.layoutLeft.visibility = View.VISIBLE
             holder.tvDescriptionLeft.text = description
@@ -57,43 +60,34 @@ class TimelineAdapter(private val events: List<TimelineEvent>) :
     }
 
     private fun setupCenterIcon(imageView: ImageView, event: TimelineEvent) {
-
         imageView.clearColorFilter()
         imageView.imageTintList = null
 
         when (event.type) {
-
             "goal" -> {
                 imageView.setImageResource(R.drawable.ic_ball)
             }
-
             "goal_pen" -> {
                 imageView.setImageResource(R.drawable.ic_penalty_goal)
             }
-
             "goal_og" -> {
                 imageView.setImageResource(R.drawable.ic_ball)
                 imageView.setColorFilter(Color.RED)
             }
-
             "yellow_card" -> {
                 imageView.setImageResource(R.drawable.ic_card)
                 imageView.setColorFilter(Color.parseColor("#FFEB3B"))
             }
-
             "red_card" -> {
                 imageView.setImageResource(R.drawable.ic_card)
                 imageView.setColorFilter(Color.RED)
             }
-
             "yellow_red" -> {
                 imageView.setImageResource(R.drawable.ic_second_yellow)
             }
-
             "substitution" -> {
                 imageView.setImageResource(R.drawable.ic_substitution)
             }
-
             else -> {
                 imageView.setImageResource(R.drawable.ic_ball)
             }
