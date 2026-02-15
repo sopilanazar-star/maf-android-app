@@ -103,6 +103,8 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                     putExtra("date", item.date)
                     putExtra("stadium", item.stadium)
                     putExtra("referee", item.referee)
+                    intent.putExtra("home_team_id", match.home_team_id)
+intent.putExtra("away_team_id", match.away_team_id)
                 }
                 context.startActivity(intent)
             }
