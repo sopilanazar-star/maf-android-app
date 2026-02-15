@@ -341,6 +341,7 @@ class MainActivity : AppCompatActivity() {
         return result
     }
 
+    // ТУТ ПОЧИНАЄТЬСЯ АДАПТЕР
     inner class MatchSwipeAdapter(private val dates: List<DateModel>) : RecyclerView.Adapter<MatchSwipeAdapter.ViewHolder>() {
         class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val rvMatches: RecyclerView = RecyclerView(view.context).apply {
