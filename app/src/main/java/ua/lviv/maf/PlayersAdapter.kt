@@ -7,13 +7,12 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import ua.lviv.maf.models.Player 
+import ua.lviv.maf.models.Player
 
-class PlayersAdapter(private var players: List<Player>) : 
+class PlayersAdapter(private var players: List<Player>) :
     RecyclerView.Adapter<PlayersAdapter.PlayerViewHolder>() {
 
     class PlayerViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        // Оновлені ID відповідно до твого XML
         val tvNumber: TextView = view.findViewById(R.id.tvPlayerNumber)
         val tvName: TextView = view.findViewById(R.id.tvPlayerName)
         val tvPosition: TextView = view.findViewById(R.id.tvPlayerPosition)
@@ -29,24 +28,33 @@ class PlayersAdapter(private var players: List<Player>) :
     override fun onBindViewHolder(holder: PlayerViewHolder, position: Int) {
         val player = players[position]
 
-        holder.tvName.text = player.name
-        holder.tvNumber.text = if (player.number.isNullOrEmpty()) "—" else player.number
+        // ІМ'Я
+        holder.tvName.text = player.name ?: ""
 
-        holder.tvPosition.text = when (player.position.lowercase()) {
+        // НОМЕР
+        holder.tvNumber.text =
+            if (player.number.isNullOrEmpty()) "—" else player.number
+
+        // ПОЗИЦІЯ (головний фікс)
+        val posRaw = player.position?.trim()?.lowercase() ?: ""
+
+        val posText = when (posRaw) {
             "g", "gk" -> "Воротар"
             "d", "df" -> "Захисник"
             "m", "mf" -> "Півзахисник"
             "f", "fw" -> "Нападник"
-            else -> "Гравець"
+            else -> ""
         }
 
-        // Завантаження фото через Glide
-        if (player.photo.isNotEmpty()) {
+        holder.tvPosition.text = posText
+
+        // ФОТО
+        if (!player.photo.isNullOrEmpty()) {
             Glide.with(holder.itemView.context)
                 .load(player.photo)
                 .placeholder(R.drawable.ic_player_placeholder)
                 .error(R.drawable.ic_player_placeholder)
-                .circleCrop() 
+                .circleCrop()
                 .into(holder.ivPhoto)
         } else {
             holder.ivPhoto.setImageResource(R.drawable.ic_player_placeholder)
@@ -56,7 +64,7 @@ class PlayersAdapter(private var players: List<Player>) :
     override fun getItemCount() = players.size
 
     fun updateData(newPlayers: List<Player>) {
-        this.players = newPlayers
+        players = newPlayers
         notifyDataSetChanged()
     }
 }
