@@ -1,13 +1,37 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="24dp"
-    android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
-    <path android:fillColor="#EEEEEE" android:pathData="M12,12m-10,0a10,10 0,1 1,20 0a10,10 0,1 1,-20 0" />
-    <path android:strokeColor="#CCCCCC" android:strokeWidth="1" android:pathData="M12,2A10,10 0,1 0,22 12,10 10,0 0,0 12,2Z" />
+    android:width="20dp"
+    android:height="20dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+
+    <!-- м'яч -->
     <path
-        android:strokeColor="#F44336"
-        android:strokeWidth="2.5"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:pathData="M50,5 A45,45 0 1,1 49.9,5"/>
+
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:fillColor="@android:color/transparent"
+        android:pathData="
+            M50,32 L50,5
+            M66,44 L90,30
+            M60,64 L78,90
+            M40,64 L22,90
+            M34,44 L10,30"/>
+
+    <!-- червоний хрест -->
+    <path
+        android:strokeColor="#FF3B30"
+        android:strokeWidth="8"
         android:strokeLineCap="round"
-        android:pathData="M7,7 L17,17 M17,7 L7,17" />
+        android:pathData="M30,30 L70,70"/>
+
+    <path
+        android:strokeColor="#FF3B30"
+        android:strokeWidth="8"
+        android:strokeLineCap="round"
+        android:pathData="M70,30 L30,70"/>
 </vector>
