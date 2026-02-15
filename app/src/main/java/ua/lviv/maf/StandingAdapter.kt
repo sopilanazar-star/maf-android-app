@@ -70,13 +70,14 @@ class StandingAdapter(private var items: List<StandingRow>) :
                 .placeholder(R.drawable.ic_ball)
                 .into(holder.ivTeamLogo)
 
-            // 🔥 ГОЛОВНИЙ FIX
             holder.itemView.setOnClickListener {
 
-                if (item.team_id.isEmpty()) return@setOnClickListener
+                val id = item.team_id.trim()
+
+                if (id.isEmpty() || id == "0") return@setOnClickListener
 
                 val intent = Intent(it.context, TeamPlayersActivity::class.java)
-                intent.putExtra("team_id", item.team_id)   // ← STRING!
+                intent.putExtra("team_id", id)
                 intent.putExtra("team_name", item.team_name)
 
                 it.context.startActivity(intent)
