@@ -56,7 +56,10 @@ class StandingAdapter(private var items: List<StandingRow>) :
 
         if (holder is HeaderViewHolder) {
             holder.tvGroupName.text = item.group_name
-        } else if (holder is TeamViewHolder) {
+        }
+
+        if (holder is TeamViewHolder) {
+
             holder.tvPosition.text = "${item.position}."
             holder.tvTeamName.text = item.team_name
             holder.tvGames.text = item.games.toString()
@@ -67,7 +70,6 @@ class StandingAdapter(private var items: List<StandingRow>) :
             holder.tvDraws?.text = item.draw.toString()
             holder.tvLosses?.text = item.loss.toString()
 
-            // Відображаємо форму
             drawForm(holder.layoutForm, item.form ?: emptyList())
 
             Glide.with(holder.itemView.context)
@@ -75,12 +77,22 @@ class StandingAdapter(private var items: List<StandingRow>) :
                 .placeholder(R.drawable.ic_ball)
                 .into(holder.ivTeamLogo)
 
+            // 🔥 ГОЛОВНИЙ FIX — БЕЗ КРАШУ
             holder.itemView.setOnClickListener {
+
+                val teamIdInt = try {
+                    item.team_id.toInt()
+                } catch (e: Exception) {
+                    0
+                }
+
+                if (teamIdInt == 0) return@setOnClickListener
+
                 val intent = Intent(it.context, TeamPlayersActivity::class.java).apply {
-                    // Передаємо як Int, бо в моделі StandingRow це Int
-                    putExtra("team_id", item.team_id) 
+                    putExtra("team_id", teamIdInt)
                     putExtra("team_name", item.team_name)
                 }
+
                 it.context.startActivity(intent)
             }
         }
@@ -88,25 +100,30 @@ class StandingAdapter(private var items: List<StandingRow>) :
 
     private fun drawForm(layout: LinearLayout, formList: List<String>) {
         layout.removeAllViews()
+
         val density = layout.context.resources.displayMetrics.density
         val size = (12 * density).toInt()
         val margin = (2 * density).toInt()
 
         formList.forEach { result ->
             val circle = View(layout.context)
-            val params = LinearLayout.LayoutParams(size, size).apply {
-                setMargins(margin, 0, margin, 0)
-            }
+
+            val params = LinearLayout.LayoutParams(size, size)
+            params.setMargins(margin, 0, margin, 0)
             circle.layoutParams = params
+
             circle.background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
-                setColor(when (result) {
-                    "W" -> Color.parseColor("#4CAF50")
-                    "D" -> Color.parseColor("#9E9E9E")
-                    "L" -> Color.parseColor("#F44336")
-                    else -> Color.TRANSPARENT
-                })
+                setColor(
+                    when (result) {
+                        "W" -> Color.parseColor("#4CAF50")
+                        "D" -> Color.parseColor("#9E9E9E")
+                        "L" -> Color.parseColor("#F44336")
+                        else -> Color.TRANSPARENT
+                    }
+                )
             }
+
             layout.addView(circle)
         }
     }
