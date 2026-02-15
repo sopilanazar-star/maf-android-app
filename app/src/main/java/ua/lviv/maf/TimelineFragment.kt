@@ -72,7 +72,6 @@ class TimelineFragment : Fragment() {
     private fun parseAndShowTimeline(json: String, container: LinearLayout) {
         try {
             val root = JSONObject(json)
-            // Використовуємо оригінальний "timeline", ігноруючи переклад гугла
             val timeline = root.optJSONArray("timeline") ?: return
 
             container.removeAllViews()
@@ -92,6 +91,7 @@ class TimelineFragment : Fragment() {
                 val event = timeline.getJSONObject(i)
                 val minute = event.optString("minute")
                 val playerName = event.optString("player_name")
+                val playerOutName = event.optString("player_out_name") // ДОДАНО: дістаємо ім'я гравця, що вийшов
                 val type = event.optString("type")
                 val eventTeamId = event.optString("team_id")
 
@@ -111,10 +111,18 @@ class TimelineFragment : Fragment() {
                 }
 
                 val tvPlayer = TextView(context).apply {
-                    text = if (type == "goal_og") "$playerName (АГ)" else playerName
+                    // ЛОГІКА ЗАМІНИ: якщо тип заміна, додаємо текст у дужках
+                    text = when {
+                        (type == "substitution" || type == "sub") && playerOutName.isNotEmpty() -> 
+                            "$playerName\n(замість $playerOutName)"
+                        type == "goal_og" -> "$playerName (АГ)"
+                        else -> playerName
+                    }
                     setTextColor(Color.WHITE)
                     textSize = 14f
                     typeface = Typeface.DEFAULT_BOLD
+                    // Вирівнювання тексту всередині (для багаторядкових замін)
+                    gravity = if (isHomeTeam) Gravity.END else Gravity.START
                 }
 
                 val tvMin = TextView(context).apply {
@@ -151,7 +159,7 @@ class TimelineFragment : Fragment() {
                         ivIcon.setColorFilter(Color.RED)
                     }
                     "substitution", "sub" -> {
-                        ivIcon.setImageResource(R.drawable.ic_sub)
+                        ivIcon.setImageResource(R.drawable.ic_substitution) // Перевір чи назва ic_substitution чи ic_sub
                         ivIcon.clearColorFilter()
                     }
                     else -> {
