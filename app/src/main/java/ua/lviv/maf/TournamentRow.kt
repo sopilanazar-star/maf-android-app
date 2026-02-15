@@ -12,5 +12,7 @@ data class TournamentRow(
     val date: String = "",
     val stadium: String = "",
     val referee: String = "",
+    val home_team_id: String = "0",
+    val away_team_id: String = "0",
     val isHeader: Boolean = false
 )
