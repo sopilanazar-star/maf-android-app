@@ -6,14 +6,15 @@
 
     <!-- зовнішній контур -->
     <path
-        android:fillColor="#FFFFFF"
-        android:strokeColor="#000000"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFF"
         android:strokeWidth="6"
         android:pathData="M50,5 A45,45 0 1,1 49.9,5"/>
 
-    <!-- центральна панель -->
+    <!-- панелі -->
     <path
-        android:fillColor="#000000"
-        android:pathData="M50,38 L62,46 L58,60 L42,60 L38,46 Z"/>
-
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="5"
+        android:pathData="M50,35 L65,45 L60,65 L40,65 L35,45 Z"/>
 </vector>
