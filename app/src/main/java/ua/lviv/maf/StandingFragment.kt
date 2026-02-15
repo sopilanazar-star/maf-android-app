@@ -17,6 +17,7 @@ class StandingFragment : Fragment() {
 
     private lateinit var tabLayout: TabLayout
     private lateinit var recyclerView: RecyclerView
+    private lateinit var adapter: StandingAdapter
 
     private var competitions = mutableListOf<Competition>()
 
@@ -28,13 +29,14 @@ class StandingFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-
         val view = inflater.inflate(R.layout.fragment_standing, container, false)
 
         tabLayout = view.findViewById(R.id.tabLayoutCompetitions)
         recyclerView = view.findViewById(R.id.rvStanding)
 
         recyclerView.layoutManager = LinearLayoutManager(context)
+        adapter = StandingAdapter(emptyList())
+        recyclerView.adapter = adapter
 
         setupTabListener()
         loadCompetitions()
@@ -42,30 +44,28 @@ class StandingFragment : Fragment() {
         return view
     }
 
+    // ===============================
+    // 1. ЗАВАНТАЖЕННЯ СПИСКУ ЛІГ
+    // ===============================
     private fun loadCompetitions() {
-
         val client = OkHttpClient()
         val request = Request.Builder().url(COMPS_URL).build()
 
         client.newCall(request).enqueue(object : Callback {
-
             override fun onFailure(call: Call, e: IOException) {
                 activity?.runOnUiThread {
-                    Toast.makeText(context, "Помилка ліг", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Помилка завантаження ліг", Toast.LENGTH_SHORT).show()
                 }
             }
 
             override fun onResponse(call: Call, response: Response) {
-
                 val json = response.body?.string() ?: ""
-
                 try {
                     val array = JSONArray(json)
                     competitions.clear()
 
                     for (i in 0 until array.length()) {
                         val obj = array.getJSONObject(i)
-
                         competitions.add(
                             Competition(
                                 obj.getString("id"),
@@ -84,43 +84,40 @@ class StandingFragment : Fragment() {
     }
 
     private fun updateTabs() {
-
         tabLayout.removeAllTabs()
-
         for (comp in competitions) {
             tabLayout.addTab(tabLayout.newTab().setText(comp.title))
         }
-
+        // Завантажуємо першу лігу зі списку (або конкретну, якщо треба)
         if (competitions.isNotEmpty()) {
             loadStanding(competitions[0].id)
         }
     }
 
     private fun setupTabListener() {
-
         tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
-
             override fun onTabSelected(tab: TabLayout.Tab?) {
                 val pos = tab?.position ?: 0
                 if (pos < competitions.size) {
                     loadStanding(competitions[pos].id)
                 }
             }
-
             override fun onTabUnselected(tab: TabLayout.Tab?) {}
             override fun onTabReselected(tab: TabLayout.Tab?) {}
         })
     }
 
+    // ===============================
+    // 2. ЗАВАНТАЖЕННЯ ТАБЛИЦІ (JSON)
+    // ===============================
     private fun loadStanding(compId: String) {
-
         val client = OkHttpClient()
+        // Формуємо URL: .../standing?competition_id=992
         val request = Request.Builder()
             .url("$STANDING_URL?competition_id=$compId")
             .build()
 
         client.newCall(request).enqueue(object : Callback {
-
             override fun onFailure(call: Call, e: IOException) {
                 activity?.runOnUiThread {
                     Toast.makeText(context, "Помилка таблиці", Toast.LENGTH_SHORT).show()
@@ -128,23 +125,31 @@ class StandingFragment : Fragment() {
             }
 
             override fun onResponse(call: Call, response: Response) {
-
                 val json = response.body?.string() ?: ""
 
                 try {
-
                     val array = JSONArray(json)
                     val list = mutableListOf<StandingRow>()
 
                     for (i in 0 until array.length()) {
-
                         val obj = array.getJSONObject(i)
 
-                        val teamId = obj.optString("team_id", "0")
+                        // Парсинг форми (W, D, L)
+                        val formArray = obj.optJSONArray("form")
+                        val formList = mutableListOf<String>()
+                        if (formArray != null) {
+                            for (j in 0 until formArray.length()) {
+                                formList.add(formArray.getString(j))
+                            }
+                        }
+
+                        // Важливо: зчитуємо team_id як String, щоб уникнути помилок
+                        // Використовуємо optString, бо в JSON це рядок "32"
+                        val teamIdStr = obj.optString("team_id", "")
 
                         list.add(
                             StandingRow(
-                                team_id = teamId,
+                                team_id = teamIdStr,
                                 position = obj.optInt("position", 0),
                                 team_name = obj.optString("team_name", ""),
                                 logo = obj.optString("logo", ""),
@@ -157,13 +162,13 @@ class StandingFragment : Fragment() {
                                 points = obj.optInt("points", 0),
                                 is_group_header = obj.optBoolean("is_group_header", false),
                                 group_name = obj.optString("group_name", ""),
-                                form = emptyList()
+                                form = formList
                             )
                         )
                     }
 
                     activity?.runOnUiThread {
-                        recyclerView.adapter = StandingAdapter(list)
+                        adapter.updateData(list)
                     }
 
                 } catch (e: Exception) {
