@@ -14,15 +14,13 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import okhttp3.*
 import java.io.IOException
-
-// ПРАВИЛЬНИЙ ІМПОРТ: тепер ми беремо модель з папки models
-import ua.lviv.maf.models.Player 
+import ua.lviv.maf.models.Player
 
 class TeamPlayersActivity : AppCompatActivity() {
 
     private var teamId: Int = 0
     private var teamName: String = ""
-    
+
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: PlayersAdapter
     private lateinit var progressBar: ProgressBar
@@ -36,10 +34,6 @@ class TeamPlayersActivity : AppCompatActivity() {
         val rootLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.parseColor("#1A1D23"))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT
-            )
         }
 
         val tvTitle = TextView(this).apply {
@@ -48,19 +42,12 @@ class TeamPlayersActivity : AppCompatActivity() {
             textSize = 22f
             setPadding(0, 40, 0, 20)
             gravity = Gravity.CENTER
-            setTypeface(null, android.graphics.Typeface.BOLD)
         }
 
-        progressBar = ProgressBar(this).apply {
-            visibility = android.view.View.VISIBLE
-        }
+        progressBar = ProgressBar(this)
 
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@TeamPlayersActivity)
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT
-            )
         }
 
         rootLayout.addView(tvTitle)
@@ -69,12 +56,12 @@ class TeamPlayersActivity : AppCompatActivity() {
 
         setContentView(rootLayout)
 
-        if (teamId != 0) {
-            loadPlayers(teamId)
-        } else {
-            progressBar.visibility = android.view.View.GONE
+        if (teamId == 0) {
             Toast.makeText(this, "Помилка ID команди", Toast.LENGTH_SHORT).show()
+            return
         }
+
+        loadPlayers(teamId)
     }
 
     private fun loadPlayers(id: Int) {
@@ -84,28 +71,37 @@ class TeamPlayersActivity : AppCompatActivity() {
         val request = Request.Builder().url(url).build()
 
         client.newCall(request).enqueue(object : Callback {
+
             override fun onFailure(call: Call, e: IOException) {
                 runOnUiThread {
-                    progressBar.visibility = android.view.View.GONE
+                    progressBar.visibility = ProgressBar.GONE
                     Toast.makeText(this@TeamPlayersActivity, "Помилка мережі", Toast.LENGTH_SHORT).show()
                 }
             }
 
             override fun onResponse(call: Call, response: Response) {
+
                 val json = response.body?.string()
-                if (response.isSuccessful && json != null) {
-                    // Тут Gson тепер точно знає, що Player — це ua.lviv.maf.models.Player
+
+                runOnUiThread {
+                    progressBar.visibility = ProgressBar.GONE
+                }
+
+                if (!response.isSuccessful || json.isNullOrEmpty()) return
+
+                try {
                     val playerType = object : TypeToken<List<Player>>() {}.type
                     val players: List<Player> = Gson().fromJson(json, playerType)
 
                     runOnUiThread {
-                        progressBar.visibility = android.view.View.GONE
                         adapter = PlayersAdapter(players)
                         recyclerView.adapter = adapter
                     }
-                } else {
+
+                } catch (e: Exception) {
+                    e.printStackTrace()
                     runOnUiThread {
-                        progressBar.visibility = android.view.View.GONE
+                        Toast.makeText(this@TeamPlayersActivity, "Нема складу", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
