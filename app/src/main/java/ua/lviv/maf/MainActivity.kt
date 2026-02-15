@@ -14,6 +14,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -35,6 +36,7 @@ class MainActivity : AppCompatActivity() {
 
     private val MAF_API_URL = "https://maf.lviv.ua/wp-json/maf/v2/matches"
     private val MAF_NEWS_URL = "https://maf.lviv.ua/wp-json/maf/v2/news"
+    private val MAF_STANDINGS_URL = "https://maf.lviv.ua/wp-json/maf/v2/standing"
     
     private var currentYear = "2025"
     private var allMatches = mutableListOf<TournamentRow>()
@@ -44,9 +46,16 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         
+        // --- EDGE-TO-EDGE SETUP ---
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = Color.TRANSPARENT
-        window.navigationBarColor = Color.parseColor("#121417")
+        window.navigationBarColor = Color.TRANSPARENT // Робимо смужку внизу прозорою
+
+        // Налаштування кольору іконок системи (білі іконки на темному фоні)
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = false
+        }
 
         val rootFrame = FrameLayout(this).apply {
             setBackgroundColor(Color.parseColor("#1A1D23"))
@@ -63,6 +72,7 @@ class MainActivity : AppCompatActivity() {
             gravity = Gravity.CENTER_VERTICAL
             background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, 
                 intArrayOf(Color.parseColor("#450000"), Color.parseColor("#1A1D23")))
+            // Padding 140 зверху забезпечує відступ від статус-бару
             setPadding(60, 140, 60, 40) 
         }
 
@@ -255,24 +265,24 @@ class MainActivity : AppCompatActivity() {
                     val array = JSONArray(jsonData)
                     allMatches.clear()
                     for (i in 0 until array.length()) {
-    val m = array.getJSONObject(i)
-    allMatches.add(TournamentRow(
-        id = m.optString("id", "0"),
-        home_team_id = m.optString("home_team_id", "0"),
-        away_team_id = m.optString("away_team_id", "0"),
-        team1 = m.optString("team1", ""),
-        logo1 = m.optString("logo1", ""),
-        team2 = m.optString("team2", ""),
-        logo2 = m.optString("logo2", ""),
-        score = m.optString("score", ""),
-        date = m.optString("date", ""),
-        league = m.optString("league", "MAF"),
-        stage = m.optString("stage", ""),
-        stadium = m.optString("stadium", ""),
-        referee = m.optString("referee", ""),
-        isHeader = false
-    ))
-}
+                        val m = array.getJSONObject(i)
+                        allMatches.add(TournamentRow(
+                            id = m.optString("id", "0"),
+                            home_team_id = m.optString("home_team_id", "0"),
+                            away_team_id = m.optString("away_team_id", "0"),
+                            team1 = m.optString("team1", ""),
+                            logo1 = m.optString("logo1", ""),
+                            team2 = m.optString("team2", ""),
+                            logo2 = m.optString("logo2", ""),
+                            score = m.optString("score", ""),
+                            date = m.optString("date", ""),
+                            league = m.optString("league", "MAF"),
+                            stage = m.optString("stage", ""),
+                            stadium = m.optString("stadium", ""),
+                            referee = m.optString("referee", ""),
+                            isHeader = false
+                        ))
+                    }
                     runOnUiThread {
                         val dateList = createDateList(allMatches)
                         dateRecyclerView.adapter = DateAdapter(dateList) { filterMatches(it) }
@@ -314,26 +324,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun groupMatchesByLeagueAndStage(matches: List<TournamentRow>): List<TournamentRow> {
-    val result = mutableListOf<TournamentRow>()
-    
-    // Групуємо матчі за унікальною комбінацією Ліга + Етап
-    val grouped = matches.groupBy { "${it.league}|${it.stage}" }
-    
-    for ((key, leagueMatches) in grouped) {
-        val parts = key.split("|")
-        val leagueName = parts[0]
-        val stageName = if (parts.size > 1) parts[1] else ""
-        
-        // Створюємо Header. Явно кажемо: в поле league пиши leagueName, в stage - stageName
-        result.add(TournamentRow(
-            league = leagueName, 
-            stage = stageName, 
-            isHeader = true
-        ))
-        
-        // Додаємо самі матчі під цей заголовок
-        result.addAll(leagueMatches)
+        val result = mutableListOf<TournamentRow>()
+        val grouped = matches.groupBy { "${it.league}|${it.stage}" }
+        for ((key, leagueMatches) in grouped) {
+            val parts = key.split("|")
+            val leagueName = parts[0]
+            val stageName = if (parts.size > 1) parts[1] else ""
+            result.add(TournamentRow(
+                league = leagueName, 
+                stage = stageName, 
+                isHeader = true
+            ))
+            result.addAll(leagueMatches)
+        }
+        return result
     }
-    return result
-}
 }
