@@ -51,7 +51,7 @@ class StandingAdapter(private var items: List<StandingRow>) :
         val item = items[position]
 
         if (holder is HeaderViewHolder) {
-            holder.tvGroupName.text = item.group_name
+            holder.tvGroupName.text = item.group_name ?: ""
             return
         }
 
@@ -70,13 +70,13 @@ class StandingAdapter(private var items: List<StandingRow>) :
                 .placeholder(R.drawable.ic_ball)
                 .into(holder.ivTeamLogo)
 
-            // 🔥 SAFE CLICK
+            // 🔥 ГОЛОВНИЙ FIX
             holder.itemView.setOnClickListener {
 
-                val teamId = item.team_id.toIntOrNull() ?: return@setOnClickListener
+                if (item.team_id.isEmpty()) return@setOnClickListener
 
                 val intent = Intent(it.context, TeamPlayersActivity::class.java)
-                intent.putExtra("team_id", teamId)
+                intent.putExtra("team_id", item.team_id)   // ← STRING!
                 intent.putExtra("team_name", item.team_name)
 
                 it.context.startActivity(intent)
