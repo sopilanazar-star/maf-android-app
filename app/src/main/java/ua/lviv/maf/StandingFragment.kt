@@ -11,14 +11,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.tabs.TabLayout
 import okhttp3.*
 import org.json.JSONArray
-import org.json.JSONObject
 import java.io.IOException
 
 class StandingFragment : Fragment() {
 
     private lateinit var tabLayout: TabLayout
     private lateinit var recyclerView: RecyclerView
-    private lateinit var adapter: StandingAdapter
 
     private var competitions = mutableListOf<Competition>()
 
@@ -37,8 +35,6 @@ class StandingFragment : Fragment() {
         recyclerView = view.findViewById(R.id.rvStanding)
 
         recyclerView.layoutManager = LinearLayoutManager(context)
-        adapter = StandingAdapter(emptyList())
-        recyclerView.adapter = adapter
 
         setupTabListener()
         loadCompetitions()
@@ -47,6 +43,7 @@ class StandingFragment : Fragment() {
     }
 
     private fun loadCompetitions() {
+
         val client = OkHttpClient()
         val request = Request.Builder().url(COMPS_URL).build()
 
@@ -115,33 +112,6 @@ class StandingFragment : Fragment() {
         })
     }
 
-    // 🔥 УНІВЕРСАЛЬНИЙ ПАРСЕР ID
-    private fun extractTeamId(obj: JSONObject): String {
-
-        if (obj.has("team_id")) {
-            val v = obj.get("team_id")
-            return v.toString()
-        }
-
-        if (obj.has("team")) {
-            val team = obj.get("team")
-
-            if (team is Int) return team.toString()
-            if (team is String) return team
-
-            if (team is JSONObject) {
-                if (team.has("id")) return team.get("id").toString()
-                if (team.has("ID")) return team.get("ID").toString()
-            }
-        }
-
-        if (obj.has("id")) {
-            return obj.get("id").toString()
-        }
-
-        return "0"
-    }
-
     private fun loadStanding(compId: String) {
 
         val client = OkHttpClient()
@@ -162,6 +132,7 @@ class StandingFragment : Fragment() {
                 val json = response.body?.string() ?: ""
 
                 try {
+
                     val array = JSONArray(json)
                     val list = mutableListOf<StandingRow>()
 
@@ -169,16 +140,7 @@ class StandingFragment : Fragment() {
 
                         val obj = array.getJSONObject(i)
 
-                        val teamId = extractTeamId(obj)
-
-                        val formArray = obj.optJSONArray("form")
-                        val formList = mutableListOf<String>()
-
-                        if (formArray != null) {
-                            for (j in 0 until formArray.length()) {
-                                formList.add(formArray.getString(j))
-                            }
-                        }
+                        val teamId = obj.optString("team_id", "0")
 
                         list.add(
                             StandingRow(
@@ -195,13 +157,13 @@ class StandingFragment : Fragment() {
                                 points = obj.optInt("points", 0),
                                 is_group_header = obj.optBoolean("is_group_header", false),
                                 group_name = obj.optString("group_name", ""),
-                                form = formList
+                                form = emptyList()
                             )
                         )
                     }
 
                     activity?.runOnUiThread {
-                        adapter.updateData(list)
+                        recyclerView.adapter = StandingAdapter(list)
                     }
 
                 } catch (e: Exception) {
