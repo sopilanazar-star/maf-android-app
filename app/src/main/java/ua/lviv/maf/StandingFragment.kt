@@ -1,6 +1,5 @@
 package ua.lviv.maf
 
-import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -19,6 +18,7 @@ class StandingFragment : Fragment() {
     private lateinit var tabLayout: TabLayout
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: StandingAdapter
+
     private var competitions = mutableListOf<Competition>()
 
     private val COMPS_URL = "https://maf.lviv.ua/wp-json/maf/v2/competitions"
@@ -28,7 +28,7 @@ class StandingFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
 
         val view = inflater.inflate(R.layout.fragment_standing, container, false)
 
@@ -36,7 +36,7 @@ class StandingFragment : Fragment() {
         recyclerView = view.findViewById(R.id.rvStanding)
 
         recyclerView.layoutManager = LinearLayoutManager(context)
-        adapter = StandingAdapter(listOf())
+        adapter = StandingAdapter(emptyList())
         recyclerView.adapter = adapter
 
         setupTabListener()
@@ -45,11 +45,16 @@ class StandingFragment : Fragment() {
         return view
     }
 
+    // ===============================
+    // LOAD COMPETITIONS
+    // ===============================
     private fun loadCompetitions() {
+
         val client = OkHttpClient()
         val request = Request.Builder().url(COMPS_URL).build()
 
         client.newCall(request).enqueue(object : Callback {
+
             override fun onFailure(call: Call, e: IOException) {
                 activity?.runOnUiThread {
                     Toast.makeText(context, "Помилка завантаження ліг", Toast.LENGTH_SHORT).show()
@@ -57,14 +62,16 @@ class StandingFragment : Fragment() {
             }
 
             override fun onResponse(call: Call, response: Response) {
-                val jsonData = response.body?.string() ?: ""
+
+                val json = response.body?.string() ?: ""
 
                 try {
-                    val array = JSONArray(jsonData)
+                    val array = JSONArray(json)
                     competitions.clear()
 
                     for (i in 0 until array.length()) {
                         val obj = array.getJSONObject(i)
+
                         competitions.add(
                             Competition(
                                 obj.getString("id"),
@@ -82,7 +89,11 @@ class StandingFragment : Fragment() {
         })
     }
 
+    // ===============================
+    // UPDATE TABS
+    // ===============================
     private fun updateTabs() {
+
         tabLayout.removeAllTabs()
 
         for (comp in competitions) {
@@ -94,10 +105,16 @@ class StandingFragment : Fragment() {
         }
     }
 
+    // ===============================
+    // TAB LISTENER
+    // ===============================
     private fun setupTabListener() {
+
         tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+
             override fun onTabSelected(tab: TabLayout.Tab?) {
                 val pos = tab?.position ?: 0
+
                 if (pos < competitions.size) {
                     loadStanding(competitions[pos].id)
                 }
@@ -108,6 +125,9 @@ class StandingFragment : Fragment() {
         })
     }
 
+    // ===============================
+    // LOAD STANDING
+    // ===============================
     private fun loadStanding(compId: String) {
 
         val client = OkHttpClient()
@@ -125,16 +145,18 @@ class StandingFragment : Fragment() {
 
             override fun onResponse(call: Call, response: Response) {
 
-                val jsonData = response.body?.string() ?: ""
+                val json = response.body?.string() ?: ""
 
                 try {
-                    val array = JSONArray(jsonData)
-                    val standingList = mutableListOf<StandingRow>()
+
+                    val array = JSONArray(json)
+                    val list = mutableListOf<StandingRow>()
 
                     for (i in 0 until array.length()) {
 
                         val obj = array.getJSONObject(i)
 
+                        // FORM
                         val formArray = obj.optJSONArray("form")
                         val formList = mutableListOf<String>()
 
@@ -144,12 +166,12 @@ class StandingFragment : Fragment() {
                             }
                         }
 
-                        // 🔥 ГОЛОВНИЙ FIX
+                        // 🔥 team_id як STRING
                         val teamIdString = obj.optString("team_id", "0")
 
-                        standingList.add(
+                        list.add(
                             StandingRow(
-                                team_id = teamIdString,   // ← ТЕПЕР STRING
+                                team_id = teamIdString,
                                 position = obj.optInt("position", 0),
                                 team_name = obj.optString("team_name", ""),
                                 logo = obj.optString("logo", ""),
@@ -168,7 +190,7 @@ class StandingFragment : Fragment() {
                     }
 
                     activity?.runOnUiThread {
-                        adapter.updateData(standingList)
+                        adapter.updateData(list)
                     }
 
                 } catch (e: Exception) {
