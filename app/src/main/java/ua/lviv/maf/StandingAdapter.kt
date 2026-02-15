@@ -32,10 +32,6 @@ class StandingAdapter(private var items: List<StandingRow>) :
         val tvGoalsDiff: TextView = view.findViewById(R.id.tvGoalsDiff)
         val tvPoints: TextView = view.findViewById(R.id.tvPoints)
         val layoutForm: LinearLayout = view.findViewById(R.id.layoutForm)
-
-        val tvWins: TextView? = view.findViewById(R.id.tvWins)
-        val tvDraws: TextView? = view.findViewById(R.id.tvDraws)
-        val tvLosses: TextView? = view.findViewById(R.id.tvLosses)
     }
 
     class HeaderViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -54,23 +50,18 @@ class StandingAdapter(private var items: List<StandingRow>) :
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val item = items[position]
 
-        // ✅ HEADER
         if (holder is HeaderViewHolder) {
-            holder.tvGroupName.text = item.group_name ?: ""
+            holder.tvGroupName.text = item.group_name
+            return
         }
 
-        // ✅ TEAM (ВАЖЛИВО: else if)
-        else if (holder is TeamViewHolder) {
+        if (holder is TeamViewHolder) {
 
             holder.tvPosition.text = "${item.position}."
             holder.tvTeamName.text = item.team_name
             holder.tvGames.text = item.games.toString()
             holder.tvGoalsDiff.text = "${item.goals_for}-${item.goals_against}"
             holder.tvPoints.text = item.points.toString()
-
-            holder.tvWins?.text = item.win.toString()
-            holder.tvDraws?.text = item.draw.toString()
-            holder.tvLosses?.text = item.loss.toString()
 
             drawForm(holder.layoutForm, item.form ?: emptyList())
 
@@ -79,20 +70,14 @@ class StandingAdapter(private var items: List<StandingRow>) :
                 .placeholder(R.drawable.ic_ball)
                 .into(holder.ivTeamLogo)
 
+            // 🔥 SAFE CLICK
             holder.itemView.setOnClickListener {
 
-                val teamIdInt = try {
-                    item.team_id.toInt()
-                } catch (e: Exception) {
-                    0
-                }
+                val teamId = item.team_id.toIntOrNull() ?: return@setOnClickListener
 
-                if (teamIdInt == 0) return@setOnClickListener
-
-                val intent = Intent(it.context, TeamPlayersActivity::class.java).apply {
-                    putExtra("team_id", teamIdInt)
-                    putExtra("team_name", item.team_name)
-                }
+                val intent = Intent(it.context, TeamPlayersActivity::class.java)
+                intent.putExtra("team_id", teamId)
+                intent.putExtra("team_name", item.team_name)
 
                 it.context.startActivity(intent)
             }
@@ -104,27 +89,22 @@ class StandingAdapter(private var items: List<StandingRow>) :
 
         val density = layout.context.resources.displayMetrics.density
         val size = (12 * density).toInt()
-        val margin = (2 * density).toInt()
 
         formList.forEach { result ->
             val circle = View(layout.context)
-
-            val params = LinearLayout.LayoutParams(size, size)
-            params.setMargins(margin, 0, margin, 0)
-            circle.layoutParams = params
+            circle.layoutParams = LinearLayout.LayoutParams(size, size)
 
             circle.background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 setColor(
                     when (result) {
-                        "W" -> Color.parseColor("#4CAF50")
-                        "D" -> Color.parseColor("#9E9E9E")
-                        "L" -> Color.parseColor("#F44336")
+                        "W" -> Color.GREEN
+                        "D" -> Color.GRAY
+                        "L" -> Color.RED
                         else -> Color.TRANSPARENT
                     }
                 )
             }
-
             layout.addView(circle)
         }
     }
