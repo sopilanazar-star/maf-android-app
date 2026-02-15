@@ -24,16 +24,19 @@ class StandingAdapter(private var items: List<StandingRow>) :
         return if (items[position].is_group_header) TYPE_HEADER else TYPE_TEAM
     }
 
+    // ViewHolder для команд
     class TeamViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvPosition: TextView = view.findViewById(R.id.tvPosition)
         val ivTeamLogo: ImageView = view.findViewById(R.id.ivTeamLogo)
         val tvTeamName: TextView = view.findViewById(R.id.tvTeamName)
         val tvGames: TextView = view.findViewById(R.id.tvGames)
+        // Переконайся, що в XML ID саме tvGoalsDiff (або зміни тут на tvGoals)
         val tvGoalsDiff: TextView = view.findViewById(R.id.tvGoalsDiff)
         val tvPoints: TextView = view.findViewById(R.id.tvPoints)
         val layoutForm: LinearLayout = view.findViewById(R.id.layoutForm)
     }
 
+    // ViewHolder для заголовків груп
     class HeaderViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvGroupName: TextView = view.findViewById(R.id.tvGroupName)
     }
@@ -50,61 +53,66 @@ class StandingAdapter(private var items: List<StandingRow>) :
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val item = items[position]
 
+        // 1. Якщо це заголовок групи
         if (holder is HeaderViewHolder) {
-            holder.tvGroupName.text = item.group_name ?: ""
+            holder.tvGroupName.text = item.group_name ?: "Група"
             return
         }
 
+        // 2. Якщо це команда
         if (holder is TeamViewHolder) {
-
             holder.tvPosition.text = "${item.position}."
             holder.tvTeamName.text = item.team_name
             holder.tvGames.text = item.games.toString()
             holder.tvGoalsDiff.text = "${item.goals_for}-${item.goals_against}"
             holder.tvPoints.text = item.points.toString()
 
-            drawForm(holder.layoutForm, item.form ?: emptyList())
+            // Малюємо форму (W D L)
+            drawForm(holder.layoutForm, item.form)
 
+            // Завантаження лого через Glide
             Glide.with(holder.itemView.context)
                 .load(item.logo)
-                .placeholder(R.drawable.ic_ball)
+                .placeholder(R.drawable.ic_ball) // Перевір, чи є у тебе ця іконка
                 .into(holder.ivTeamLogo)
 
+            // Клік по команді
             holder.itemView.setOnClickListener {
-
-                val id = item.team_id.trim()
-
-                if (id.isEmpty() || id == "0") return@setOnClickListener
-
-                val intent = Intent(it.context, TeamPlayersActivity::class.java)
-                intent.putExtra("team_id", id)
-                intent.putExtra("team_name", item.team_name)
-
-                it.context.startActivity(intent)
+                if (item.team_id.isNotEmpty() && item.team_id != "0") {
+                    val intent = Intent(it.context, TeamPlayersActivity::class.java)
+                    intent.putExtra("team_id", item.team_id) // Передаємо String
+                    intent.putExtra("team_name", item.team_name)
+                    it.context.startActivity(intent)
+                }
             }
         }
     }
 
-    private fun drawForm(layout: LinearLayout, formList: List<String>) {
+    // Функція малювання кружечків форми
+    private fun drawForm(layout: LinearLayout, formList: List<String>?) {
         layout.removeAllViews()
+        if (formList.isNullOrEmpty()) return
 
         val density = layout.context.resources.displayMetrics.density
-        val size = (12 * density).toInt()
+        val size = (10 * density).toInt() // Розмір кружечка 10dp
+        val margin = (2 * density).toInt() // Відступ 2dp
 
         formList.forEach { result ->
             val circle = View(layout.context)
-            circle.layoutParams = LinearLayout.LayoutParams(size, size)
+            val params = LinearLayout.LayoutParams(size, size)
+            params.setMargins(margin, 0, margin, 0) // Додаємо відступи
+            circle.layoutParams = params
+
+            val color = when (result.uppercase()) {
+                "W" -> Color.parseColor("#4CAF50") // Зелений
+                "D" -> Color.parseColor("#9E9E9E") // Сірий
+                "L" -> Color.parseColor("#F44336") // Червоний
+                else -> Color.TRANSPARENT
+            }
 
             circle.background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
-                setColor(
-                    when (result) {
-                        "W" -> Color.GREEN
-                        "D" -> Color.GRAY
-                        "L" -> Color.RED
-                        else -> Color.TRANSPARENT
-                    }
-                )
+                setColor(color)
             }
             layout.addView(circle)
         }
