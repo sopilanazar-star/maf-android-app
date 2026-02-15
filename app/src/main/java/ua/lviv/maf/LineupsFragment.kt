@@ -30,7 +30,7 @@ class LineupsFragment : Fragment(R.layout.fragment_lineups) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
+
         containerHome = view.findViewById(R.id.containerHome)
         containerAway = view.findViewById(R.id.containerAway)
 
@@ -62,22 +62,23 @@ class LineupsFragment : Fragment(R.layout.fragment_lineups) {
         try {
             val root = JSONObject(json)
             if (!root.has("lineups")) return
-            
+
             val lineups = root.getJSONObject("lineups")
 
-            // Очищуємо контейнери перед заповненням
             containerHome?.removeAllViews()
             containerAway?.removeAllViews()
 
-            // Господарі
+            // HOME
             addSectionTitle(containerHome, "СТАРТ")
             displayPlayers(lineups.getJSONArray("home_start"), containerHome)
+
             addSectionTitle(containerHome, "ЗАПАСНІ")
             displayPlayers(lineups.getJSONArray("home_subs"), containerHome)
 
-            // Гості
+            // AWAY
             addSectionTitle(containerAway, "СТАРТ")
             displayPlayers(lineups.getJSONArray("away_start"), containerAway)
+
             addSectionTitle(containerAway, "ЗАПАСНІ")
             displayPlayers(lineups.getJSONArray("away_subs"), containerAway)
 
@@ -89,7 +90,7 @@ class LineupsFragment : Fragment(R.layout.fragment_lineups) {
     private fun addSectionTitle(container: LinearLayout?, title: String) {
         val tv = TextView(context).apply {
             text = title
-            setTextColor(Color.parseColor("#4CAF50")) // Зелений колір як на скріні
+            setTextColor(Color.parseColor("#4CAF50"))
             textSize = 12f
             setPadding(10, 20, 10, 10)
             typeface = Typeface.DEFAULT_BOLD
@@ -100,21 +101,55 @@ class LineupsFragment : Fragment(R.layout.fragment_lineups) {
 
     private fun displayPlayers(players: org.json.JSONArray, container: LinearLayout?) {
         for (i in 0 until players.length()) {
+
             val p = players.getJSONObject(i)
-            val playerRow = TextView(context).apply {
-                // Формат: [Номер] Прізвище Ім'я
-                val number = p.optString("number").ifEmpty { "-" }
-                text = "$number  ${p.optString("name")}"
+
+            val name = p.optString("name")
+            val number = p.optString("number")
+            val posRaw = p.optString("position")
+
+            val pos = when (posRaw) {
+                "g" -> "Г"
+                "d" -> "З"
+                "m" -> "П"
+                "f" -> "Н"
+                else -> ""
+            }
+
+            val row = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(10, 12, 10, 12)
+                gravity = Gravity.CENTER_VERTICAL
+            }
+
+            val posBox = TextView(context).apply {
+                text = pos
+                setTextColor(Color.BLACK)
+                setBackgroundColor(Color.parseColor("#8BC34A"))
+                setPadding(14, 6, 14, 6)
+                textSize = 12f
+                gravity = Gravity.CENTER
+            }
+
+            val nameTv = TextView(context).apply {
+                text = if (number.isNotEmpty())
+                    "$number  $name"
+                else name
+
                 setTextColor(Color.WHITE)
                 textSize = 14f
-                setPadding(10, 12, 10, 12)
-                background = null // Тут можна додати лінію-розділювач пізніше
+                setPadding(20, 0, 0, 0)
             }
-            container?.addView(playerRow)
-            
-            // Додаємо тонку лінію між гравцями
+
+            row.addView(posBox)
+            row.addView(nameTv)
+
+            container?.addView(row)
+
             val line = View(context).apply {
-                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, 1
+                )
                 setBackgroundColor(Color.parseColor("#333A45"))
             }
             container?.addView(line)
