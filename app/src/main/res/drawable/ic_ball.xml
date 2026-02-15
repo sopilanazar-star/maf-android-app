@@ -8,25 +8,30 @@
     <path
         android:fillColor="@android:color/transparent"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="6"
+        android:strokeWidth="7"
         android:pathData="M50,5 A45,45 0 1,1 49.9,5"/>
 
     <!-- центральний п'ятикутник -->
     <path
         android:fillColor="@android:color/transparent"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="5"
-        android:pathData="M50,32 L66,44 L60,64 L40,64 L34,44 Z"/>
+        android:strokeWidth="6"
+        android:pathData="
+            M50,30
+            L67,42
+            L60,64
+            L40,64
+            L33,42 Z"/>
 
-    <!-- лінії до кола -->
+    <!-- 5 симетричних променів -->
     <path
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="4"
+        android:strokeWidth="5"
         android:fillColor="@android:color/transparent"
         android:pathData="
-            M50,32 L50,5
-            M66,44 L90,30
-            M60,64 L78,90
-            M40,64 L22,90
-            M34,44 L10,30"/>
+            M50,30 L50,5
+            M67,42 L88,27
+            M60,64 L74,90
+            M40,64 L26,90
+            M33,42 L12,27"/>
 </vector>
