@@ -4,17 +4,29 @@
     android:viewportWidth="100"
     android:viewportHeight="100">
 
-    <!-- зовнішній контур -->
+    <!-- зовнішнє коло -->
     <path
         android:fillColor="@android:color/transparent"
         android:strokeColor="#FFFFFF"
         android:strokeWidth="6"
         android:pathData="M50,5 A45,45 0 1,1 49.9,5"/>
 
-    <!-- панелі -->
+    <!-- центральний п'ятикутник -->
     <path
         android:fillColor="@android:color/transparent"
         android:strokeColor="#FFFFFF"
         android:strokeWidth="5"
-        android:pathData="M50,35 L65,45 L60,65 L40,65 L35,45 Z"/>
+        android:pathData="M50,32 L66,44 L60,64 L40,64 L34,44 Z"/>
+
+    <!-- лінії до кола -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:fillColor="@android:color/transparent"
+        android:pathData="
+            M50,32 L50,5
+            M66,44 L90,30
+            M60,64 L78,90
+            M40,64 L22,90
+            M34,44 L10,30"/>
 </vector>
