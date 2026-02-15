@@ -1,7 +1,7 @@
 package ua.lviv.maf
 
 data class StandingRow(
-    val team_id: String,   // ← БУЛО Int → має бути String
+    val team_id: String,
     val position: Int,
     val team_name: String,
     val logo: String,
