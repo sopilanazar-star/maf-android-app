@@ -75,6 +75,12 @@ class TimelineFragment : Fragment() {
         try {
             val root = JSONObject(json)
             val timeline = root.optJSONArray("timeline") ?: return
+            
+            // Надійна перевірка ID господаря з самого JSON
+            val jsonHomeId = root.optString("home_team_id")
+            if (jsonHomeId.isNotEmpty() && jsonHomeId != "0") {
+                homeTeamId = jsonHomeId
+            }
 
             container.removeAllViews()
 
@@ -96,68 +102,65 @@ class TimelineFragment : Fragment() {
                 val playerOutName = event.optString("player_out_name")
                 val type = event.optString("type")
                 val eventTeamId = event.optString("team_id")
+                val eventSide = event.optString("side")
 
-                // Логіка визначення сторони: якщо ID команди збігається з ID господаря
-                val isHomeTeam = eventTeamId == homeTeamId
+                // Визначаємо сторону: або за збігом ID, або якщо сервер прямо каже "left"
+                val isHomeTeam = (eventTeamId == homeTeamId && homeTeamId != "0") || eventSide == "left"
 
                 val rowLayout = LinearLayout(context).apply {
                     orientation = LinearLayout.HORIZONTAL
                     layoutParams = LinearLayout.LayoutParams(-1, -2)
                     gravity = Gravity.CENTER_VERTICAL
-                    setPadding(0, 20, 0, 20)
+                    setPadding(0, 25, 0, 25)
                 }
 
-                // Блок з текстом
                 val infoLayout = LinearLayout(context).apply {
                     layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
                     orientation = LinearLayout.VERTICAL
                     gravity = if (isHomeTeam) Gravity.END else Gravity.START
                 }
 
-                // Текст події (гравець + деталі)
                 val tvPlayer = TextView(context).apply {
                     textSize = 14f
                     typeface = Typeface.DEFAULT_BOLD
-                    setTextColor(Color.WHITE)
                     gravity = if (isHomeTeam) Gravity.END else Gravity.START
                     
-                    if (type == "substitution" || type == "sub") {
+                    if ((type == "substitution" || type == "sub") && !playerOutName.isNullOrBlank() && playerOutName != "null") {
                         val sb = SpannableStringBuilder()
-                        val inText = "↑ $playerName"
-                        sb.append(inText)
-                        sb.setSpan(ForegroundColorSpan(Color.parseColor("#00E676")), 0, inText.length, 0)
                         
-                        if (!playerOutName.isNullOrBlank() && playerOutName != "null") {
-                            sb.append("\n")
-                            val start = sb.length
-                            val outText = "↓ $playerOutName"
-                            sb.append(outText)
-                            sb.setSpan(ForegroundColorSpan(Color.parseColor("#FF5252")), start, start + outText.length, 0)
-                        }
+                        // Гравець, що входить (Зелений)
+                        val startIn = sb.length
+                        sb.append(playerName)
+                        sb.setSpan(ForegroundColorSpan(Color.parseColor("#00E676")), startIn, sb.length, 0)
+                        
+                        sb.append("\n")
+                        
+                        // Гравець, що виходить (Червоний)
+                        val startOut = sb.length
+                        sb.append(playerOutName)
+                        sb.setSpan(ForegroundColorSpan(Color.parseColor("#FF5252")), startOut, sb.length, 0)
+                        
                         text = sb
-                    } else if (type == "goal_og") {
-                        text = "$playerName (АГ)"
                     } else {
-                        text = playerName
+                        text = if (type == "goal_og") "$playerName (АГ)" else playerName
+                        setTextColor(Color.WHITE)
                     }
                 }
 
-                // Хвилина
                 val tvMin = TextView(context).apply {
                     text = "$minute'"
                     setTextColor(Color.parseColor("#BCBCBC"))
-                    textSize = 11f
+                    textSize = 12f
                     gravity = if (isHomeTeam) Gravity.END else Gravity.START
                 }
 
                 infoLayout.addView(tvPlayer)
                 infoLayout.addView(tvMin)
 
-                // Іконка події
                 val ivIcon = ImageView(context).apply {
-                    val size = (22 * resources.displayMetrics.density).toInt()
+                    val size = (24 * resources.displayMetrics.density).toInt()
                     layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                        setMargins(30, 0, 30, 0)
+                        setMargins(25, 0, 25, 0)
                     }
                 }
 
@@ -190,19 +193,13 @@ class TimelineFragment : Fragment() {
                     }
                 }
 
-                // Пружина для вирівнювання
-                val emptySpace = View(context).apply { 
-                    layoutParams = LinearLayout.LayoutParams(0, 1, 1f) 
-                }
+                val emptySpace = View(context).apply { layoutParams = LinearLayout.LayoutParams(0, 1, 1f) }
 
-                // Складаємо рядок залежно від сторони
                 if (isHomeTeam) {
-                    // Зліва: Текст -> Іконка -> Пустота
                     rowLayout.addView(infoLayout)
                     rowLayout.addView(ivIcon)
                     rowLayout.addView(emptySpace)
                 } else {
-                    // Справа: Пустота -> Іконка -> Текст
                     rowLayout.addView(emptySpace)
                     rowLayout.addView(ivIcon)
                     rowLayout.addView(infoLayout)
@@ -210,8 +207,6 @@ class TimelineFragment : Fragment() {
 
                 container.addView(rowLayout)
             }
-        } catch (e: Exception) { 
-            e.printStackTrace() 
-        }
+        } catch (e: Exception) { e.printStackTrace() }
     }
 }
