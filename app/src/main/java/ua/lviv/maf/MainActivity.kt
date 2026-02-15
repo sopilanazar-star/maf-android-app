@@ -37,7 +37,6 @@ class MainActivity : AppCompatActivity() {
     private val MAF_API_URL = "https://maf.lviv.ua/wp-json/maf/v2/matches"
     private val MAF_NEWS_URL = "https://maf.lviv.ua/wp-json/maf/v2/news"
     
-    // ВСТАНОВЛЮЄМО АКТИВНИЙ СЕЗОН (2026)
     private val seasons = arrayOf("2026", "2025", "2024")
     private var currentYear = seasons[0]
     private var allMatches = mutableListOf<TournamentRow>()
@@ -134,7 +133,12 @@ class MainActivity : AppCompatActivity() {
 
         viewPager = ViewPager2(this).apply {
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
-            getChildAt(0).overScrollMode = RecyclerView.OVER_SCROLL_NEVER 
+            // Додаємо перевірку на наявність дітей перед налаштуванням
+            post {
+                if (childCount > 0) {
+                    getChildAt(0).overScrollMode = RecyclerView.OVER_SCROLL_NEVER
+                }
+            }
         }
 
         newsRecyclerView = RecyclerView(this).apply {
