@@ -60,39 +60,51 @@ class TimelineAdapter(private val events: List<TimelineEvent>) :
     }
 
     private fun setupCenterIcon(imageView: ImageView, event: TimelineEvent) {
-        imageView.clearColorFilter()
-        imageView.imageTintList = null
 
-        when (event.type) {
-            "goal" -> {
-                imageView.setImageResource(R.drawable.ic_ball)
-            }
-            "goal_pen" -> {
-                imageView.setImageResource(R.drawable.ic_penalty_goal)
-            }
-            "goal_og" -> {
-                imageView.setImageResource(R.drawable.ic_ball)
-                imageView.setColorFilter(Color.RED)
-            }
-            "yellow_card" -> {
-                imageView.setImageResource(R.drawable.ic_card)
-                imageView.setColorFilter(Color.parseColor("#FFEB3B"))
-            }
-            "red_card" -> {
-                imageView.setImageResource(R.drawable.ic_card)
-                imageView.setColorFilter(Color.RED)
-            }
-            "yellow_red" -> {
-                imageView.setImageResource(R.drawable.ic_second_yellow)
-            }
-            "substitution" -> {
-                imageView.setImageResource(R.drawable.ic_substitution)
-            }
-            else -> {
-                imageView.setImageResource(R.drawable.ic_ball)
-            }
+    // 🔴 повний ресет перед новим drawable
+    imageView.setImageDrawable(null)
+    imageView.clearColorFilter()
+    imageView.imageTintList = null
+    imageView.visibility = View.VISIBLE
+
+    when (event.type) {
+
+        "goal" -> {
+            imageView.setImageResource(R.drawable.ic_ball)
+        }
+
+        "goal_pen" -> {
+            imageView.setImageResource(R.drawable.ic_penalty_goal)
+        }
+
+        "goal_og" -> {
+            imageView.setImageResource(R.drawable.ic_ball)
+            imageView.setColorFilter(Color.RED)
+        }
+
+        "yellow_card" -> {
+            imageView.setImageResource(R.drawable.ic_card)
+            imageView.setColorFilter(Color.parseColor("#FFEB3B"))
+        }
+
+        "red_card" -> {
+            imageView.setImageResource(R.drawable.ic_card)
+            imageView.setColorFilter(Color.RED)
+        }
+
+        "yellow_red" -> {
+            imageView.setImageResource(R.drawable.ic_second_yellow)
+        }
+
+        "substitution" -> {
+            imageView.setImageResource(R.drawable.ic_substitution)
+        }
+
+        else -> {
+            imageView.visibility = View.INVISIBLE
         }
     }
+}
 
     override fun getItemCount() = events.size
 }
