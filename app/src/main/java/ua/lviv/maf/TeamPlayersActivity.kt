@@ -2,10 +2,7 @@ package ua.lviv.maf
 
 import android.graphics.Color
 import android.os.Bundle
-import android.widget.LinearLayout
-import android.widget.ProgressBar
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -17,16 +14,16 @@ import ua.lviv.maf.models.Player
 
 class TeamPlayersActivity : AppCompatActivity() {
 
-    private var teamId: String = "0"
-    private var teamName: String = ""
-
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
+
+    private var teamId: String = ""
+    private var teamName: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        teamId = intent.getStringExtra("team_id") ?: "0"
+        teamId = intent.getStringExtra("team_id") ?: ""
         teamName = intent.getStringExtra("team_name") ?: "Команда"
 
         val root = LinearLayout(this).apply {
@@ -54,10 +51,10 @@ class TeamPlayersActivity : AppCompatActivity() {
 
         setContentView(root)
 
-        if (teamId != "0") {
+        if (teamId.isNotEmpty() && teamId != "0") {
             loadPlayers()
         } else {
-            Toast.makeText(this, "ID команди = 0", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "team_id втрачено", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -95,19 +92,13 @@ class TeamPlayersActivity : AppCompatActivity() {
 
                     runOnUiThread {
                         progressBar.visibility = ProgressBar.GONE
-
-                        if (players.isEmpty()) {
-                            Toast.makeText(this@TeamPlayersActivity, "Склад пустий", Toast.LENGTH_SHORT).show()
-                        }
-
                         recyclerView.adapter = PlayersAdapter(players)
                     }
 
                 } catch (e: Exception) {
-                    e.printStackTrace()
                     runOnUiThread {
                         progressBar.visibility = ProgressBar.GONE
-                        Toast.makeText(this@TeamPlayersActivity, "Помилка JSON", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@TeamPlayersActivity, "JSON error", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
