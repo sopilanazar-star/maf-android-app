@@ -3,6 +3,8 @@ package ua.lviv.maf
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
+import android.text.SpannableStringBuilder
+import android.text.style.ForegroundColorSpan
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -91,75 +93,95 @@ class TimelineFragment : Fragment() {
                 val event = timeline.getJSONObject(i)
                 val minute = event.optString("minute")
                 val playerName = event.optString("player_name")
-                val playerOutName = event.optString("player_out_name") // ДОДАНО: дістаємо ім'я гравця, що вийшов
+                val playerOutName = event.optString("player_out_name")
                 val type = event.optString("type")
                 val eventTeamId = event.optString("team_id")
 
+                // Логіка визначення сторони: якщо ID команди збігається з ID господаря
                 val isHomeTeam = eventTeamId == homeTeamId
 
                 val rowLayout = LinearLayout(context).apply {
                     orientation = LinearLayout.HORIZONTAL
                     layoutParams = LinearLayout.LayoutParams(-1, -2)
                     gravity = Gravity.CENTER_VERTICAL
-                    setPadding(0, 25, 0, 25)
+                    setPadding(0, 20, 0, 20)
                 }
 
+                // Блок з текстом
                 val infoLayout = LinearLayout(context).apply {
                     layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
                     orientation = LinearLayout.VERTICAL
                     gravity = if (isHomeTeam) Gravity.END else Gravity.START
                 }
 
+                // Текст події (гравець + деталі)
                 val tvPlayer = TextView(context).apply {
-                    // ЛОГІКА ЗАМІНИ: якщо тип заміна, додаємо текст у дужках
-                    text = when {
-                        (type == "substitution" || type == "sub") && playerOutName.isNotEmpty() -> 
-            "$playerName\n$playerOutName"
-        type == "goal_og" -> "$playerName (АГ)"
-        else -> playerName
-                    }
-                    setTextColor(Color.WHITE)
                     textSize = 14f
                     typeface = Typeface.DEFAULT_BOLD
-                    // Вирівнювання тексту всередині (для багаторядкових замін)
+                    setTextColor(Color.WHITE)
                     gravity = if (isHomeTeam) Gravity.END else Gravity.START
+                    
+                    if (type == "substitution" || type == "sub") {
+                        val sb = SpannableStringBuilder()
+                        val inText = "↑ $playerName"
+                        sb.append(inText)
+                        sb.setSpan(ForegroundColorSpan(Color.parseColor("#00E676")), 0, inText.length, 0)
+                        
+                        if (!playerOutName.isNullOrBlank() && playerOutName != "null") {
+                            sb.append("\n")
+                            val start = sb.length
+                            val outText = "↓ $playerOutName"
+                            sb.append(outText)
+                            sb.setSpan(ForegroundColorSpan(Color.parseColor("#FF5252")), start, start + outText.length, 0)
+                        }
+                        text = sb
+                    } else if (type == "goal_og") {
+                        text = "$playerName (АГ)"
+                    } else {
+                        text = playerName
+                    }
                 }
 
+                // Хвилина
                 val tvMin = TextView(context).apply {
                     text = "$minute'"
                     setTextColor(Color.parseColor("#BCBCBC"))
-                    textSize = 12f
+                    textSize = 11f
+                    gravity = if (isHomeTeam) Gravity.END else Gravity.START
                 }
 
                 infoLayout.addView(tvPlayer)
                 infoLayout.addView(tvMin)
 
+                // Іконка події
                 val ivIcon = ImageView(context).apply {
-                    val size = (24 * resources.displayMetrics.density).toInt()
+                    val size = (22 * resources.displayMetrics.density).toInt()
                     layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                        setMargins(25, 0, 25, 0)
+                        setMargins(30, 0, 30, 0)
                     }
                 }
 
                 when (type) {
                     "goal" -> {
                         ivIcon.setImageResource(R.drawable.ic_ball)
-                        ivIcon.setColorFilter(Color.WHITE)
+                        ivIcon.clearColorFilter()
                     }
+                    "goal_pen" -> ivIcon.setImageResource(R.drawable.ic_penalty_goal)
                     "goal_og" -> {
                         ivIcon.setImageResource(R.drawable.ic_ball)
                         ivIcon.setColorFilter(Color.RED)
                     }
                     "yellow_card" -> {
                         ivIcon.setImageResource(R.drawable.ic_card)
-                        ivIcon.setColorFilter(Color.YELLOW)
+                        ivIcon.setColorFilter(Color.parseColor("#FFEB3B"))
                     }
                     "red_card" -> {
                         ivIcon.setImageResource(R.drawable.ic_card)
                         ivIcon.setColorFilter(Color.RED)
                     }
+                    "yellow_red" -> ivIcon.setImageResource(R.drawable.ic_second_yellow)
                     "substitution", "sub" -> {
-                        ivIcon.setImageResource(R.drawable.ic_substitution) // Перевір чи назва ic_substitution чи ic_sub
+                        ivIcon.setImageResource(R.drawable.ic_substitution)
                         ivIcon.clearColorFilter()
                     }
                     else -> {
@@ -168,13 +190,19 @@ class TimelineFragment : Fragment() {
                     }
                 }
 
-                val emptySpace = View(context).apply { layoutParams = LinearLayout.LayoutParams(0, 1, 1f) }
+                // Пружина для вирівнювання
+                val emptySpace = View(context).apply { 
+                    layoutParams = LinearLayout.LayoutParams(0, 1, 1f) 
+                }
 
+                // Складаємо рядок залежно від сторони
                 if (isHomeTeam) {
+                    // Зліва: Текст -> Іконка -> Пустота
                     rowLayout.addView(infoLayout)
                     rowLayout.addView(ivIcon)
                     rowLayout.addView(emptySpace)
                 } else {
+                    // Справа: Пустота -> Іконка -> Текст
                     rowLayout.addView(emptySpace)
                     rowLayout.addView(ivIcon)
                     rowLayout.addView(infoLayout)
@@ -182,6 +210,8 @@ class TimelineFragment : Fragment() {
 
                 container.addView(rowLayout)
             }
-        } catch (e: Exception) { e.printStackTrace() }
+        } catch (e: Exception) { 
+            e.printStackTrace() 
+        }
     }
 }
