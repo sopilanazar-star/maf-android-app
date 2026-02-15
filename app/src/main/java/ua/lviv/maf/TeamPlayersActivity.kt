@@ -2,6 +2,7 @@ package ua.lviv.maf
 
 import android.graphics.Color
 import android.os.Bundle
+import android.view.Gravity
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -23,12 +24,27 @@ class TeamPlayersActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        teamId = intent.getStringExtra("team_id") ?: ""
+        // 🔥 ПРАВКА ТУТ:
+        // Спочатку пробуємо отримати як число (Int), бо саме Int ми передавали з MatchDetailActivity
+        val idInt = intent.getIntExtra("team_id", 0)
+
+        if (idInt != 0) {
+            teamId = idInt.toString()
+        } else {
+            // Якщо раптом передали як стрічку (String)
+            teamId = intent.getStringExtra("team_id") ?: ""
+        }
+
         teamName = intent.getStringExtra("team_name") ?: "Команда"
 
+        // Створення UI кодом (без XML)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.parseColor("#1A1D23"))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT
+            )
         }
 
         val title = TextView(this).apply {
@@ -36,13 +52,20 @@ class TeamPlayersActivity : AppCompatActivity() {
             textSize = 22f
             setTextColor(Color.WHITE)
             setPadding(0, 40, 0, 20)
-            gravity = android.view.Gravity.CENTER
+            gravity = Gravity.CENTER
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
         }
 
-        progressBar = ProgressBar(this)
+        progressBar = ProgressBar(this).apply {
+            indeterminateTintList = android.content.res.ColorStateList.valueOf(Color.WHITE) // Білий колір
+        }
 
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@TeamPlayersActivity)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT
+            )
         }
 
         root.addView(title)
@@ -51,10 +74,12 @@ class TeamPlayersActivity : AppCompatActivity() {
 
         setContentView(root)
 
+        // Перевірка
         if (teamId.isNotEmpty() && teamId != "0") {
             loadPlayers()
         } else {
-            Toast.makeText(this, "team_id втрачено", Toast.LENGTH_LONG).show()
+            progressBar.visibility = ProgressBar.GONE
+            Toast.makeText(this, "Помилка: team_id втрачено ($teamId)", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -81,7 +106,7 @@ class TeamPlayersActivity : AppCompatActivity() {
                 if (!response.isSuccessful || json.isNullOrEmpty()) {
                     runOnUiThread {
                         progressBar.visibility = ProgressBar.GONE
-                        Toast.makeText(this@TeamPlayersActivity, "Нема складу", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@TeamPlayersActivity, "Склад порожній або помилка", Toast.LENGTH_SHORT).show()
                     }
                     return
                 }
@@ -92,13 +117,14 @@ class TeamPlayersActivity : AppCompatActivity() {
 
                     runOnUiThread {
                         progressBar.visibility = ProgressBar.GONE
+                        // Передаємо адаптер
                         recyclerView.adapter = PlayersAdapter(players)
                     }
 
                 } catch (e: Exception) {
                     runOnUiThread {
                         progressBar.visibility = ProgressBar.GONE
-                        Toast.makeText(this@TeamPlayersActivity, "JSON error", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@TeamPlayersActivity, "Помилка обробки даних (JSON)", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
