@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.tabs.TabLayout
 import okhttp3.*
 import org.json.JSONArray
+import org.json.JSONObject
 import java.io.IOException
 
 class StandingFragment : Fragment() {
@@ -46,7 +47,6 @@ class StandingFragment : Fragment() {
     }
 
     private fun loadCompetitions() {
-
         val client = OkHttpClient()
         val request = Request.Builder().url(COMPS_URL).build()
 
@@ -115,6 +115,33 @@ class StandingFragment : Fragment() {
         })
     }
 
+    // 🔥 УНІВЕРСАЛЬНИЙ ПАРСЕР ID
+    private fun extractTeamId(obj: JSONObject): String {
+
+        if (obj.has("team_id")) {
+            val v = obj.get("team_id")
+            return v.toString()
+        }
+
+        if (obj.has("team")) {
+            val team = obj.get("team")
+
+            if (team is Int) return team.toString()
+            if (team is String) return team
+
+            if (team is JSONObject) {
+                if (team.has("id")) return team.get("id").toString()
+                if (team.has("ID")) return team.get("ID").toString()
+            }
+        }
+
+        if (obj.has("id")) {
+            return obj.get("id").toString()
+        }
+
+        return "0"
+    }
+
     private fun loadStanding(compId: String) {
 
         val client = OkHttpClient()
@@ -142,15 +169,11 @@ class StandingFragment : Fragment() {
 
                         val obj = array.getJSONObject(i)
 
-                        // 🔥 SAFE TEAM ID PARSE
-                        val teamIdString = when {
-                            obj.has("team_id") -> obj.get("team_id").toString()
-                            obj.has("team") -> obj.get("team").toString()
-                            else -> "0"
-                        }
+                        val teamId = extractTeamId(obj)
 
                         val formArray = obj.optJSONArray("form")
                         val formList = mutableListOf<String>()
+
                         if (formArray != null) {
                             for (j in 0 until formArray.length()) {
                                 formList.add(formArray.getString(j))
@@ -159,7 +182,7 @@ class StandingFragment : Fragment() {
 
                         list.add(
                             StandingRow(
-                                team_id = teamIdString,
+                                team_id = teamId,
                                 position = obj.optInt("position", 0),
                                 team_name = obj.optString("team_name", ""),
                                 logo = obj.optString("logo", ""),
