@@ -307,7 +307,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
     }
-
+}
     private fun createDateList(matches: List<TournamentRow>): List<DateModel> {
         val calendarList = mutableListOf<DateModel>()
         try {
@@ -360,4 +360,3 @@ class MainActivity : AppCompatActivity() {
         }
         override fun getItemCount(): Int = dates.size
     }
-}
