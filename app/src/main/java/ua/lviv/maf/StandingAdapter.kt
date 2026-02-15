@@ -54,11 +54,13 @@ class StandingAdapter(private var items: List<StandingRow>) :
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val item = items[position]
 
+        // ✅ HEADER
         if (holder is HeaderViewHolder) {
-            holder.tvGroupName.text = item.group_name
+            holder.tvGroupName.text = item.group_name ?: ""
         }
 
-        if (holder is TeamViewHolder) {
+        // ✅ TEAM (ВАЖЛИВО: else if)
+        else if (holder is TeamViewHolder) {
 
             holder.tvPosition.text = "${item.position}."
             holder.tvTeamName.text = item.team_name
@@ -77,7 +79,6 @@ class StandingAdapter(private var items: List<StandingRow>) :
                 .placeholder(R.drawable.ic_ball)
                 .into(holder.ivTeamLogo)
 
-            // 🔥 ГОЛОВНИЙ FIX — БЕЗ КРАШУ
             holder.itemView.setOnClickListener {
 
                 val teamIdInt = try {
