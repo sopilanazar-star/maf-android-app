@@ -45,9 +45,6 @@ class StandingFragment : Fragment() {
         return view
     }
 
-    // ===============================
-    // LOAD COMPETITIONS
-    // ===============================
     private fun loadCompetitions() {
 
         val client = OkHttpClient()
@@ -57,7 +54,7 @@ class StandingFragment : Fragment() {
 
             override fun onFailure(call: Call, e: IOException) {
                 activity?.runOnUiThread {
-                    Toast.makeText(context, "Помилка завантаження ліг", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Помилка ліг", Toast.LENGTH_SHORT).show()
                 }
             }
 
@@ -89,9 +86,6 @@ class StandingFragment : Fragment() {
         })
     }
 
-    // ===============================
-    // UPDATE TABS
-    // ===============================
     private fun updateTabs() {
 
         tabLayout.removeAllTabs()
@@ -105,16 +99,12 @@ class StandingFragment : Fragment() {
         }
     }
 
-    // ===============================
-    // TAB LISTENER
-    // ===============================
     private fun setupTabListener() {
 
         tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
 
             override fun onTabSelected(tab: TabLayout.Tab?) {
                 val pos = tab?.position ?: 0
-
                 if (pos < competitions.size) {
                     loadStanding(competitions[pos].id)
                 }
@@ -125,9 +115,6 @@ class StandingFragment : Fragment() {
         })
     }
 
-    // ===============================
-    // LOAD STANDING
-    // ===============================
     private fun loadStanding(compId: String) {
 
         val client = OkHttpClient()
@@ -148,7 +135,6 @@ class StandingFragment : Fragment() {
                 val json = response.body?.string() ?: ""
 
                 try {
-
                     val array = JSONArray(json)
                     val list = mutableListOf<StandingRow>()
 
@@ -156,18 +142,20 @@ class StandingFragment : Fragment() {
 
                         val obj = array.getJSONObject(i)
 
-                        // FORM
+                        // 🔥 SAFE TEAM ID PARSE
+                        val teamIdString = when {
+                            obj.has("team_id") -> obj.get("team_id").toString()
+                            obj.has("team") -> obj.get("team").toString()
+                            else -> "0"
+                        }
+
                         val formArray = obj.optJSONArray("form")
                         val formList = mutableListOf<String>()
-
                         if (formArray != null) {
                             for (j in 0 until formArray.length()) {
                                 formList.add(formArray.getString(j))
                             }
                         }
-
-                        // 🔥 team_id як STRING
-                        val teamIdString = obj.optString("team_id", "0")
 
                         list.add(
                             StandingRow(
