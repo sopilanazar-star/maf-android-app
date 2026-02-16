@@ -93,10 +93,8 @@ class TeamPlayersActivity : AppCompatActivity() {
                     }
 
                     try {
-                        // 🔥 РУЧНЕ КЕРУВАННЯ:
                         // 1. Парсимо структуру як загальний елемент
                         val jsonElement = JsonParser.parseString(rawJson)
-
                         val playersList = ArrayList<Player>()
 
                         if (jsonElement.isJsonArray) {
@@ -107,20 +105,19 @@ class TeamPlayersActivity : AppCompatActivity() {
                         } else if (jsonElement.isJsonObject) {
                             // ВАРІАНТ Б: Це об'єкт (наприклад, PHP array "0":{}, "1":{})
                             val jsonObject = jsonElement.asJsonObject
-                            // Проходимося по всіх ключах і пробуємо витягнути гравців
                             for (key in jsonObject.keySet()) {
                                 try {
                                     val item = jsonObject.get(key)
                                     val player = Gson().fromJson(item, Player::class.java)
                                     playersList.add(player)
                                 } catch (e: Exception) {
-                                    // Ігноруємо ключі, які не є гравцями (наприклад "status": "ok")
+                                    // Ігноруємо те, що не схоже на гравця
                                 }
                             }
                         } else {
-                            // ВАРІАНТ В: Це false, null або примітив
+                            // ВАРІАНТ В: Це false, null або щось інше
                             Toast.makeText(this@TeamPlayersActivity, "Дані гравців відсутні", Toast.LENGTH_SHORT).show()
-                            return@try
+                            return@runOnUiThread // 🔥 ВИПРАВЛЕНО ТУТ
                         }
 
                         if (playersList.isNotEmpty()) {
@@ -131,7 +128,7 @@ class TeamPlayersActivity : AppCompatActivity() {
 
                     } catch (e: Exception) {
                         Log.e("TeamPlayers", "Error: ${e.message}")
-                        // 🔥 ПОКАЗУЄМО ТОБІ, ЩО ПРИЙШЛО, ЯКЩО ЗНОВУ ПОМИЛКА
+                        // Якщо знову помилка - показуємо діалог із "сирим" JSON
                         showError("Що надіслав сервер?", rawJson)
                     }
                 }
@@ -139,12 +136,11 @@ class TeamPlayersActivity : AppCompatActivity() {
         })
     }
 
-    // Діалог для відладки
     private fun showError(title: String, message: String) {
         progressBar.visibility = ProgressBar.GONE
         AlertDialog.Builder(this)
             .setTitle(title)
-            .setMessage(message.take(500)) // Показуємо перші 500 символів
+            .setMessage(message.take(500))
             .setPositiveButton("OK", null)
             .show()
     }
