@@ -12,7 +12,7 @@ import org.json.JSONObject
 
 class TeamMatchesAdapter(
     private val matches: List<JSONObject>,
-    private val onMatchClick: (String) -> Unit
+    private val onMatchClick: (JSONObject) -> Unit // 🔥 Передаємо весь об'єкт матчу!
 ) : RecyclerView.Adapter<TeamMatchesAdapter.MatchViewHolder>() {
 
     class MatchViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -23,6 +23,8 @@ class TeamMatchesAdapter(
         val tvScore: TextView = view.findViewById(R.id.tvScore)
         val ivHomeLogo: ImageView = view.findViewById(R.id.ivHomeLogo)
         val ivAwayLogo: ImageView = view.findViewById(R.id.ivAwayLogo)
+        val tvStadium: TextView = view.findViewById(R.id.tvStadium) // Нове
+        val tvReferee: TextView = view.findViewById(R.id.tvReferee) // Нове
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MatchViewHolder {
@@ -34,54 +36,45 @@ class TeamMatchesAdapter(
     override fun onBindViewHolder(holder: MatchViewHolder, position: Int) {
         val match = matches[position]
 
-        val id = match.optString("id")
-        val league = match.optString("league")
-        val stage = match.optString("stage")
+        val stage = match.optString("stage_name")
         val date = match.optString("date")
-        val team1 = match.optString("team1")
-        val team2 = match.optString("team2")
-        val logo1 = match.optString("logo1")
-        val logo2 = match.optString("logo2")
+        val time = match.optString("time")
+        val team1 = match.optString("team1_name")
+        val team2 = match.optString("team2_name")
+        val logo1 = match.optString("team1_logo")
+        val logo2 = match.optString("team2_logo")
         val score = match.optString("score")
+        
+        // 🔥 Нові поля
+        val stadium = match.optString("stadium_name") // Перевір в JSON, чи ключ stadium або stadium_name
+        val referee = match.optString("referee_name") // Або referee
 
-        // 1. ЕТАП ТА ЛІГА
-        val fullInfo = if (league == stage || stage.isEmpty()) league else "$league | $stage"
-        holder.tvStage.text = fullInfo
-        holder.tvStage.visibility = if (fullInfo.isNotEmpty()) View.VISIBLE else View.GONE
-
-        // 2. ДАТА
-        holder.tvDate.text = date
-
-        // 3. КОМАНДИ
+        holder.tvStage.text = if (stage.isNotEmpty()) stage else "МАТЧ"
+        holder.tvDate.text = "$date $time"
         holder.tvHomeName.text = team1
         holder.tvAwayName.text = team2
 
-        // 4. 🔥 РАХУНОК (З ПРАВИЛЬНИМ ФОНОМ)
-        if (score.contains(" : ")) {
+        // Рахунок
+        if (score.contains(":")) {
             holder.tvScore.text = score
             holder.tvScore.setTextColor(Color.WHITE)
-            holder.tvScore.textSize = 20f
-            // Вмикаємо той самий файл фону, через який сварився Gradle
-            holder.tvScore.setBackgroundResource(R.drawable.bg_score_container)
         } else {
-            // Якщо матчу ще не було (час або VS)
-            holder.tvScore.text = if (score.isNotEmpty()) score else "VS"
+            holder.tvScore.text = time
             holder.tvScore.setTextColor(Color.parseColor("#00E676"))
-            holder.tvScore.textSize = 16f
-            // Прибираємо фон, щоб VS не було в рамці
-            holder.tvScore.background = null
         }
 
-        // 5. ЛОГОТИПИ
-        Glide.with(holder.itemView.context)
-            .load(logo1.replace("http://", "https://"))
-            .into(holder.ivHomeLogo)
-        Glide.with(holder.itemView.context)
-            .load(logo2.replace("http://", "https://"))
-            .into(holder.ivAwayLogo)
+        // Стадіон та Арбітр
+        holder.tvStadium.text = if (stadium.isNotEmpty()) "🏟 $stadium" else ""
+        holder.tvReferee.text = if (referee.isNotEmpty()) "👮‍♂️ $referee" else ""
 
-        // 6. КЛІК
-        holder.itemView.setOnClickListener { onMatchClick(id) }
+        // Логотипи
+        Glide.with(holder.itemView.context).load(logo1).into(holder.ivHomeLogo)
+        Glide.with(holder.itemView.context).load(logo2).into(holder.ivAwayLogo)
+
+        // Клік
+        holder.itemView.setOnClickListener {
+            onMatchClick(match) // Передаємо весь JSON об'єкт
+        }
     }
 
     override fun getItemCount() = matches.size
