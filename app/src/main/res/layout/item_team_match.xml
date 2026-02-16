@@ -18,26 +18,27 @@
             android:id="@+id/tvMatchStage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="#3300E676"
+            android:background="#3300E676" 
             android:paddingHorizontal="8dp"
             android:paddingVertical="4dp"
-            android:text="Stage"
+            android:text="Premier League"
             android:textColor="#00E676"
             android:textSize="10sp"
             android:textStyle="bold"
             android:textAllCaps="true"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginBottom="8dp"/>
 
         <TextView
             android:id="@+id/tvMatchDate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Date"
+            android:text="20.02 14:00"
             android:textColor="#BCBCBC"
             android:textSize="11sp"
-            android:layout_marginTop="6dp"
             android:layout_marginEnd="12dp"
+            android:layout_marginTop="6dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"/>
 
@@ -45,21 +46,21 @@
             android:id="@+id/tvHomeName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Home"
+            android:text="FC Home"
             android:textColor="#FFFFFF"
             android:textSize="13sp"
             android:gravity="center"
             android:maxLines="2"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="12dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/ivHomeLogo"
             app:layout_constraintTop_toBottomOf="@+id/tvMatchStage"
-            app:layout_constraintWidth_percent="0.30"/>
+            app:layout_constraintWidth_percent="0.25"/>
 
         <ImageView
             android:id="@+id/ivHomeLogo"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:src="@drawable/ic_player_placeholder"
             app:layout_constraintEnd_toStartOf="@+id/tvScore"
             app:layout_constraintStart_toEndOf="@+id/tvHomeName"
@@ -70,20 +71,21 @@
             android:id="@+id/tvScore"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="- : -"
+            android:text="2 : 1"
             android:textColor="#FFFFFF"
-            android:textSize="22sp"
+            android:textSize="20sp"
             android:textStyle="bold"
-            android:layout_marginHorizontal="8dp"
+            android:background="@drawable/bg_score_container" 
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="4dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@+id/ivHomeLogo"
             app:layout_constraintBottom_toBottomOf="@+id/ivHomeLogo"/>
-
         <ImageView
             android:id="@+id/ivAwayLogo"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:src="@drawable/ic_player_placeholder"
             app:layout_constraintStart_toEndOf="@+id/tvScore"
             app:layout_constraintEnd_toStartOf="@+id/tvAwayName"
@@ -93,7 +95,7 @@
             android:id="@+id/tvAwayName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Away"
+            android:text="FC Away"
             android:textColor="#FFFFFF"
             android:textSize="13sp"
             android:gravity="center"
@@ -101,44 +103,7 @@
             app:layout_constraintStart_toEndOf="@+id/ivAwayLogo"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@+id/tvHomeName"
-            app:layout_constraintWidth_percent="0.30"/>
-
-        <View
-            android:id="@+id/divider"
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#33FFFFFF"
-            android:layout_marginTop="16dp"
-            android:layout_marginHorizontal="12dp"
-            app:layout_constraintTop_toBottomOf="@+id/tvScore"/>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:paddingTop="8dp"
-            app:layout_constraintTop_toBottomOf="@+id/divider">
-
-            <TextView
-                android:id="@+id/tvStadium"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Стадіон"
-                android:textColor="#9E9E9E"
-                android:textSize="11sp"
-                android:gravity="center"
-                android:layout_marginEnd="16dp"/>
-
-            <TextView
-                android:id="@+id/tvReferee"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Арбітр"
-                android:textColor="#9E9E9E"
-                android:textSize="11sp"
-                android:gravity="center"/>
-        </LinearLayout>
+            app:layout_constraintWidth_percent="0.25"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>
