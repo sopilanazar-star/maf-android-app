@@ -34,10 +34,9 @@ class TeamMatchesAdapter(
     override fun onBindViewHolder(holder: MatchViewHolder, position: Int) {
         val match = matches[position]
 
-        // --- ДАНІ З ТВОГО JSON ---
         val id = match.optString("id")
-        val league = match.optString("league") // Назва турніру
-        val stage = match.optString("stage")   // Назва етапу (напр. 2 тур)
+        val league = match.optString("league")
+        val stage = match.optString("stage")
         val date = match.optString("date")
         val team1 = match.optString("team1")
         val team2 = match.optString("team2")
@@ -45,8 +44,7 @@ class TeamMatchesAdapter(
         val logo2 = match.optString("logo2")
         val score = match.optString("score")
 
-        // 1. ЕТАП ТА ЛІГА (Твій запит: "назву етапу в лівий верхній куток")
-        // Об'єднуємо Лігу та Етап через кому, якщо вони різні
+        // 1. ЕТАП ТА ЛІГА
         val fullInfo = if (league == stage || stage.isEmpty()) league else "$league | $stage"
         holder.tvStage.text = fullInfo
         holder.tvStage.visibility = if (fullInfo.isNotEmpty()) View.VISIBLE else View.GONE
@@ -58,23 +56,27 @@ class TeamMatchesAdapter(
         holder.tvHomeName.text = team1
         holder.tvAwayName.text = team2
 
-        // 4. РАХУНОК
+        // 4. 🔥 РАХУНОК (З ПРАВИЛЬНИМ ФОНОМ)
         if (score.contains(" : ")) {
             holder.tvScore.text = score
             holder.tvScore.setTextColor(Color.WHITE)
             holder.tvScore.textSize = 20f
+            // Вмикаємо той самий файл фону, через який сварився Gradle
+            holder.tvScore.setBackgroundResource(R.drawable.bg_score_container)
         } else {
-            // Якщо рахунку немає, можна вивести час або "VS"
+            // Якщо матчу ще не було (час або VS)
             holder.tvScore.text = if (score.isNotEmpty()) score else "VS"
             holder.tvScore.setTextColor(Color.parseColor("#00E676"))
             holder.tvScore.textSize = 16f
+            // Прибираємо фон, щоб VS не було в рамці
+            holder.tvScore.background = null
         }
 
-        // 5. ЛОГОТИПИ (Glide підправить http на https автоматично)
+        // 5. ЛОГОТИПИ
         Glide.with(holder.itemView.context)
             .load(logo1.replace("http://", "https://"))
             .into(holder.ivHomeLogo)
-             Glide.with(holder.itemView.context)
+        Glide.with(holder.itemView.context)
             .load(logo2.replace("http://", "https://"))
             .into(holder.ivAwayLogo)
 
