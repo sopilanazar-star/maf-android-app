@@ -12,7 +12,7 @@ import org.json.JSONObject
 
 class TeamMatchesAdapter(
     private val matches: List<JSONObject>,
-    private val onMatchClick: (JSONObject) -> Unit
+    private val onMatchClick: (JSONObject) -> Unit // 🔥 Передаємо весь об'єкт матчу!
 ) : RecyclerView.Adapter<TeamMatchesAdapter.MatchViewHolder>() {
 
     class MatchViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -23,8 +23,8 @@ class TeamMatchesAdapter(
         val tvScore: TextView = view.findViewById(R.id.tvScore)
         val ivHomeLogo: ImageView = view.findViewById(R.id.ivHomeLogo)
         val ivAwayLogo: ImageView = view.findViewById(R.id.ivAwayLogo)
-        val tvStadium: TextView = view.findViewById(R.id.tvStadium)
-        val tvReferee: TextView = view.findViewById(R.id.tvReferee)
+        val tvStadium: TextView = view.findViewById(R.id.tvStadium) // Нове
+        val tvReferee: TextView = view.findViewById(R.id.tvReferee) // Нове
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MatchViewHolder {
@@ -43,38 +43,37 @@ class TeamMatchesAdapter(
         val team2 = match.optString("team2_name")
         val logo1 = match.optString("team1_logo")
         val logo2 = match.optString("team2_logo")
-        val score = match.optString("score") // Може бути "2 : 1" або просто час, якщо порожньо
+        val score = match.optString("score")
         
-        val stadium = match.optString("stadium_name")
-        val referee = match.optString("referee_name")
+        // 🔥 Нові поля
+        val stadium = match.optString("stadium_name") // Перевір в JSON, чи ключ stadium або stadium_name
+        val referee = match.optString("referee_name") // Або referee
 
         holder.tvStage.text = if (stage.isNotEmpty()) stage else "МАТЧ"
         holder.tvDate.text = "$date $time"
         holder.tvHomeName.text = team1
         holder.tvAwayName.text = team2
 
-        // 🔥 Логіка відображення рахунку або часу
-        // Перевіряємо: якщо є двокрапка або дефіс - це рахунок
-        if (score.contains(":") || score.contains("-")) {
+        // Рахунок
+        if (score.contains(":")) {
             holder.tvScore.text = score
             holder.tvScore.setTextColor(Color.WHITE)
-            holder.tvScore.textSize = 20f // Трохи більше для рахунку
         } else {
-            // Якщо матчу ще не було - показуємо час зеленим
             holder.tvScore.text = time
             holder.tvScore.setTextColor(Color.parseColor("#00E676"))
-            holder.tvScore.textSize = 16f // Трохи менше для часу
         }
 
-        // Стадіон та Арбітр з іконками
+        // Стадіон та Арбітр
         holder.tvStadium.text = if (stadium.isNotEmpty()) "🏟 $stadium" else ""
         holder.tvReferee.text = if (referee.isNotEmpty()) "👮‍♂️ $referee" else ""
 
+        // Логотипи
         Glide.with(holder.itemView.context).load(logo1).into(holder.ivHomeLogo)
         Glide.with(holder.itemView.context).load(logo2).into(holder.ivAwayLogo)
 
+        // Клік
         holder.itemView.setOnClickListener {
-            onMatchClick(match)
+            onMatchClick(match) // Передаємо весь JSON об'єкт
         }
     }
 
