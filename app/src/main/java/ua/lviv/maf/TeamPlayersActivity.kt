@@ -1,171 +1,92 @@
 package ua.lviv.maf
 
-import android.app.AlertDialog
 import android.graphics.Color
 import android.os.Bundle
-import android.util.Log
-import android.view.Gravity
-import android.widget.*
+import android.widget.ImageButton
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.JsonParser
-import okhttp3.*
-import java.io.IOException
-import ua.lviv.maf.models.Player
+import androidx.fragment.app.Fragment
+import androidx.viewpager2.adapter.FragmentStateAdapter
+import androidx.viewpager2.widget.ViewPager2
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
 
 class TeamPlayersActivity : AppCompatActivity() {
-
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var progressBar: ProgressBar
-
-    private var teamId: String = ""
-    private var teamName: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Отримуємо ID та назву
         val idInt = intent.getIntExtra("team_id", 0)
-        teamId = if (idInt != 0) idInt.toString() else intent.getStringExtra("team_id") ?: ""
-        teamName = intent.getStringExtra("team_name") ?: "Команда"
+        val teamId = if (idInt != 0) idInt.toString() else intent.getStringExtra("team_id") ?: ""
+        val teamName = intent.getStringExtra("team_name") ?: "Команда"
 
-        // --- UI ---
+        // --- БУДУЄМО UI КОДОМ (Щоб не створювати XML) ---
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.parseColor("#1A1D23"))
             layoutParams = LinearLayout.LayoutParams(-1, -1)
         }
 
+        // Верхня панель з кнопкою назад і назвою
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(20, 40, 20, 20)
+            gravity = android.view.Gravity.CENTER_VERTICAL
+        }
+
+        val btnBack = ImageButton(this).apply {
+            setImageResource(android.R.drawable.ic_menu_revert) // Або R.drawable.ic_back
+            setColorFilter(Color.WHITE)
+            setBackgroundColor(Color.TRANSPARENT)
+            setOnClickListener { finish() }
+        }
+
         val title = TextView(this).apply {
             text = teamName
-            textSize = 22f
+            textSize = 20f
             setTextColor(Color.WHITE)
-            setPadding(0, 40, 0, 20)
-            gravity = Gravity.CENTER
+            setPadding(30, 0, 0, 0)
             typeface = android.graphics.Typeface.DEFAULT_BOLD
         }
 
-        progressBar = ProgressBar(this).apply {
-            indeterminateTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
+        header.addView(btnBack)
+        header.addView(title)
+
+        // Таби (Вкладки)
+        val tabLayout = TabLayout(this).apply {
+            setBackgroundColor(Color.parseColor("#1A1D23"))
+            setTabTextColors(Color.GRAY, Color.parseColor("#00E676"))
+            setSelectedTabIndicatorColor(Color.parseColor("#00E676"))
         }
 
-        recyclerView = RecyclerView(this).apply {
-            layoutManager = LinearLayoutManager(this@TeamPlayersActivity)
+        // ViewPager (горталка сторінок)
+        val viewPager = ViewPager2(this).apply {
             layoutParams = LinearLayout.LayoutParams(-1, -1)
         }
 
-        root.addView(title)
-        root.addView(progressBar)
-        root.addView(recyclerView)
-
+        root.addView(header)
+        root.addView(tabLayout)
+        root.addView(viewPager)
         setContentView(root)
-        // -----------
+        // --------------------------------------------------
 
-        if (teamId.isNotEmpty() && teamId != "0") {
-            loadPlayers()
-        } else {
-            showError("Помилка", "Немає ID команди")
-        }
-    }
+        // Налаштування адаптера для табів
+        viewPager.adapter = object : FragmentStateAdapter(this) {
+            override fun getItemCount(): Int = 2
 
-    private fun loadPlayers() {
-        val url = "https://maf.lviv.ua/wp-json/maf/v2/team-players?id=$teamId"
-        val request = Request.Builder().url(url).build()
-
-        OkHttpClient().newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                runOnUiThread {
-                    progressBar.visibility = ProgressBar.GONE
-                    Toast.makeText(this@TeamPlayersActivity, "Помилка мережі", Toast.LENGTH_SHORT).show()
+            override fun createFragment(position: Int): Fragment {
+                return when (position) {
+                    0 -> TeamSquadFragment.newInstance(teamId)   // 1. Гравці
+                    else -> TeamMatchesFragment.newInstance(teamId) // 2. Матчі
                 }
             }
-
-            override fun onResponse(call: Call, response: Response) {
-                val rawJson = response.body?.string()?.trim() ?: ""
-
-                runOnUiThread {
-                    progressBar.visibility = ProgressBar.GONE
-                    
-                    if (!response.isSuccessful || rawJson.isEmpty()) {
-                        Toast.makeText(this@TeamPlayersActivity, "Сервер мовчить", Toast.LENGTH_SHORT).show()
-                        return@runOnUiThread
-                    }
-
-                    try {
-                        // 🔥 РУЧНИЙ ПАРСИНГ (MANUAL PARSING)
-                        // Це найнадійніший спосіб обійти глюки Gson
-                        val jsonElement = JsonParser.parseString(rawJson)
-                        val playersList = ArrayList<Player>()
-
-                        if (jsonElement.isJsonArray) {
-                            val jsonArray = jsonElement.asJsonArray
-                            for (element in jsonArray) {
-                                val obj = element.asJsonObject
-                                playersList.add(parsePlayerSafe(obj))
-                            }
-                        } else if (jsonElement.isJsonObject) {
-                            // Якщо сервер віддав асоціативний масив (PHP style)
-                            val jsonObject = jsonElement.asJsonObject
-                            for (key in jsonObject.keySet()) {
-                                try {
-                                    val element = jsonObject.get(key)
-                                    if (element.isJsonObject) {
-                                        playersList.add(parsePlayerSafe(element.asJsonObject))
-                                    }
-                                } catch (e: Exception) { /* ігноруємо сміття */ }
-                            }
-                        } else {
-                            // Якщо прийшло false, null або рядок
-                            Toast.makeText(this@TeamPlayersActivity, "Гравців не знайдено", Toast.LENGTH_SHORT).show()
-                            return@runOnUiThread
-                        }
-
-                        if (playersList.isNotEmpty()) {
-                            recyclerView.adapter = PlayersAdapter(playersList)
-                        } else {
-                            Toast.makeText(this@TeamPlayersActivity, "Список пустий", Toast.LENGTH_SHORT).show()
-                        }
-
-                    } catch (e: Exception) {
-                        Log.e("TeamPlayers", "Error: ${e.message}")
-                        showError("Помилка обробки", rawJson)
-                    }
-                }
-            }
-        })
-    }
-
-    // 🔥 Ця функція витягує дані безпечно. Вона не впаде!
-    private fun parsePlayerSafe(obj: com.google.gson.JsonObject): Player {
-        
-        fun getString(key: String): String {
-            if (!obj.has(key) || obj.get(key).isJsonNull) return ""
-            val primitive = obj.get(key)
-            
-            // Якщо це примітив (число, рядок, boolean)
-            if (primitive.isJsonPrimitive) {
-                val p = primitive.asJsonPrimitive
-                if (p.isBoolean) return "" // Ігноруємо false/true (наприклад для фото)
-                return p.asString // Повертає текст
-            }
-            return ""
         }
 
-        return Player(
-            id = getString("id"),
-            name = getString("name"),
-            number = getString("number"),
-            position = getString("position"),
-            photo = getString("photo")
-        )
-    }
-
-    private fun showError(title: String, message: String) {
-        progressBar.visibility = ProgressBar.GONE
-        AlertDialog.Builder(this)
-            .setTitle(title)
-            .setMessage(message.take(500))
-            .setPositiveButton("OK", null)
-            .show()
+        // Зв'язуємо Таби і Пейджер
+        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
+            tab.text = if (position == 0) "ГРАВЦІ" else "МАТЧІ"
+        }.attach()
     }
 }
