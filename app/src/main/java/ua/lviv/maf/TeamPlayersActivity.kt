@@ -9,9 +9,7 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.Gson
 import com.google.gson.JsonParser
-import com.google.gson.reflect.TypeToken
 import okhttp3.*
 import java.io.IOException
 import ua.lviv.maf.models.Player
@@ -31,7 +29,7 @@ class TeamPlayersActivity : AppCompatActivity() {
         teamId = if (idInt != 0) idInt.toString() else intent.getStringExtra("team_id") ?: ""
         teamName = intent.getStringExtra("team_name") ?: "Команда"
 
-        // UI
+        // --- UI ---
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.parseColor("#1A1D23"))
@@ -61,6 +59,7 @@ class TeamPlayersActivity : AppCompatActivity() {
         root.addView(recyclerView)
 
         setContentView(root)
+        // -----------
 
         if (teamId.isNotEmpty() && teamId != "0") {
             loadPlayers()
@@ -93,47 +92,72 @@ class TeamPlayersActivity : AppCompatActivity() {
                     }
 
                     try {
-                        // 1. Парсимо структуру як загальний елемент
+                        // 🔥 РУЧНИЙ ПАРСИНГ (MANUAL PARSING)
+                        // Це найнадійніший спосіб обійти глюки Gson
                         val jsonElement = JsonParser.parseString(rawJson)
                         val playersList = ArrayList<Player>()
 
                         if (jsonElement.isJsonArray) {
-                            // ВАРІАНТ А: Це нормальний список [...]
-                            val type = object : TypeToken<List<Player>>() {}.type
-                            playersList.addAll(Gson().fromJson(jsonElement, type))
-
+                            val jsonArray = jsonElement.asJsonArray
+                            for (element in jsonArray) {
+                                val obj = element.asJsonObject
+                                playersList.add(parsePlayerSafe(obj))
+                            }
                         } else if (jsonElement.isJsonObject) {
-                            // ВАРІАНТ Б: Це об'єкт (наприклад, PHP array "0":{}, "1":{})
+                            // Якщо сервер віддав асоціативний масив (PHP style)
                             val jsonObject = jsonElement.asJsonObject
                             for (key in jsonObject.keySet()) {
                                 try {
-                                    val item = jsonObject.get(key)
-                                    val player = Gson().fromJson(item, Player::class.java)
-                                    playersList.add(player)
-                                } catch (e: Exception) {
-                                    // Ігноруємо те, що не схоже на гравця
-                                }
+                                    val element = jsonObject.get(key)
+                                    if (element.isJsonObject) {
+                                        playersList.add(parsePlayerSafe(element.asJsonObject))
+                                    }
+                                } catch (e: Exception) { /* ігноруємо сміття */ }
                             }
                         } else {
-                            // ВАРІАНТ В: Це false, null або щось інше
-                            Toast.makeText(this@TeamPlayersActivity, "Дані гравців відсутні", Toast.LENGTH_SHORT).show()
-                            return@runOnUiThread // 🔥 ВИПРАВЛЕНО ТУТ
+                            // Якщо прийшло false, null або рядок
+                            Toast.makeText(this@TeamPlayersActivity, "Гравців не знайдено", Toast.LENGTH_SHORT).show()
+                            return@runOnUiThread
                         }
 
                         if (playersList.isNotEmpty()) {
                             recyclerView.adapter = PlayersAdapter(playersList)
                         } else {
-                            Toast.makeText(this@TeamPlayersActivity, "Список гравців порожній", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@TeamPlayersActivity, "Список пустий", Toast.LENGTH_SHORT).show()
                         }
 
                     } catch (e: Exception) {
                         Log.e("TeamPlayers", "Error: ${e.message}")
-                        // Якщо знову помилка - показуємо діалог із "сирим" JSON
-                        showError("Що надіслав сервер?", rawJson)
+                        showError("Помилка обробки", rawJson)
                     }
                 }
             }
         })
+    }
+
+    // 🔥 Ця функція витягує дані безпечно. Вона не впаде!
+    private fun parsePlayerSafe(obj: com.google.gson.JsonObject): Player {
+        
+        fun getString(key: String): String {
+            if (!obj.has(key) || obj.get(key).isJsonNull) return ""
+            val primitive = obj.get(key)
+            
+            // Якщо це примітив (число, рядок, boolean)
+            if (primitive.isJsonPrimitive) {
+                val p = primitive.asJsonPrimitive
+                if (p.isBoolean) return "" // Ігноруємо false/true (наприклад для фото)
+                return p.asString // Повертає текст
+            }
+            return ""
+        }
+
+        return Player(
+            id = getString("id"),
+            name = getString("name"),
+            number = getString("number"),
+            position = getString("position"),
+            photo = getString("photo")
+        )
     }
 
     private fun showError(title: String, message: String) {
