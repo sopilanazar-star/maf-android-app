@@ -16,7 +16,6 @@ class TeamMatchesAdapter(
 ) : RecyclerView.Adapter<TeamMatchesAdapter.MatchViewHolder>() {
 
     class MatchViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        // Переконайся, що ID у файлі item_team_match.xml збігаються!
         val tvStage: TextView = view.findViewById(R.id.tvMatchStage)
         val tvDate: TextView = view.findViewById(R.id.tvMatchDate)
         val tvHomeName: TextView = view.findViewById(R.id.tvHomeName)
@@ -35,58 +34,52 @@ class TeamMatchesAdapter(
     override fun onBindViewHolder(holder: MatchViewHolder, position: Int) {
         val match = matches[position]
 
-        // Отримуємо поля (назви можуть відрізнятися залежно від твого API)
-        // Спробуємо різні варіанти назв, щоб точно вгадати
-        val stage = match.optString("league_name").ifEmpty { match.optString("stage") }
+        // --- ДАНІ З ТВОГО JSON ---
+        val id = match.optString("id")
+        val league = match.optString("league") // Назва турніру
+        val stage = match.optString("stage")   // Назва етапу (напр. 2 тур)
         val date = match.optString("date")
-        val time = match.optString("time")
-        
-        val team1 = match.optString("team1_name")
-        val team2 = match.optString("team2_name")
-        
-        // Для логотипів
-        val logo1 = match.optString("team1_logo")
-        val logo2 = match.optString("team2_logo")
-        
-        val score = match.optString("score") // Наприклад "2 : 1" або "15:00"
+        val team1 = match.optString("team1")
+        val team2 = match.optString("team2")
+        val logo1 = match.optString("logo1")
+        val logo2 = match.optString("logo2")
+        val score = match.optString("score")
 
-        // 1. ЕТАП (Ліга)
-        if (stage.isNotEmpty() && stage != "null") {
-            holder.tvStage.text = stage
-            holder.tvStage.visibility = View.VISIBLE
-        } else {
-            holder.tvStage.visibility = View.GONE
-        }
+        // 1. ЕТАП ТА ЛІГА (Твій запит: "назву етапу в лівий верхній куток")
+        // Об'єднуємо Лігу та Етап через кому, якщо вони різні
+        val fullInfo = if (league == stage || stage.isEmpty()) league else "$league | $stage"
+        holder.tvStage.text = fullInfo
+        holder.tvStage.visibility = if (fullInfo.isNotEmpty()) View.VISIBLE else View.GONE
 
         // 2. ДАТА
-        holder.tvDate.text = "$date $time"
+        holder.tvDate.text = date
 
         // 3. КОМАНДИ
         holder.tvHomeName.text = team1
         holder.tvAwayName.text = team2
 
         // 4. РАХУНОК
-        if (score.contains(":") && score.length < 6) { 
-            // Це схоже на рахунок "2:1"
+        if (score.contains(" : ")) {
             holder.tvScore.text = score
             holder.tvScore.setTextColor(Color.WHITE)
             holder.tvScore.textSize = 20f
-            holder.tvScore.setBackgroundResource(R.drawable.bg_score_container) // Якщо є фон
         } else {
-            // Це час "14:00" або "VS"
-            holder.tvScore.text = if (time.isNotEmpty()) time else "VS"
+            // Якщо рахунку немає, можна вивести час або "VS"
+            holder.tvScore.text = if (score.isNotEmpty()) score else "VS"
             holder.tvScore.setTextColor(Color.parseColor("#00E676"))
             holder.tvScore.textSize = 16f
-            holder.tvScore.background = null
         }
 
-        // 5. КАРТИНКИ
-        Glide.with(holder.itemView.context).load(logo1).into(holder.ivHomeLogo)
-        Glide.with(holder.itemView.context).load(logo2).into(holder.ivAwayLogo)
+        // 5. ЛОГОТИПИ (Glide підправить http на https автоматично)
+        Glide.with(holder.itemView.context)
+            .load(logo1.replace("http://", "https://"))
+            .into(holder.ivHomeLogo)
+             Glide.with(holder.itemView.context)
+            .load(logo2.replace("http://", "https://"))
+            .into(holder.ivAwayLogo)
 
-        holder.itemView.setOnClickListener {
-            onMatchClick(match.optString("id"))
-        }
+        // 6. КЛІК
+        holder.itemView.setOnClickListener { onMatchClick(id) }
     }
 
     override fun getItemCount() = matches.size
