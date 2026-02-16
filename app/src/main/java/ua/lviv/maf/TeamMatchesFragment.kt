@@ -34,8 +34,7 @@ class TeamMatchesFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        // Можна створити окремий XML (fragment_team_matches.xml) або створити View кодом
-        // Для швидкості створимо кодом, але краще XML
+        // Створюємо макет кодом (або використовуй XML, якщо створив)
         val root = android.widget.RelativeLayout(context).apply {
             layoutParams = ViewGroup.LayoutParams(-1, -1)
             setBackgroundColor(android.graphics.Color.parseColor("#1A1D23"))
@@ -76,10 +75,8 @@ class TeamMatchesFragment : Fragment() {
     }
 
     private fun loadMatches() {
-        // УВАГА: Перевір цей URL. Якщо немає окремого endpoint для матчів команди, 
-        // можливо треба використовувати загальний фільтр. 
-        // Я припускаю, що endpoint виглядає так:
-        val url = "https://maf.lviv.ua/wp-json/maf/v2/team-matches?id=$teamId" 
+        // 🔥 ВИПРАВЛЕННЯ: Використовуємо загальний endpoint 'matches' з параметром team_id
+        val url = "https://maf.lviv.ua/wp-json/maf/v2/matches?team_id=$teamId" 
         
         val request = Request.Builder().url(url).build()
 
@@ -98,23 +95,32 @@ class TeamMatchesFragment : Fragment() {
                     progressBar.visibility = View.GONE
 
                     if (!response.isSuccessful || jsonStr.isNullOrEmpty()) {
+                        // Якщо 404, то, можливо, сервер повертає пустий масив [] або помилку
+                        tvEmpty.text = "Матчів немає"
                         tvEmpty.visibility = View.VISIBLE
                         return@runOnUiThread
                     }
 
                     try {
-                        // Парсимо JSON
                         val matchesList = ArrayList<JSONObject>()
                         
-                        // Перевірка, що прийшло (масив чи об'єкт)
+                        // Обробка масиву [...]
                         if (jsonStr.trim().startsWith("[")) {
                             val jsonArray = JSONArray(jsonStr)
                             for (i in 0 until jsonArray.length()) {
                                 matchesList.add(jsonArray.getJSONObject(i))
                             }
-                        } else {
-                             // Якщо прийшов об'єкт (PHP style array)
+                        } 
+                        // Обробка об'єкта {...} (якщо PHP віддав асоціативний масив)
+                        else if (jsonStr.trim().startsWith("{")) {
                              val jsonObject = JSONObject(jsonStr)
+                             // Іноді сервер може віддати {"status": 404}, перевіримо це
+                             if (jsonObject.has("code") && jsonObject.getString("code") == "rest_no_route") {
+                                 tvEmpty.text = "Помилка API (Маршрут не існує)"
+                                 tvEmpty.visibility = View.VISIBLE
+                                 return@runOnUiThread
+                             }
+                             
                              val keys = jsonObject.keys()
                              while(keys.hasNext()) {
                                  val key = keys.next()
@@ -124,11 +130,12 @@ class TeamMatchesFragment : Fragment() {
                         }
 
                         if (matchesList.isNotEmpty()) {
+                            tvEmpty.visibility = View.GONE
+                            // Передаємо адаптер
                             recyclerView.adapter = TeamMatchesAdapter(matchesList) { matchId ->
-                                // Відкриваємо деталі матчу
                                 val intent = Intent(context, MatchDetailActivity::class.java)
                                 intent.putExtra("id", matchId)
-                                // Тут можна додати інші дані (home_id і т.д.), якщо MatchDetail їх потребує
+                                intent.putExtra("home_team_id", "0") // Тимчасово, бо в списку матчів може не бути ID
                                 startActivity(intent)
                             }
                         } else {
