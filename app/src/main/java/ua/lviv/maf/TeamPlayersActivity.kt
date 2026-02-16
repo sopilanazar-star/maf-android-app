@@ -1,5 +1,6 @@
 package ua.lviv.maf
 
+import android.app.AlertDialog
 import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
@@ -9,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
+import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
 import okhttp3.*
 import java.io.IOException
@@ -25,17 +27,11 @@ class TeamPlayersActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. ЛОВИМО ID (І як число, і як текст)
         val idInt = intent.getIntExtra("team_id", 0)
-        if (idInt != 0) {
-            teamId = idInt.toString()
-        } else {
-            teamId = intent.getStringExtra("team_id") ?: ""
-        }
-
+        teamId = if (idInt != 0) idInt.toString() else intent.getStringExtra("team_id") ?: ""
         teamName = intent.getStringExtra("team_name") ?: "Команда"
 
-        // 2. БУДУЄМО ІНТЕРФЕЙС
+        // UI
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.parseColor("#1A1D23"))
@@ -69,17 +65,15 @@ class TeamPlayersActivity : AppCompatActivity() {
         if (teamId.isNotEmpty() && teamId != "0") {
             loadPlayers()
         } else {
-            progressBar.visibility = ProgressBar.GONE
-            Toast.makeText(this, "Помилка: Немає ID команди", Toast.LENGTH_LONG).show()
+            showError("Помилка", "Немає ID команди")
         }
     }
 
     private fun loadPlayers() {
         val url = "https://maf.lviv.ua/wp-json/maf/v2/team-players?id=$teamId"
-        val client = OkHttpClient()
         val request = Request.Builder().url(url).build()
 
-        client.newCall(request).enqueue(object : Callback {
+        OkHttpClient().newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 runOnUiThread {
                     progressBar.visibility = ProgressBar.GONE
@@ -88,44 +82,70 @@ class TeamPlayersActivity : AppCompatActivity() {
             }
 
             override fun onResponse(call: Call, response: Response) {
-                // Читаємо відповідь як простий текст
-                val rawJson = response.body?.string()?.trim()
+                val rawJson = response.body?.string()?.trim() ?: ""
 
                 runOnUiThread {
                     progressBar.visibility = ProgressBar.GONE
-
-                    // 1. Якщо прийшло пусто або помилка сервера
-                    if (!response.isSuccessful || rawJson.isNullOrEmpty()) {
-                        Toast.makeText(this@TeamPlayersActivity, "Сервер не відповідає", Toast.LENGTH_SHORT).show()
+                    
+                    if (!response.isSuccessful || rawJson.isEmpty()) {
+                        Toast.makeText(this@TeamPlayersActivity, "Сервер мовчить", Toast.LENGTH_SHORT).show()
                         return@runOnUiThread
                     }
 
-                    // 2. 🔥 ГОЛОВНА ПЕРЕВІРКА:
-                    // Якщо відповідь це 'false', 'null' або щось інше, що НЕ починається на '['
-                    if (rawJson == "false" || rawJson == "null" || !rawJson.startsWith("[")) {
-                        Toast.makeText(this@TeamPlayersActivity, "Гравців у базі ще немає", Toast.LENGTH_LONG).show()
-                        return@runOnUiThread
-                    }
-
-                    // 3. Якщо ми тут — значить це точно список [...]
                     try {
-                        val type = object : TypeToken<List<Player>>() {}.type
-                        val players: List<Player> = Gson().fromJson(rawJson, type)
+                        // 🔥 РУЧНЕ КЕРУВАННЯ:
+                        // 1. Парсимо структуру як загальний елемент
+                        val jsonElement = JsonParser.parseString(rawJson)
 
-                        if (players.isEmpty()) {
-                            Toast.makeText(this@TeamPlayersActivity, "Список пустий", Toast.LENGTH_SHORT).show()
+                        val playersList = ArrayList<Player>()
+
+                        if (jsonElement.isJsonArray) {
+                            // ВАРІАНТ А: Це нормальний список [...]
+                            val type = object : TypeToken<List<Player>>() {}.type
+                            playersList.addAll(Gson().fromJson(jsonElement, type))
+
+                        } else if (jsonElement.isJsonObject) {
+                            // ВАРІАНТ Б: Це об'єкт (наприклад, PHP array "0":{}, "1":{})
+                            val jsonObject = jsonElement.asJsonObject
+                            // Проходимося по всіх ключах і пробуємо витягнути гравців
+                            for (key in jsonObject.keySet()) {
+                                try {
+                                    val item = jsonObject.get(key)
+                                    val player = Gson().fromJson(item, Player::class.java)
+                                    playersList.add(player)
+                                } catch (e: Exception) {
+                                    // Ігноруємо ключі, які не є гравцями (наприклад "status": "ok")
+                                }
+                            }
                         } else {
-                            recyclerView.adapter = PlayersAdapter(players)
+                            // ВАРІАНТ В: Це false, null або примітив
+                            Toast.makeText(this@TeamPlayersActivity, "Дані гравців відсутні", Toast.LENGTH_SHORT).show()
+                            return@try
+                        }
+
+                        if (playersList.isNotEmpty()) {
+                            recyclerView.adapter = PlayersAdapter(playersList)
+                        } else {
+                            Toast.makeText(this@TeamPlayersActivity, "Список гравців порожній", Toast.LENGTH_SHORT).show()
                         }
 
                     } catch (e: Exception) {
-                        // Якщо впало тут — значить проблема всередині моделі Player (наприклад, null там де не треба)
-                        Log.e("TeamPlayers", "JSON Parse error: ${e.message}")
-                        Log.e("TeamPlayers", "RAW DATA: $rawJson") // Дивись в Logcat, що прийшло!
-                        Toast.makeText(this@TeamPlayersActivity, "Збій структури даних", Toast.LENGTH_SHORT).show()
+                        Log.e("TeamPlayers", "Error: ${e.message}")
+                        // 🔥 ПОКАЗУЄМО ТОБІ, ЩО ПРИЙШЛО, ЯКЩО ЗНОВУ ПОМИЛКА
+                        showError("Що надіслав сервер?", rawJson)
                     }
                 }
             }
         })
+    }
+
+    // Діалог для відладки
+    private fun showError(title: String, message: String) {
+        progressBar.visibility = ProgressBar.GONE
+        AlertDialog.Builder(this)
+            .setTitle(title)
+            .setMessage(message.take(500)) // Показуємо перші 500 символів
+            .setPositiveButton("OK", null)
+            .show()
     }
 }
