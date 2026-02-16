@@ -74,9 +74,7 @@ class TeamMatchesFragment : Fragment() {
     }
 
     private fun loadMatches() {
-        // Якщо треба, зміни на: "https://maf.lviv.ua/wp-json/maf/v2/team-matches?id=$teamId"
         val url = "https://maf.lviv.ua/wp-json/maf/v2/matches" 
-        
         val request = Request.Builder().url(url).build()
 
         OkHttpClient().newCall(request).enqueue(object : Callback {
@@ -92,7 +90,6 @@ class TeamMatchesFragment : Fragment() {
 
                 activity?.runOnUiThread {
                     progressBar.visibility = View.GONE
-
                     if (!response.isSuccessful || jsonStr.isNullOrEmpty()) {
                         tvEmpty.visibility = View.VISIBLE
                         return@runOnUiThread
@@ -100,39 +97,33 @@ class TeamMatchesFragment : Fragment() {
 
                     try {
                         val allMatches = ArrayList<JSONObject>()
-                        
                         if (jsonStr.trim().startsWith("[")) {
                             val jsonArray = JSONArray(jsonStr)
-                            for (i in 0 until jsonArray.length()) {
-                                allMatches.add(jsonArray.getJSONObject(i))
-                            }
+                            for (i in 0 until jsonArray.length()) allMatches.add(jsonArray.getJSONObject(i))
                         } else {
                              val jsonObject = JSONObject(jsonStr)
                              val keys = jsonObject.keys()
                              while(keys.hasNext()) {
-                                 val key = keys.next()
-                                 val item = jsonObject.optJSONObject(key)
+                                 val item = jsonObject.optJSONObject(keys.next())
                                  if (item != null) allMatches.add(item)
                              }
                         }
 
-                        // Фільтрація для нашої команди
+                        // Фільтруємо
                         val teamMatches = allMatches.filter { match ->
                             val homeId = match.optString("home_team_id")
                             val awayId = match.optString("away_team_id")
                             val team1Id = match.optString("team1_id")
                             val team2Id = match.optString("team2_id")
-                            
                             homeId == teamId || awayId == teamId || team1Id == teamId || team2Id == teamId
                         }
 
                         if (teamMatches.isNotEmpty()) {
-                            // Передаємо адаптер
                             recyclerView.adapter = TeamMatchesAdapter(teamMatches) { matchJson ->
                                 openMatchDetails(matchJson)
                             }
                         } else {
-                            tvEmpty.text = "Матчів для цієї команди немає"
+                            tvEmpty.text = "Матчів немає"
                             tvEmpty.visibility = View.VISIBLE
                         }
 
@@ -146,42 +137,44 @@ class TeamMatchesFragment : Fragment() {
         })
     }
 
-    // 🔥 ВИПРАВЛЕНИЙ МЕТОД ПЕРЕХОДУ
+    // 🔥 ФУНКЦІЯ ПЕРЕХОДУ, ЯКА ЗНАХОДИТЬ ВСЕ
     private fun openMatchDetails(match: JSONObject) {
         val intent = Intent(context, MatchDetailActivity::class.java)
+
+        // Копія функції пошуку з адаптера, щоб Intent був повним
+        fun find(vararg keys: String): String {
+            for (key in keys) {
+                if (match.has(key) && !match.isNull(key)) {
+                    val v = match.optString(key)
+                    if (v.isNotEmpty() && v != "false" && v != "null") return v
+                }
+            }
+            return ""
+        }
+
+        intent.putExtra("id", find("id"))
         
-        // Тут ми мапимо ключі з JSON на ключі, які чекає MatchDetailActivity
-        // Дивимося в твій код MatchDetailActivity:
-        // intent.getStringExtra("team1"), "logo1", "score" і т.д.
-        
-        intent.putExtra("id", match.optString("id"))
-        
+        // 🚀 НАЙВАЖЛИВІШЕ: Передаємо правильні ключі для MatchDetailActivity
         // Назви команд
-        intent.putExtra("team1", match.optString("team1_name"))
-        intent.putExtra("team2", match.optString("team2_name"))
+        intent.putExtra("team1", find("home_team_name", "home_team", "team1_name", "team1"))
+        intent.putExtra("team2", find("away_team_name", "away_team", "team2_name", "team2"))
         
-        // Логотипи
-        intent.putExtra("logo1", match.optString("team1_logo"))
-        intent.putExtra("logo2", match.optString("team2_logo"))
+        // Логотипи (саме тут була проблема)
+        intent.putExtra("logo1", find("home_team_logo", "home_logo", "team1_logo", "team1_image"))
+        intent.putExtra("logo2", find("away_team_logo", "away_logo", "team2_logo", "team2_image"))
         
-        // Рахунок і статус
-        intent.putExtra("score", match.optString("score"))
+        // Інфо
+        intent.putExtra("score", find("score", "match_score"))
+        intent.putExtra("date", "${find("date")} ${find("time")}")
+        intent.putExtra("league", find("league_name", "competition_name"))
+        intent.putExtra("stage", find("stage_name", "round"))
+        intent.putExtra("stadium", find("stadium_name", "stadium"))
+        intent.putExtra("referee", find("referee_name", "referee"))
         
-        // Дата і час
-        val date = match.optString("date")
-        val time = match.optString("time")
-        intent.putExtra("date", "$date $time")
-        
-        // Додаткова інфа
-        intent.putExtra("league", match.optString("league_name"))
-        intent.putExtra("stage", match.optString("stage_name"))
-        intent.putExtra("stadium", match.optString("stadium_name")) // Або "stadium"
-        intent.putExtra("referee", match.optString("referee_name")) // Або "referee"
-        
-        // ID команд для Таймлайну (ДУЖЕ ВАЖЛИВО)
-        intent.putExtra("home_team_id", match.optString("home_team_id")) // Або team1_id
-        intent.putExtra("away_team_id", match.optString("away_team_id")) // Або team2_id
-        
+        // ID для таймлайну
+        intent.putExtra("home_team_id", find("home_team_id", "team1_id"))
+        intent.putExtra("away_team_id", find("away_team_id", "team2_id"))
+
         startActivity(intent)
     }
 }
