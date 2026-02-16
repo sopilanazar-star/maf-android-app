@@ -3,18 +3,25 @@ package ua.lviv.maf.models
 import com.google.gson.annotations.SerializedName
 
 data class Player(
-    @SerializedName("id")
-    val id: String? = null, // Тепер це поле не обов'язкове
+    // Приймаємо будь-що (Any?), щоб Gson не падав від false чи чисел
+    @SerializedName("id") private val _id: Any? = null,
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("number") private val _number: Any? = null,
+    @SerializedName("position") val position: String? = null,
+    @SerializedName("photo") private val _photo: Any? = null
+) {
+    // А тут магія: перетворюємо "брудні" дані в чистий текст для Адаптера
 
-    @SerializedName("name")
-    val name: String? = null, // І це теж
+    val id: String
+        get() = _id?.toString() ?: ""
 
-    @SerializedName("number")
-    val number: String? = null,
+    val number: String
+        get() = _number?.toString() ?: ""
 
-    @SerializedName("position")
-    val position: String? = null,
-
-    @SerializedName("photo")
-    val photo: String? = null
-)
+    val photo: String
+        get() {
+            // Якщо сервер надіслав false (булеве), повертаємо пустий рядок
+            if (_photo is Boolean) return ""
+            return _photo?.toString() ?: ""
+        }
+}
