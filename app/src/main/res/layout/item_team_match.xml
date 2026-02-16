@@ -15,19 +15,29 @@
         android:paddingBottom="12dp">
 
         <TextView
+            android:id="@+id/tvTournament"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="PREMIER LEAGUE"
+            android:textColor="#00E676"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textAllCaps="true"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
             android:id="@+id/tvMatchStage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="#3300E676"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="4dp"
-            android:text="TUR 1"
-            android:textColor="#00E676"
+            android:text="Round 5"
+            android:textColor="#BCBCBC"
             android:textSize="10sp"
-            android:textStyle="bold"
-            android:textAllCaps="true"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:layout_marginTop="2dp"
+            app:layout_constraintStart_toStartOf="@+id/tvTournament"
+            app:layout_constraintTop_toBottomOf="@+id/tvTournament" />
 
         <TextView
             android:id="@+id/tvMatchDate"
@@ -36,10 +46,9 @@
             android:text="20.02 14:00"
             android:textColor="#BCBCBC"
             android:textSize="11sp"
-            android:layout_marginTop="6dp"
             android:layout_marginEnd="12dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"/>
+            app:layout_constraintBaseline_toBaselineOf="@+id/tvTournament"
+            app:layout_constraintEnd_toEndOf="parent"/>
 
         <TextView
             android:id="@+id/tvHomeName"
@@ -50,7 +59,7 @@
             android:textSize="12sp"
             android:gravity="center"
             android:maxLines="2"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="16dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/ivHomeLogo"
             app:layout_constraintTop_toBottomOf="@+id/tvMatchStage"
@@ -71,7 +80,7 @@
             android:id="@+id/tvScore"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="2 : 1"
+            android:text="- : -"
             android:textColor="#FFFFFF"
             android:textSize="18sp"
             android:textStyle="bold"
@@ -132,7 +141,7 @@
                 android:id="@+id/tvStadium"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Стадіон"
+                android:text=""
                 android:textColor="#9E9E9E"
                 android:textSize="11sp"
                 android:gravity="center"
@@ -142,7 +151,7 @@
                 android:id="@+id/tvReferee"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Арбітр"
+                android:text=""
                 android:textColor="#9E9E9E"
                 android:textSize="11sp"
                 android:gravity="center"/>
@@ -150,3 +159,4 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>
+            
