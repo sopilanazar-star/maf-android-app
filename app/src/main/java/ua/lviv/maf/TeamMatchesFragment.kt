@@ -81,19 +81,14 @@ class TeamMatchesFragment : Fragment() {
             override fun onFailure(call: Call, e: IOException) {
                 activity?.runOnUiThread { 
                     progressBar.visibility = View.GONE
-                    Toast.makeText(context, "Помилка мережі", Toast.LENGTH_SHORT).show()
                 }
             }
 
             override fun onResponse(call: Call, response: Response) {
                 val jsonStr = response.body?.string()
-
                 activity?.runOnUiThread {
                     progressBar.visibility = View.GONE
-                    if (!response.isSuccessful || jsonStr.isNullOrEmpty()) {
-                        tvEmpty.visibility = View.VISIBLE
-                        return@runOnUiThread
-                    }
+                    if (!response.isSuccessful || jsonStr.isNullOrEmpty()) return@runOnUiThread
 
                     try {
                         val allMatches = ArrayList<JSONObject>()
@@ -109,13 +104,12 @@ class TeamMatchesFragment : Fragment() {
                              }
                         }
 
-                        // Фільтруємо матчі, де грає наша команда
+                        // Фільтрація матчів команди
                         val teamMatches = allMatches.filter { match ->
-                            val homeId = match.optString("home_team_id")
-                            val awayId = match.optString("away_team_id")
-                            val t1Id = match.optString("team1_id")
-                            val t2Id = match.optString("team2_id")
-                            homeId == teamId || awayId == teamId || t1Id == teamId || t2Id == teamId
+                            match.optString("home_team_id") == teamId || 
+                            match.optString("away_team_id") == teamId ||
+                            match.optString("team1_id") == teamId ||
+                            match.optString("team2_id") == teamId
                         }
 
                         if (teamMatches.isNotEmpty()) {
@@ -123,59 +117,36 @@ class TeamMatchesFragment : Fragment() {
                                 openMatchDetails(matchJson)
                             }
                         } else {
-                            tvEmpty.text = "Матчів для цієї команди немає"
                             tvEmpty.visibility = View.VISIBLE
                         }
-
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        tvEmpty.text = "Помилка обробки даних"
-                        tvEmpty.visibility = View.VISIBLE
-                    }
+                    } catch (e: Exception) { e.printStackTrace() }
                 }
             }
         })
     }
 
-    // 🔥 ТУТ ПРАВИЛЬНЕ МАППІНГУ КЛЮЧІВ ПІД ТВОЮ MatchDetailActivity
+    // 🔥 ПЕРЕДАЧА ДАНИХ СУВОРО ПІД ТВОЮ MatchDetailActivity
     private fun openMatchDetails(match: JSONObject) {
         val intent = Intent(context, MatchDetailActivity::class.java)
 
-        // Допоміжна функція пошуку, щоб не залежати від кривих ключів сервера
-        fun find(vararg keys: String): String {
-            for (key in keys) {
-                if (match.has(key) && !match.isNull(key)) {
-                    val v = match.optString(key)
-                    if (v.isNotEmpty() && v != "false" && v != "null") return v
-                }
-            }
-            return ""
-        }
-
-        // 1. ID матчу
-        intent.putExtra("id", find("id"))
+        // Передаємо ключі один-в-один як у твоєму MatchDetailActivity.onCreate
+        intent.putExtra("id", match.optString("id"))
+        intent.putExtra("home_team_id", match.optString("home_team_id"))
+        intent.putExtra("away_team_id", match.optString("away_team_id"))
         
-        // 2. ID команд (для таймлайну та кліків по лого)
-        intent.putExtra("home_team_id", find("home_team_id", "team1_id"))
-        intent.putExtra("away_team_id", find("away_team_id", "team2_id"))
+        intent.putExtra("team1", match.optString("team1_name"))
+        intent.putExtra("team2", match.optString("team2_name"))
         
-        // 3. Назви команд
-        intent.putExtra("team1", find("team1_name", "home_team_name", "home_team"))
-        intent.putExtra("team2", find("team2_name", "away_team_name", "away_team"))
+        intent.putExtra("logo1", match.optString("team1_logo"))
+        intent.putExtra("logo2", match.optString("team2_logo"))
         
-        // 4. Логотипи (передаємо як є, Activity сама зробить replace http на https)
-        intent.putExtra("logo1", find("team1_logo", "home_team_logo", "home_logo"))
-        intent.putExtra("logo2", find("team2_logo", "away_team_logo", "away_logo"))
+        intent.putExtra("score", match.optString("score"))
+        intent.putExtra("date", "${match.optString("date")} ${match.optString("time")}")
         
-        // 5. Рахунок та Дата
-        intent.putExtra("score", find("score", "match_score"))
-        intent.putExtra("date", "${find("date")} ${find("time")}")
-        
-        // 6. Додаткова інформація
-        intent.putExtra("league", find("league_name", "competition_name", "league"))
-        intent.putExtra("stage", find("stage_name", "round", "stage"))
-        intent.putExtra("stadium", find("stadium_name", "stadium"))
-        intent.putExtra("referee", find("referee_name", "referee"))
+        intent.putExtra("league", match.optString("league_name"))
+        intent.putExtra("stage", match.optString("stage_name"))
+        intent.putExtra("stadium", match.optString("stadium_name"))
+        intent.putExtra("referee", match.optString("referee_name"))
 
         startActivity(intent)
     }
