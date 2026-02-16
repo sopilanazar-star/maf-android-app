@@ -2,6 +2,7 @@ package ua.lviv.maf
 
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.Gravity
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
@@ -24,27 +25,21 @@ class TeamPlayersActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. ВИПРАВЛЕННЯ ID:
-        // Спочатку пробуємо дістати як число (бо MatchDetailActivity передає Int)
+        // 1. ЛОВИМО ID (І як число, і як текст)
         val idInt = intent.getIntExtra("team_id", 0)
-
         if (idInt != 0) {
             teamId = idInt.toString()
         } else {
-            // Якщо раптом десь передали як рядок
             teamId = intent.getStringExtra("team_id") ?: ""
         }
 
         teamName = intent.getStringExtra("team_name") ?: "Команда"
 
-        // Створення інтерфейсу (UI) кодом
+        // 2. БУДУЄМО ІНТЕРФЕЙС
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.parseColor("#1A1D23"))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT
-            )
+            layoutParams = LinearLayout.LayoutParams(-1, -1)
         }
 
         val title = TextView(this).apply {
@@ -57,16 +52,12 @@ class TeamPlayersActivity : AppCompatActivity() {
         }
 
         progressBar = ProgressBar(this).apply {
-            // Робимо спіннер білим, щоб його було видно на темному фоні
             indeterminateTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
         }
 
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@TeamPlayersActivity)
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT
-            )
+            layoutParams = LinearLayout.LayoutParams(-1, -1)
         }
 
         root.addView(title)
@@ -75,12 +66,11 @@ class TeamPlayersActivity : AppCompatActivity() {
 
         setContentView(root)
 
-        // Перевірка, чи ми таки знайшли ID
         if (teamId.isNotEmpty() && teamId != "0") {
             loadPlayers()
         } else {
             progressBar.visibility = ProgressBar.GONE
-            Toast.makeText(this, "Помилка: ID команди не знайдено", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Помилка: Немає ID команди", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -98,41 +88,41 @@ class TeamPlayersActivity : AppCompatActivity() {
             }
 
             override fun onResponse(call: Call, response: Response) {
-                val json = response.body?.string()
+                // Читаємо відповідь як простий текст
+                val rawJson = response.body?.string()?.trim()
 
-                if (!response.isSuccessful || json.isNullOrEmpty()) {
-                    runOnUiThread {
-                        progressBar.visibility = ProgressBar.GONE
-                        Toast.makeText(this@TeamPlayersActivity, "Дані відсутні", Toast.LENGTH_SHORT).show()
+                runOnUiThread {
+                    progressBar.visibility = ProgressBar.GONE
+
+                    // 1. Якщо прийшло пусто або помилка сервера
+                    if (!response.isSuccessful || rawJson.isNullOrEmpty()) {
+                        Toast.makeText(this@TeamPlayersActivity, "Сервер не відповідає", Toast.LENGTH_SHORT).show()
+                        return@runOnUiThread
                     }
-                    return
-                }
 
-                try {
-                    // 2. ЗАХИСТ ВІД ЗБОЮ JSON:
-                    // Перевіряємо, чи сервер повернув масив (починається з "[")
-                    // Якщо сервер повертає "false" або "null", ми просто покажемо пустий список
-                    if (json.trim().startsWith("[")) {
+                    // 2. 🔥 ГОЛОВНА ПЕРЕВІРКА:
+                    // Якщо відповідь це 'false', 'null' або щось інше, що НЕ починається на '['
+                    if (rawJson == "false" || rawJson == "null" || !rawJson.startsWith("[")) {
+                        Toast.makeText(this@TeamPlayersActivity, "Гравців у базі ще немає", Toast.LENGTH_LONG).show()
+                        return@runOnUiThread
+                    }
+
+                    // 3. Якщо ми тут — значить це точно список [...]
+                    try {
                         val type = object : TypeToken<List<Player>>() {}.type
-                        val players: List<Player> = Gson().fromJson(json, type)
+                        val players: List<Player> = Gson().fromJson(rawJson, type)
 
-                        runOnUiThread {
-                            progressBar.visibility = ProgressBar.GONE
+                        if (players.isEmpty()) {
+                            Toast.makeText(this@TeamPlayersActivity, "Список пустий", Toast.LENGTH_SHORT).show()
+                        } else {
                             recyclerView.adapter = PlayersAdapter(players)
                         }
-                    } else {
-                        // Це не помилка JSON, це просто відсутність гравців
-                        runOnUiThread {
-                            progressBar.visibility = ProgressBar.GONE
-                            Toast.makeText(this@TeamPlayersActivity, "Список гравців порожній", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                } catch (e: Exception) {
-                    runOnUiThread {
-                        progressBar.visibility = ProgressBar.GONE
-                        // Логування для тебе, щоб бачити реальну причину, якщо щось піде не так
-                        android.util.Log.e("TeamPlayers", "JSON Error: ${e.message}")
-                        Toast.makeText(this@TeamPlayersActivity, "Помилка обробки даних", Toast.LENGTH_SHORT).show()
+
+                    } catch (e: Exception) {
+                        // Якщо впало тут — значить проблема всередині моделі Player (наприклад, null там де не треба)
+                        Log.e("TeamPlayers", "JSON Parse error: ${e.message}")
+                        Log.e("TeamPlayers", "RAW DATA: $rawJson") // Дивись в Logcat, що прийшло!
+                        Toast.makeText(this@TeamPlayersActivity, "Збій структури даних", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
