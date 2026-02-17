@@ -29,20 +29,24 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val item = items[position]
 
         if (holder is LeagueHeaderViewHolder) {
+            // --- ПРАВКА №1: ХЕДЕР (ЛІГА + ЧЕРВОНИЙ ЕТАП) ---
             holder.tvLeagueName.text = item.league.uppercase()
+            
             if (item.stage.isNotEmpty()) {
                 holder.tvStageName.visibility = View.VISIBLE
                 holder.tvStageName.text = item.stage
-                holder.tvStageName.setTextColor(Color.parseColor("#E30613"))
-                holder.tvStageName.textSize = 12f
+                holder.tvStageName.setTextColor(Color.parseColor("#E30613")) // Червоний колір
+                holder.tvStageName.textSize = 12f // Маленький розмір
             } else {
                 holder.tvStageName.visibility = View.GONE
             }
 
         } else if (holder is MatchViewHolder) {
+            // --- КАРТКА МАТЧУ ---
             holder.tvTeam1.text = item.team1
             holder.tvTeam2.text = item.team2
-
+            
+            // Стадіон
             if (item.stadium.isNotEmpty()) {
                 holder.tvStadium?.visibility = View.VISIBLE
                 holder.tvStadium?.text = item.stadium
@@ -50,6 +54,7 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                 holder.tvStadium?.visibility = View.GONE
             }
 
+            // Арбітр
             if (item.referee.isNotEmpty()) {
                 holder.tvReferee?.visibility = View.VISIBLE
                 holder.tvReferee?.text = "Арбітр: ${item.referee}"
@@ -57,18 +62,21 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                 holder.tvReferee?.visibility = View.GONE
             }
 
+            // --- ПРАВКА №2: РАХУНОК / ЧАС + ГОДИННИК ---
             val scoreValue = item.score ?: ""
             holder.tvScore?.text = scoreValue
 
             if (scoreValue.contains(" : ")) {
-                holder.ivTimeIcon?.visibility = View.GONE
+                // === МАТЧ ЗІГРАНО (рахунок білий та жирний) ===
+                holder.ivTimeIcon?.visibility = View.GONE // Ховаємо годинник
                 holder.tvScore?.apply {
                     setTextColor(Color.WHITE)
                     textSize = 18f
                     setTypeface(null, Typeface.BOLD)
                 }
             } else {
-                holder.ivTimeIcon?.visibility = View.VISIBLE
+                // === МАТЧ НЕ ПОЧАВСЯ (час сірий + ПОВЕРТАЄМО ГОДИННИК! 🕒) ===
+                holder.ivTimeIcon?.visibility = View.VISIBLE 
                 holder.tvScore?.apply {
                     setTextColor(Color.parseColor("#BCBCBC"))
                     textSize = 14f
@@ -76,28 +84,32 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                 }
             }
 
+            // Логотипи команд
             Glide.with(holder.itemView.context).load(item.logo1).into(holder.ivLogo1)
             Glide.with(holder.itemView.context).load(item.logo2).into(holder.ivLogo2)
 
-            holder.itemView.setOnClickListener {
-                val context = holder.itemView.context
-                val intent = Intent(context, MatchDetailActivity::class.java).apply {
-                    putExtra("id", item.id)
-                    putExtra("team1", item.team1)
-                    putExtra("team2", item.team2)
-                    putExtra("logo1", item.logo1)
-                    putExtra("logo2", item.logo2)
-                    putExtra("score", item.score)
-                    putExtra("league", item.league)
-                    putExtra("stage", item.stage)
-                    putExtra("date", item.date)
-                    putExtra("stadium", item.stadium)
-                    putExtra("referee", item.referee)
-                    putExtra("home_team_id", item.home_team_id)
-                    putExtra("away_team_id", item.away_team_id)
-                }
-                context.startActivity(intent)
-            }
+            // Перехід до деталей матчу
+holder.itemView.setOnClickListener {
+    val context = holder.itemView.context
+    val intent = Intent(context, MatchDetailActivity::class.java).apply {
+        putExtra("id", item.id)
+        putExtra("team1", item.team1)
+        putExtra("team2", item.team2)
+        putExtra("logo1", item.logo1)
+        putExtra("logo2", item.logo2)
+        putExtra("score", item.score)
+        putExtra("league", item.league)
+        putExtra("stage", item.stage)
+        putExtra("date", item.date)
+        putExtra("stadium", item.stadium)
+        putExtra("referee", item.referee)
+        
+        // ПРАВИЛЬНІ ПАРАМЕТРИ (використовуємо item замість match)
+        putExtra("home_team_id", item.home_team_id)
+        putExtra("away_team_id", item.away_team_id)
+    }
+    context.startActivity(intent)
+}
         }
     }
 
@@ -116,8 +128,6 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val tvScore: TextView? = view.findViewById(R.id.tvScore)
         val tvStadium: TextView? = view.findViewById(R.id.tvStadium)
         val tvReferee: TextView? = view.findViewById(R.id.tvReferee)
-        
-        // 🔥 ОСЬ ЦЕЙ РЯДОК ВИПРАВЛЯЄ ПОМИЛКУ В ДРУГОМУ ФАЙЛІ
         val ivTimeIcon: ImageView? = view.findViewById(R.id.ivTimeIcon)
     }
 }
