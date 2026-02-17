@@ -71,18 +71,33 @@
                 android:textStyle="bold"
                 android:layout_marginHorizontal="4dp" />
 
-            <TextView 
-                android:id="@+id/tvScore" 
-                android:layout_width="wrap_content" 
-                android:layout_height="wrap_content" 
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
                 android:background="@drawable/bg_match_score_box"
                 android:paddingHorizontal="12dp"
                 android:paddingVertical="4dp"
-                android:minWidth="65dp"
-                android:gravity="center"
-                android:textColor="#FFFFFF" 
-                android:textSize="16sp" 
-                android:textStyle="bold" />
+                android:minWidth="65dp">
+
+                <ImageView
+                    android:id="@+id/ivTimeIcon"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:src="@drawable/ic_time" 
+                    android:visibility="gone"
+                    app:tint="#BCBCBC"
+                    android:layout_marginBottom="2dp"/>
+
+                <TextView 
+                    android:id="@+id/tvScore" 
+                    android:layout_width="wrap_content" 
+                    android:layout_height="wrap_content" 
+                    android:textColor="#FFFFFF" 
+                    android:textSize="16sp" 
+                    android:textStyle="bold" />
+            </LinearLayout>
 
             <TextView android:id="@+id/tvTeam2" 
                 android:layout_width="0dp" 
