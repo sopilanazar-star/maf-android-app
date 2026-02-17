@@ -89,27 +89,27 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
             Glide.with(holder.itemView.context).load(item.logo2).into(holder.ivLogo2)
 
             // Перехід до деталей матчу
-holder.itemView.setOnClickListener {
-    val context = holder.itemView.context
-    val intent = Intent(context, MatchDetailActivity::class.java).apply {
-        putExtra("id", item.id)
-        putExtra("team1", item.team1)
-        putExtra("team2", item.team2)
-        putExtra("logo1", item.logo1)
-        putExtra("logo2", item.logo2)
-        putExtra("score", item.score)
-        putExtra("league", item.league)
-        putExtra("stage", item.stage)
-        putExtra("date", item.date)
-        putExtra("stadium", item.stadium)
-        putExtra("referee", item.referee)
-        
-        // ПРАВИЛЬНІ ПАРАМЕТРИ (використовуємо item замість match)
-        putExtra("home_team_id", item.home_team_id)
-        putExtra("away_team_id", item.away_team_id)
-    }
-    context.startActivity(intent)
-}
+            holder.itemView.setOnClickListener {
+                val context = holder.itemView.context
+                val intent = Intent(context, MatchDetailActivity::class.java).apply {
+                    putExtra("id", item.id)
+                    putExtra("team1", item.team1)
+                    putExtra("team2", item.team2)
+                    putExtra("logo1", item.logo1)
+                    putExtra("logo2", item.logo2)
+                    putExtra("score", item.score)
+                    putExtra("league", item.league)
+                    putExtra("stage", item.stage)
+                    putExtra("date", item.date)
+                    putExtra("stadium", item.stadium)
+                    putExtra("referee", item.referee)
+                    
+                    // ПРАВИЛЬНІ ПАРАМЕТРИ
+                    putExtra("home_team_id", item.home_team_id)
+                    putExtra("away_team_id", item.away_team_id)
+                }
+                context.startActivity(intent)
+            }
         }
     }
 
@@ -128,6 +128,8 @@ holder.itemView.setOnClickListener {
         val tvScore: TextView? = view.findViewById(R.id.tvScore)
         val tvStadium: TextView? = view.findViewById(R.id.tvStadium)
         val tvReferee: TextView? = view.findViewById(R.id.tvReferee)
-        val ivTimeIcon: ImageView? = view.findViewById(R.id.ivTimeIcon)
+        
+        // 🔥 ВИПРАВЛЕНО: Прибрали знак питання, щоб ідентифікатор був доступний прямо
+        val ivTimeIcon: ImageView = view.findViewById(R.id.ivTimeIcon)
     }
 }
