@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView 
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -15,13 +14,44 @@
         android:orientation="vertical"
         android:padding="12dp">
 
-        <TextView
-            android:id="@+id/tvStadium"
-            android:layout_width="wrap_content"
+        <RelativeLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:textColor="#808080"
-            android:textSize="10sp" />
+            android:layout_marginBottom="8dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_toStartOf="@+id/tvStadium"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvTournament"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="#00E676"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textAllCaps="true" />
+
+                <TextView
+                    android:id="@+id/tvMatchStage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="#BCBCBC"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvStadium"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:textColor="#808080"
+                android:textSize="10sp"
+                android:gravity="end" />
+        </RelativeLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -30,38 +60,50 @@
             android:orientation="horizontal">
 
             <ImageView android:id="@+id/ivLogo1" android:layout_width="32dp" android:layout_height="32dp" />
-            <TextView android:id="@+id/tvTeam1" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:textColor="#FFFFFF" android:textSize="13sp" android:textStyle="bold" />
+            
+            <TextView android:id="@+id/tvTeam1" 
+                android:layout_width="0dp" 
+                android:layout_height="wrap_content" 
+                android:layout_weight="1" 
+                android:gravity="center" 
+                android:textColor="#FFFFFF" 
+                android:textSize="13sp" 
+                android:textStyle="bold"
+                android:layout_marginHorizontal="4dp" />
 
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
+            <TextView 
+                android:id="@+id/tvScore" 
+                android:layout_width="wrap_content" 
+                android:layout_height="wrap_content" 
+                android:background="@drawable/bg_match_score_box"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="4dp"
+                android:minWidth="65dp"
                 android:gravity="center"
-                android:minWidth="60dp">
+                android:textColor="#FFFFFF" 
+                android:textSize="16sp" 
+                android:textStyle="bold" />
 
-                <ImageView
-                    android:id="@+id/ivTimeIcon"
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:src="@drawable/ic_time"
-                    android:visibility="gone"
-                    android:layout_marginBottom="2dp"
-                    app:tint="#BCBCBC" />
-
-                <TextView 
-                    android:id="@+id/tvScore" 
-                    android:layout_width="wrap_content" 
-                    android:layout_height="wrap_content" 
-                    android:textColor="#FFFFFF" 
-                    android:textSize="16sp" 
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <TextView android:id="@+id/tvTeam2" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:textColor="#FFFFFF" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tvTeam2" 
+                android:layout_width="0dp" 
+                android:layout_height="wrap_content" 
+                android:layout_weight="1" 
+                android:gravity="center" 
+                android:textColor="#FFFFFF" 
+                android:textSize="13sp" 
+                android:textStyle="bold"
+                android:layout_marginHorizontal="4dp" />
+            
             <ImageView android:id="@+id/ivLogo2" android:layout_width="32dp" android:layout_height="32dp" />
         </LinearLayout>
 
-        <TextView android:id="@+id/tvReferee" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:textColor="#CCCCCC" android:textSize="10sp" android:textStyle="italic" />
+        <TextView 
+            android:id="@+id/tvReferee" 
+            android:layout_width="wrap_content" 
+            android:layout_height="wrap_content" 
+            android:layout_marginTop="8dp" 
+            android:textColor="#CCCCCC" 
+            android:textSize="10sp" 
+            android:textStyle="italic" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>
-                
