@@ -26,7 +26,7 @@ class TeamMatchesAdapter(
         val tvStadium: TextView = view.findViewById(R.id.tvStadium)
         val tvReferee: TextView = view.findViewById(R.id.tvReferee)
         
-        // 🔥 ОСЬ ВОНА! Цього рядка не вистачало
+        // 🔥 ОСЬ ЦЕЙ РЯДОК ВИПРАВЛЯЄ ПОМИЛКУ В ЦЬОМУ ФАЙЛІ
         val ivTimeIcon: ImageView = view.findViewById(R.id.ivTimeIcon)
     }
 
