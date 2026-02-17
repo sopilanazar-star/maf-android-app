@@ -1,221 +1,105 @@
 package ua.lviv.maf
 
-
-
 import android.graphics.Color
-
 import android.view.LayoutInflater
-
 import android.view.View
-
 import android.view.ViewGroup
-
 import android.widget.ImageView
-
 import android.widget.TextView
-
 import androidx.recyclerview.widget.RecyclerView
-
 import com.bumptech.glide.Glide
-
 import org.json.JSONObject
 
-
-
 class TeamMatchesAdapter(
-
     private val matches: List<JSONObject>,
-
     private val onMatchClick: (JSONObject) -> Unit
-
 ) : RecyclerView.Adapter<TeamMatchesAdapter.MatchViewHolder>() {
 
-
-
     class MatchViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-
-        val tvTournament: TextView = view.findViewById(R.id.tvTournament) // Нове
-
+        val tvTournament: TextView = view.findViewById(R.id.tvTournament)
         val tvStage: TextView = view.findViewById(R.id.tvMatchStage)
-
-        val tvDate: TextView = view.findViewById(R.id.tvMatchDate)
-
-        val tvHomeName: TextView = view.findViewById(R.id.tvHomeName)
-
-        val tvAwayName: TextView = view.findViewById(R.id.tvAwayName)
-
+        
+        // Оновлені ID згідно з новим XML
+        val tvTeam1: TextView = view.findViewById(R.id.tvTeam1)
+        val tvTeam2: TextView = view.findViewById(R.id.tvTeam2)
+        val ivLogo1: ImageView = view.findViewById(R.id.ivLogo1)
+        val ivLogo2: ImageView = view.findViewById(R.id.ivLogo2)
+        
         val tvScore: TextView = view.findViewById(R.id.tvScore)
-
-        val ivHomeLogo: ImageView = view.findViewById(R.id.ivHomeLogo)
-
-        val ivAwayLogo: ImageView = view.findViewById(R.id.ivAwayLogo)
-
         val tvStadium: TextView = view.findViewById(R.id.tvStadium)
-
         val tvReferee: TextView = view.findViewById(R.id.tvReferee)
-
+        val ivTimeIcon: ImageView = view.findViewById(R.id.ivTimeIcon)
     }
-
-
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MatchViewHolder {
-
         val view = LayoutInflater.from(parent.context)
-
             .inflate(R.layout.item_team_match, parent, false)
-
         return MatchViewHolder(view)
-
     }
-
-
 
     override fun onBindViewHolder(holder: MatchViewHolder, position: Int) {
-
         val match = matches[position]
 
-
-
-        // 🕵️‍♂️ ГОНЧІ ПСИ: Шукаємо значення по всіх можливих ключах
-
         fun getValue(vararg keys: String): String {
-
             for (key in keys) {
-
                 if (match.has(key) && !match.isNull(key)) {
-
                     val v = match.optString(key)
-
                     if (v.isNotEmpty() && v != "false" && v != "null") return v
-
                 }
-
             }
-
             return ""
-
         }
 
-
-
-        // --- ВИДОБУВАЄМО ДАНІ ---
-
-        // Турнір та Етап
-
-        val tournament = getValue("league_name", "league", "competition_name")
-
-        val stage = getValue("stage_name", "stage", "round")
-
-        
-
-        val date = getValue("date")
-
+        // Дані
+        val tournament = getValue("league_name", "league")
+        val stage = getValue("stage_name", "stage")
         val time = getValue("time")
-
-        
-
-        // Назви команд
-
-        val team1 = getValue("home_team_name", "home_team", "team1_name", "team1")
-
-        val team2 = getValue("away_team_name", "away_team", "team2_name", "team2")
-
-        
-
-        // Логотипи (Шукаємо скрізь!)
-
-        val logo1 = getValue("home_team_logo", "home_logo", "team1_logo", "team1_image")
-
-        val logo2 = getValue("away_team_logo", "away_logo", "team2_logo", "team2_image")
-
-        
-
-        val score = getValue("score", "match_score", "full_time_score")
-
-        val stadium = getValue("stadium_name", "stadium", "place")
-
+        val team1 = getValue("team1_name", "home_team_name", "home_team")
+        val team2 = getValue("team2_name", "away_team_name", "away_team")
+        val logo1 = getValue("team1_logo", "home_team_logo")
+        val logo2 = getValue("team2_logo", "away_team_logo")
+        val score = getValue("score", "match_score")
+        val stadium = getValue("stadium_name", "stadium")
         val referee = getValue("referee_name", "referee")
 
+        // Заповнення UI
+        holder.tvTournament.text = if (tournament.isNotEmpty()) tournament.uppercase() else "ТУРНІР"
+        holder.tvStage.text = stage
+        holder.tvTeam1.text = team1
+        holder.tvTeam2.text = team2
 
-
-        // --- ЗАПОВНЮЄМО ІНТЕРФЕЙС ---
-
-        
-
-        // Турнір (Зелений)
-
-        holder.tvTournament.text = if (tournament.isNotEmpty()) tournament else "ТУРНІР"
-
-        
-
-        // Етап (Сірий)
-
-        holder.tvStage.text = if (stage.isNotEmpty()) stage else ""
-
-        holder.tvStage.visibility = if (stage.isNotEmpty()) View.VISIBLE else View.GONE
-
-        
-
-        holder.tvDate.text = "$date $time"
-
-        holder.tvHomeName.text = team1
-
-        holder.tvAwayName.text = team2
-
-
-
-        // Рахунок / Час
-
+        // Рахунок та іконка часу
         if (score.contains(":") || score.contains("-")) {
-
             holder.tvScore.text = score
-
             holder.tvScore.setTextColor(Color.WHITE)
-
-            holder.tvScore.textSize = 18f
-
+            holder.ivTimeIcon.visibility = View.GONE
         } else {
-
             holder.tvScore.text = if (time.isNotEmpty()) time else "VS"
-
             holder.tvScore.setTextColor(Color.parseColor("#00E676"))
-
-            holder.tvScore.textSize = 16f
-
+            holder.ivTimeIcon.visibility = View.VISIBLE
         }
 
-
-
-        // Стадіон та Арбітр
-
         holder.tvStadium.text = if (stadium.isNotEmpty()) "🏟 $stadium" else ""
+        holder.tvReferee.text = if (referee.isNotEmpty()) "Арбітр: $referee" else ""
 
-        holder.tvReferee.text = if (referee.isNotEmpty()) "👮‍♂️ $referee" else ""
+        // Логотипи
+        fun loadLogo(url: String, imageView: ImageView) {
+            if (url.isNotEmpty()) {
+                Glide.with(holder.itemView.context)
+                    .load(url.replace("http://", "https://"))
+                    .placeholder(R.drawable.ic_player_placeholder)
+                    .error(R.drawable.ic_player_placeholder)
+                    .into(imageView)
+            } else {
+                imageView.setImageResource(R.drawable.ic_player_placeholder)
+            }
+        }
 
-
-
-        // Логотипи (з перевіркою)
-
-        if (logo1.isNotEmpty()) Glide.with(holder.itemView.context).load(logo1).into(holder.ivHomeLogo)
-
-        else holder.ivHomeLogo.setImageResource(R.drawable.ic_player_placeholder)
-
-
-
-        if (logo2.isNotEmpty()) Glide.with(holder.itemView.context).load(logo2).into(holder.ivAwayLogo)
-
-        else holder.ivAwayLogo.setImageResource(R.drawable.ic_player_placeholder)
-
-
-
-        // Клік - передаємо весь JSON, щоб нічого не загубити
+        loadLogo(logo1, holder.ivLogo1)
+        loadLogo(logo2, holder.ivLogo2)
 
         holder.itemView.setOnClickListener { onMatchClick(match) }
-
     }
 
-
-
     override fun getItemCount() = matches.size
-
 }
