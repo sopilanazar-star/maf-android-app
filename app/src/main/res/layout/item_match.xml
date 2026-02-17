@@ -17,7 +17,7 @@
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="12dp">
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -56,12 +56,17 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center"
+            android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <ImageView android:id="@+id/ivLogo1" android:layout_width="32dp" android:layout_height="32dp" />
+            <ImageView 
+                android:id="@+id/ivLogo1" 
+                android:layout_width="36dp" 
+                android:layout_height="36dp"
+                android:src="@drawable/ic_player_placeholder" />
             
-            <TextView android:id="@+id/tvTeam1" 
+            <TextView 
+                android:id="@+id/tvTeam1" 
                 android:layout_width="0dp" 
                 android:layout_height="wrap_content" 
                 android:layout_weight="1" 
@@ -69,7 +74,9 @@
                 android:textColor="#FFFFFF" 
                 android:textSize="13sp" 
                 android:textStyle="bold"
-                android:layout_marginHorizontal="4dp" />
+                android:layout_marginHorizontal="4dp"
+                android:maxLines="2"
+                android:ellipsize="end"/>
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -77,9 +84,9 @@
                 android:orientation="vertical"
                 android:gravity="center"
                 android:background="@drawable/bg_match_score_box"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="4dp"
-                android:minWidth="65dp">
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="6dp"
+                android:minWidth="60dp">
 
                 <ImageView
                     android:id="@+id/ivTimeIcon"
@@ -96,10 +103,12 @@
                     android:layout_height="wrap_content" 
                     android:textColor="#FFFFFF" 
                     android:textSize="16sp" 
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:text="-:-" />
             </LinearLayout>
 
-            <TextView android:id="@+id/tvTeam2" 
+            <TextView 
+                android:id="@+id/tvTeam2" 
                 android:layout_width="0dp" 
                 android:layout_height="wrap_content" 
                 android:layout_weight="1" 
@@ -107,9 +116,15 @@
                 android:textColor="#FFFFFF" 
                 android:textSize="13sp" 
                 android:textStyle="bold"
-                android:layout_marginHorizontal="4dp" />
+                android:layout_marginHorizontal="4dp"
+                android:maxLines="2"
+                android:ellipsize="end"/>
             
-            <ImageView android:id="@+id/ivLogo2" android:layout_width="32dp" android:layout_height="32dp" />
+            <ImageView 
+                android:id="@+id/ivLogo2" 
+                android:layout_width="36dp" 
+                android:layout_height="36dp"
+                android:src="@drawable/ic_player_placeholder" />
         </LinearLayout>
 
         <TextView 
@@ -120,5 +135,6 @@
             android:textColor="#CCCCCC" 
             android:textSize="10sp" 
             android:textStyle="italic" />
+            
     </LinearLayout>
 </androidx.cardview.widget.CardView>
