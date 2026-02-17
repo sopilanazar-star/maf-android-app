@@ -21,7 +21,8 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         return if (viewType == 0) {
             LeagueHeaderViewHolder(inflater.inflate(R.layout.item_league_header, parent, false))
         } else {
-            MatchViewHolder(inflater.inflate(R.layout.item_match, parent, false))
+            // Використовуємо новий, унікальний клас
+            TournamentMatchViewHolder(inflater.inflate(R.layout.item_match, parent, false))
         }
     }
 
@@ -30,7 +31,6 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
 
         if (holder is LeagueHeaderViewHolder) {
             holder.tvLeagueName.text = item.league.uppercase()
-            
             if (item.stage.isNotEmpty()) {
                 holder.tvStageName.visibility = View.VISIBLE
                 holder.tvStageName.text = item.stage
@@ -40,7 +40,7 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                 holder.tvStageName.visibility = View.GONE
             }
 
-        } else if (holder is MatchViewHolder) {
+        } else if (holder is TournamentMatchViewHolder) { // Перевірка на новий клас
             holder.tvTeam1.text = item.team1
             holder.tvTeam2.text = item.team2
             
@@ -61,7 +61,7 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
             val scoreValue = item.score ?: ""
             holder.tvScore?.text = scoreValue
 
-            // 🔥 ВИПРАВЛЕННЯ ТУТ: звертаємось через holder.ivTimeIcon
+            // Тут більше не буде помилки, бо клас точно має цю змінну
             if (scoreValue.contains(" : ")) {
                 holder.ivTimeIcon.visibility = View.GONE 
                 holder.tvScore?.apply {
@@ -110,7 +110,8 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val tvStageName: TextView = view.findViewById(R.id.tvStageName)
     }
 
-    class MatchViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+    // 🔥 ПЕРЕЙМЕНОВАНИЙ КЛАС (Унікальна назва)
+    class TournamentMatchViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val ivLogo1: ImageView = view.findViewById(R.id.ivLogo1)
         val ivLogo2: ImageView = view.findViewById(R.id.ivLogo2)
         val tvTeam1: TextView = view.findViewById(R.id.tvTeam1)
@@ -119,7 +120,7 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val tvStadium: TextView? = view.findViewById(R.id.tvStadium)
         val tvReferee: TextView? = view.findViewById(R.id.tvReferee)
         
-        // 🔥 КЛЮЧОВИЙ РЯДОК: Оголошуємо іконку БЕЗ знаку питання, щоб вона була видима
+        // Тут змінна точно є
         val ivTimeIcon: ImageView = view.findViewById(R.id.ivTimeIcon)
     }
 }
