@@ -26,7 +26,7 @@ class TeamMatchesAdapter(
         val tvStadium: TextView = view.findViewById(R.id.tvStadium)
         val tvReferee: TextView = view.findViewById(R.id.tvReferee)
         
-        // 🔥 ДОДАНО: Іконка часу (щоб не було помилки Unresolved reference)
+        // 🔥 ОСЬ ВОНА! Цього рядка не вистачало
         val ivTimeIcon: ImageView = view.findViewById(R.id.ivTimeIcon)
     }
 
@@ -39,7 +39,6 @@ class TeamMatchesAdapter(
     override fun onBindViewHolder(holder: MatchViewHolder, position: Int) {
         val match = matches[position]
 
-        // Універсальна функція пошуку даних в JSON
         fun getValue(vararg keys: String): String {
             for (key in keys) {
                 if (match.has(key) && !match.isNull(key)) {
@@ -50,14 +49,12 @@ class TeamMatchesAdapter(
             return ""
         }
 
-        // --- ВИТЯГУЄМО ДАНІ ---
         val tournament = getValue("league_name", "league", "competition_name")
         val stage = getValue("stage_name", "stage", "round")
-        val time = getValue("time", "start_time") // Час матчу
+        val time = getValue("time", "start_time")
         
         val team1 = getValue("home_team_name", "team1_name", "home_team")
         val team2 = getValue("away_team_name", "team2_name", "away_team")
-        
         val logo1 = getValue("home_team_logo", "team1_logo", "home_logo")
         val logo2 = getValue("away_team_logo", "team2_logo", "away_logo")
         
@@ -65,34 +62,25 @@ class TeamMatchesAdapter(
         val stadium = getValue("stadium_name", "stadium", "place")
         val referee = getValue("referee_name", "referee")
 
-        // --- ЗАПОВНЮЄМО UI ---
-
-        // 1. Турнір та Етап
         holder.tvTournament.text = if (tournament.isNotEmpty()) tournament.uppercase() else "ТУРНІР"
         holder.tvStage.text = if (stage.isNotEmpty()) stage else ""
 
-        // 2. Назви команд
         holder.tvTeam1.text = team1
         holder.tvTeam2.text = team2
 
-        // 3. Логіка: Рахунок чи Час?
         if (score.contains(":") || score.contains("-")) {
-            // Матч відбувся
             holder.tvScore.text = score
             holder.tvScore.setTextColor(Color.WHITE)
-            holder.ivTimeIcon.visibility = View.GONE // Ховаємо годинник
+            holder.ivTimeIcon.visibility = View.GONE
         } else {
-            // Матч заплановано
             holder.tvScore.text = if (time.isNotEmpty()) time else "VS"
-            holder.tvScore.setTextColor(Color.parseColor("#00E676")) // Зелений час
-            holder.ivTimeIcon.visibility = View.VISIBLE // Показуємо годинник
+            holder.tvScore.setTextColor(Color.parseColor("#00E676"))
+            holder.ivTimeIcon.visibility = View.VISIBLE
         }
 
-        // 4. Стадіон та Арбітр
         holder.tvStadium.text = if (stadium.isNotEmpty()) "🏟 $stadium" else ""
         holder.tvReferee.text = if (referee.isNotEmpty()) "Арбітр: $referee" else ""
 
-        // 5. Логотипи (з безпечним завантаженням HTTPS)
         fun loadLogo(url: String, imageView: ImageView) {
             if (url.isNotEmpty()) {
                 Glide.with(holder.itemView.context)
@@ -108,7 +96,6 @@ class TeamMatchesAdapter(
         loadLogo(logo1, holder.ivLogo1)
         loadLogo(logo2, holder.ivLogo2)
 
-        // 6. Клік по матчу
         holder.itemView.setOnClickListener { onMatchClick(match) }
     }
 
