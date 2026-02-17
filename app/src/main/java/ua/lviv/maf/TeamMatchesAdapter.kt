@@ -1,103 +1,161 @@
-package ua.lviv.maf
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="6dp"
+    app:cardBackgroundColor="#252830"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp">
 
-import android.graphics.Color
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.TextView
-import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import org.json.JSONObject
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="12dp">
 
-class TeamMatchesAdapter(
-    private val matches: List<JSONObject>,
-    private val onMatchClick: (JSONObject) -> Unit
-) : RecyclerView.Adapter<TeamMatchesAdapter.MatchViewHolder>() {
+        <TextView
+            android:id="@+id/tvTournament"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="PREMIER LEAGUE"
+            android:textColor="#00E676"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textAllCaps="true"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    class MatchViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val tvTournament: TextView = view.findViewById(R.id.tvTournament)
-        val tvStage: TextView = view.findViewById(R.id.tvMatchStage)
-        val tvTeam1: TextView = view.findViewById(R.id.tvTeam1)
-        val tvTeam2: TextView = view.findViewById(R.id.tvTeam2)
-        val tvScore: TextView = view.findViewById(R.id.tvScore)
-        val ivLogo1: ImageView = view.findViewById(R.id.ivLogo1)
-        val ivLogo2: ImageView = view.findViewById(R.id.ivLogo2)
-        val tvStadium: TextView = view.findViewById(R.id.tvStadium)
-        val tvReferee: TextView = view.findViewById(R.id.tvReferee)
-        
-        // 🔥 ОСЬ ЦЕЙ РЯДОК ВИПРАВЛЯЄ ПОМИЛКУ В ЦЬОМУ ФАЙЛІ
-        val ivTimeIcon: ImageView = view.findViewById(R.id.ivTimeIcon)
-    }
+        <TextView
+            android:id="@+id/tvMatchStage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Round 5"
+            android:textColor="#BCBCBC"
+            android:textSize="10sp"
+            android:layout_marginTop="2dp"
+            app:layout_constraintStart_toStartOf="@+id/tvTournament"
+            app:layout_constraintTop_toBottomOf="@+id/tvTournament" />
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MatchViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_team_match, parent, false)
-        return MatchViewHolder(view)
-    }
+        <TextView
+            android:id="@+id/tvMatchDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="20.02 14:00"
+            android:textColor="#BCBCBC"
+            android:textSize="11sp"
+            android:layout_marginEnd="12dp"
+            app:layout_constraintBaseline_toBaselineOf="@+id/tvTournament"
+            app:layout_constraintEnd_toEndOf="parent"/>
 
-    override fun onBindViewHolder(holder: MatchViewHolder, position: Int) {
-        val match = matches[position]
+        <TextView
+            android:id="@+id/tvHomeName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Home Team"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:gravity="center"
+            android:maxLines="2"
+            android:layout_marginTop="16dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/ivHomeLogo"
+            app:layout_constraintTop_toBottomOf="@+id/tvMatchStage"
+            app:layout_constraintWidth_percent="0.28"/>
 
-        fun getValue(vararg keys: String): String {
-            for (key in keys) {
-                if (match.has(key) && !match.isNull(key)) {
-                    val v = match.optString(key)
-                    if (v.isNotEmpty() && v != "false" && v != "null") return v
-                }
-            }
-            return ""
-        }
+        <ImageView
+            android:id="@+id/ivHomeLogo"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_player_placeholder"
+            android:layout_marginEnd="8dp"
+            app:layout_constraintEnd_toStartOf="@+id/tvScore"
+            app:layout_constraintStart_toEndOf="@+id/tvHomeName"
+            app:layout_constraintTop_toTopOf="@+id/tvHomeName"
+            app:layout_constraintBottom_toBottomOf="@+id/tvHomeName"/>
 
-        val tournament = getValue("league_name", "league", "competition_name")
-        val stage = getValue("stage_name", "stage", "round")
-        val time = getValue("time", "start_time")
-        
-        val team1 = getValue("home_team_name", "team1_name", "home_team")
-        val team2 = getValue("away_team_name", "team2_name", "away_team")
-        val logo1 = getValue("home_team_logo", "team1_logo", "home_logo")
-        val logo2 = getValue("away_team_logo", "team2_logo", "away_logo")
-        
-        val score = getValue("score", "match_score", "full_time_score")
-        val stadium = getValue("stadium_name", "stadium", "place")
-        val referee = getValue("referee_name", "referee")
+        <TextView
+            android:id="@+id/tvScore"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="- : -"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:background="@drawable/bg_match_score_box"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="4dp"
+            android:minWidth="70dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/ivHomeLogo"
+            app:layout_constraintBottom_toBottomOf="@+id/ivHomeLogo"/>
 
-        holder.tvTournament.text = if (tournament.isNotEmpty()) tournament.uppercase() else "ТУРНІР"
-        holder.tvStage.text = if (stage.isNotEmpty()) stage else ""
+        <ImageView
+            android:id="@+id/ivAwayLogo"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_player_placeholder"
+            android:layout_marginStart="8dp"
+            app:layout_constraintStart_toEndOf="@+id/tvScore"
+            app:layout_constraintEnd_toStartOf="@+id/tvAwayName"
+            app:layout_constraintTop_toTopOf="@+id/ivHomeLogo"
+            app:layout_constraintBottom_toBottomOf="@+id/ivHomeLogo"/>
 
-        holder.tvTeam1.text = team1
-        holder.tvTeam2.text = team2
+        <TextView
+            android:id="@+id/tvAwayName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Away Team"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:gravity="center"
+            android:maxLines="2"
+            app:layout_constraintStart_toEndOf="@+id/ivAwayLogo"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/tvHomeName"
+            app:layout_constraintBottom_toBottomOf="@+id/tvHomeName"
+            app:layout_constraintWidth_percent="0.28"/>
 
-        if (score.contains(":") || score.contains("-")) {
-            holder.tvScore.text = score
-            holder.tvScore.setTextColor(Color.WHITE)
-            holder.ivTimeIcon.visibility = View.GONE
-        } else {
-            holder.tvScore.text = if (time.isNotEmpty()) time else "VS"
-            holder.tvScore.setTextColor(Color.parseColor("#00E676"))
-            holder.ivTimeIcon.visibility = View.VISIBLE
-        }
+        <View
+            android:id="@+id/divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#33FFFFFF"
+            android:layout_marginTop="16dp"
+            android:layout_marginHorizontal="12dp"
+            app:layout_constraintTop_toBottomOf="@+id/tvScore"/>
 
-        holder.tvStadium.text = if (stadium.isNotEmpty()) "🏟 $stadium" else ""
-        holder.tvReferee.text = if (referee.isNotEmpty()) "Арбітр: $referee" else ""
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingTop="8dp"
+            app:layout_constraintTop_toBottomOf="@+id/divider">
 
-        fun loadLogo(url: String, imageView: ImageView) {
-            if (url.isNotEmpty()) {
-                Glide.with(holder.itemView.context)
-                    .load(url.replace("http://", "https://"))
-                    .placeholder(R.drawable.ic_player_placeholder)
-                    .error(R.drawable.ic_player_placeholder)
-                    .into(imageView)
-            } else {
-                imageView.setImageResource(R.drawable.ic_player_placeholder)
-            }
-        }
+            <TextView
+                android:id="@+id/tvStadium"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="#9E9E9E"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:layout_marginEnd="16dp"/>
 
-        loadLogo(logo1, holder.ivLogo1)
-        loadLogo(logo2, holder.ivLogo2)
+            <TextView
+                android:id="@+id/tvReferee"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="#9E9E9E"
+                android:textSize="11sp"
+                android:gravity="center"/>
+        </LinearLayout>
 
-        holder.itemView.setOnClickListener { onMatchClick(match) }
-    }
-
-    override fun getItemCount() = matches.size
-}
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.cardview.widget.CardView>
