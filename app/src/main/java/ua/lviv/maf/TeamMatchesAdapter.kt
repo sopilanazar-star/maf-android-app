@@ -16,14 +16,13 @@ class TeamMatchesAdapter(
 ) : RecyclerView.Adapter<TeamMatchesAdapter.MatchViewHolder>() {
 
     class MatchViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val tvTournament: TextView = view.findViewById(R.id.tvTournament) // Нове
+        val tvTournament: TextView = view.findViewById(R.id.tvTournament)
         val tvStage: TextView = view.findViewById(R.id.tvMatchStage)
-        val tvDate: TextView = view.findViewById(R.id.tvMatchDate)
-        val tvHomeName: TextView = view.findViewById(R.id.tvHomeName)
-        val tvAwayName: TextView = view.findViewById(R.id.tvAwayName)
+        val tvTeam1: TextView = view.findViewById(R.id.tvTeam1)
+        val tvTeam2: TextView = view.findViewById(R.id.tvTeam2)
         val tvScore: TextView = view.findViewById(R.id.tvScore)
-        val ivHomeLogo: ImageView = view.findViewById(R.id.ivHomeLogo)
-        val ivAwayLogo: ImageView = view.findViewById(R.id.ivAwayLogo)
+        val ivLogo1: ImageView = view.findViewById(R.id.ivLogo1)
+        val ivLogo2: ImageView = view.findViewById(R.id.ivLogo2)
         val tvStadium: TextView = view.findViewById(R.id.tvStadium)
         val tvReferee: TextView = view.findViewById(R.id.tvReferee)
     }
@@ -37,7 +36,6 @@ class TeamMatchesAdapter(
     override fun onBindViewHolder(holder: MatchViewHolder, position: Int) {
         val match = matches[position]
 
-        // 🕵️‍♂️ ГОНЧІ ПСИ: Шукаємо значення по всіх можливих ключах
         fun getValue(vararg keys: String): String {
             for (key in keys) {
                 if (match.has(key) && !match.isNull(key)) {
@@ -48,62 +46,54 @@ class TeamMatchesAdapter(
             return ""
         }
 
-        // --- ВИДОБУВАЄМО ДАНІ ---
-        // Турнір та Етап
-        val tournament = getValue("league_name", "league", "competition_name")
-        val stage = getValue("stage_name", "stage", "round")
-        
-        val date = getValue("date")
+        // Дані
+        val tournament = getValue("league_name", "league")
+        val stage = getValue("stage_name", "stage")
         val time = getValue("time")
-        
-        // Назви команд
-        val team1 = getValue("home_team_name", "home_team", "team1_name", "team1")
-        val team2 = getValue("away_team_name", "away_team", "team2_name", "team2")
-        
-        // Логотипи (Шукаємо скрізь!)
-        val logo1 = getValue("home_team_logo", "home_logo", "team1_logo", "team1_image")
-        val logo2 = getValue("away_team_logo", "away_logo", "team2_logo", "team2_image")
-        
-        val score = getValue("score", "match_score", "full_time_score")
-        val stadium = getValue("stadium_name", "stadium", "place")
+        val team1 = getValue("home_team_name", "team1_name", "home_team")
+        val team2 = getValue("away_team_name", "team2_name", "away_team")
+        val logo1 = getValue("home_team_logo", "team1_logo", "home_logo")
+        val logo2 = getValue("away_team_logo", "team2_logo", "away_logo")
+        val score = getValue("score", "match_score")
+        val stadium = getValue("stadium_name", "stadium")
         val referee = getValue("referee_name", "referee")
 
-        // --- ЗАПОВНЮЄМО ІНТЕРФЕЙС ---
-        
-        // Турнір (Зелений)
-        holder.tvTournament.text = if (tournament.isNotEmpty()) tournament else "ТУРНІР"
-        
-        // Етап (Сірий)
-        holder.tvStage.text = if (stage.isNotEmpty()) stage else ""
-        holder.tvStage.visibility = if (stage.isNotEmpty()) View.VISIBLE else View.GONE
-        
-        holder.tvDate.text = "$date $time"
-        holder.tvHomeName.text = team1
-        holder.tvAwayName.text = team2
+        // 1. Турнір та етап
+        holder.tvTournament.text = if (tournament.isNotEmpty()) tournament.uppercase() else "ТУРНІР"
+        holder.tvStage.text = stage
 
-        // Рахунок / Час
+        // 2. Команди
+        holder.tvTeam1.text = team1
+        holder.tvTeam2.text = team2
+
+        // 3. Рахунок у рамочці (результат або час)
         if (score.contains(":") || score.contains("-")) {
             holder.tvScore.text = score
             holder.tvScore.setTextColor(Color.WHITE)
-            holder.tvScore.textSize = 18f
         } else {
             holder.tvScore.text = if (time.isNotEmpty()) time else "VS"
             holder.tvScore.setTextColor(Color.parseColor("#00E676"))
-            holder.tvScore.textSize = 16f
         }
 
-        // Стадіон та Арбітр
+        // 4. Стадіон та арбітр
         holder.tvStadium.text = if (stadium.isNotEmpty()) "🏟 $stadium" else ""
-        holder.tvReferee.text = if (referee.isNotEmpty()) "👮‍♂️ $referee" else ""
+        holder.tvReferee.text = if (referee.isNotEmpty()) "Арбітр: $referee" else ""
 
-        // Логотипи (з перевіркою)
-        if (logo1.isNotEmpty()) Glide.with(holder.itemView.context).load(logo1).into(holder.ivHomeLogo)
-        else holder.ivHomeLogo.setImageResource(R.drawable.ic_player_placeholder)
+        // 5. Логотипи (з https та заглушкою)
+        fun loadLogo(url: String, imageView: ImageView) {
+            if (url.isNotEmpty()) {
+                Glide.with(holder.itemView.context)
+                    .load(url.replace("http://", "https://"))
+                    .placeholder(R.drawable.ic_player_placeholder)
+                    .into(imageView)
+            } else {
+                imageView.setImageResource(R.drawable.ic_player_placeholder)
+            }
+        }
 
-        if (logo2.isNotEmpty()) Glide.with(holder.itemView.context).load(logo2).into(holder.ivAwayLogo)
-        else holder.ivAwayLogo.setImageResource(R.drawable.ic_player_placeholder)
+        loadLogo(logo1, holder.ivLogo1)
+        loadLogo(logo2, holder.ivLogo2)
 
-        // Клік - передаємо весь JSON, щоб нічого не загубити
         holder.itemView.setOnClickListener { onMatchClick(match) }
     }
 
