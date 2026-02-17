@@ -63,8 +63,21 @@ class TeamMatchesAdapter(
         val team1Name = getValue("home_team_name", "team1_name", "home_team", "team1")
         val team2Name = getValue("away_team_name", "team2_name", "away_team", "team2")
         
-        val logo1Url = getValue("home_team_logo", "team1_logo", "home_logo", "team1_image")
-        val logo2Url = getValue("away_team_logo", "team2_logo", "away_logo", "team2_image")
+        val logo1Url = getValue(
+    "logo1",                 // ← ДОДАТИ
+    "home_team_logo",
+    "team1_logo",
+    "home_logo",
+    "team1_image"
+)
+
+val logo2Url = getValue(
+    "logo2",                 // ← ДОДАТИ
+    "away_team_logo",
+    "team2_logo",
+    "away_logo",
+    "team2_image"
+)
         
         val score = getValue("score", "match_score", "full_time_score")
         val stadium = getValue("stadium_name", "stadium", "place")
