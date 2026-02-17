@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto" 
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -15,7 +15,7 @@
             android:id="@+id/btnBack"
             android:layout_width="48dp"
             android:layout_height="match_parent"
-            android:src="@drawable/ic_arrow_back" 
+            android:src="@drawable/ic_arrow_back"
             android:background="?attr/selectableItemBackground"
             app:tint="@android:color/white" />
 
@@ -35,8 +35,9 @@
         android:layout_height="wrap_content"
         android:background="#252830"
         app:tabTextColor="#BCBCBC"
-        app:tabSelectedTextColor="#00E676"
-        app:tabIndicatorColor="#00E676"/>
+        app:tabSelectedTextColor="#FFFFFF"
+        app:tabIndicatorColor="#E30613"
+        app:tabIndicatorHeight="3dp"/>
 
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/viewPager"
