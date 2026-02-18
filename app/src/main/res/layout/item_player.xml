@@ -33,7 +33,6 @@
         android:layout_marginEnd="12dp"
         android:scaleType="centerCrop"
         android:src="@drawable/ic_player_placeholder"
-        app:shapeAppearanceOverlay="@style/CircleImage"
         app:strokeColor="#2E3440"
         app:strokeWidth="1dp" />
 
