@@ -1,5 +1,6 @@
 package ua.lviv.maf
 
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -18,7 +19,7 @@ import java.security.MessageDigest
 
 class PlayersAdapter(
     private val items: List<Any>,
-    private val onPlayerClick: (Player) -> Unit
+    private val onPlayerClick: (Player) -> Unit // Ми залишаємо це, щоб старий код виклику не ламався
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
@@ -46,7 +47,8 @@ class PlayersAdapter(
         if (holder is HeaderViewHolder) {
             holder.bind(items[position] as String)
         } else if (holder is PlayerViewHolder) {
-            holder.bind(items[position] as Player, onPlayerClick)
+            // Тут ми передаємо null замість onPlayerClick, бо обробимо клік всередині
+            holder.bind(items[position] as Player)
         }
     }
 
@@ -65,15 +67,16 @@ class PlayersAdapter(
         private val ivPhoto: ImageView = view.findViewById(R.id.ivPlayerPhoto)
         private val tvPosition: TextView? = view.findViewById(R.id.tvPlayerPosition)
 
-        fun bind(player: Player, onClick: (Player) -> Unit) {
+        fun bind(player: Player) {
             tvName.text = player.name
             tvNumber.text = if (player.number.isNotEmpty()) "#${player.number}" else ""
             tvPosition?.visibility = View.GONE
 
+            // Завантаження фото
             if (player.photo.isNotEmpty()) {
                 Glide.with(itemView.context)
                     .load(player.photo.replace("http://", "https://"))
-                    .transform(TopCropCircleTransformation()) // 🔥 Flashscore crop
+                    .transform(TopCropCircleTransformation()) 
                     .placeholder(android.R.drawable.ic_menu_gallery)
                     .error(android.R.drawable.ic_menu_gallery)
                     .into(ivPhoto)
@@ -81,14 +84,30 @@ class PlayersAdapter(
                 ivPhoto.setImageResource(android.R.drawable.ic_menu_gallery)
             }
 
-            itemView.setOnClickListener { onClick(player) }
+            // --- ОСЬ ТУТ ГОЛОВНА ЗМІНА: КЛІК ВІДКРИВАЄ ПРОФІЛЬ ---
+            itemView.setOnClickListener {
+                val context = itemView.context
+                // Створюємо намір відкрити PlayerProfileActivity
+                val intent = Intent(context, PlayerProfileActivity::class.java)
+                
+                // Пакуємо дані гравця
+                intent.putExtra("PLAYER_NAME", player.name)
+                intent.putExtra("PLAYER_PHOTO", player.photo.replace("http://", "https://"))
+                intent.putExtra("PLAYER_NUMBER", player.number)
+                intent.putExtra("PLAYER_POSITION", player.position)
+                
+                // Можна додати назву команди, якщо вона є десь поруч, 
+                // або передати просто "Гравець клубу"
+                intent.putExtra("TEAM_NAME", "Гравець клубу") 
+
+                // Погнали!
+                context.startActivity(intent)
+            }
         }
     }
 }
 
-//
-// 🔥 Flashscore-style crop
-//
+// Твій клас для обрізки фото (Flashscore style) - залишаємо без змін
 class TopCropCircleTransformation : BitmapTransformation() {
 
     override fun updateDiskCacheKey(messageDigest: MessageDigest) {
@@ -104,7 +123,7 @@ class TopCropCircleTransformation : BitmapTransformation() {
 
         val size = minOf(outWidth, outHeight)
         val x = 0
-        val y = (toTransform.height * 0.15).toInt() // ← зміщення ВГОРУ (голова)
+        val y = (toTransform.height * 0.15).toInt() 
 
         val cropped = Bitmap.createBitmap(
             toTransform,
