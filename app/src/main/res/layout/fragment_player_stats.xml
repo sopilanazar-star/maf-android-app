@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#121212"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <Spinner
+            android:id="@+id/spinnerTournaments"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/bg_spinner_dark" 
+            android:minHeight="48dp"/>
+
+        <LinearLayout android:id="@+id/statsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            
+            <include layout="@layout/item_stat_row" android:id="@+id/row1"/>
+            <include layout="@layout/item_stat_row" android:id="@+id/row2"/>
+            <include layout="@layout/item_stat_row" android:id="@+id/row3"/>
+            <include layout="@layout/item_stat_row" android:id="@+id/row4"/>
+            <include layout="@layout/item_stat_row" android:id="@+id/row5"/>
+
+        </LinearLayout>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
