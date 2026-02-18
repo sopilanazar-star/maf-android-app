@@ -7,4 +7,11 @@
     
     <color name="text_white">#FFFFFF</color>
     <color name="text_grey">#888888</color>
+    <color name="maf_red_start">#E53935</color>
+    <color name="maf_red_end">#B71C1C</color>
+    
+    <color name="app_background">#1A1A2E</color>
+    
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B0BEC5</color>
 </resources>
