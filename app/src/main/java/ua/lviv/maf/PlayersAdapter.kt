@@ -65,11 +65,11 @@ class PlayersAdapter(
             // Ховаємо позицію, бо є заголовок секції
             tvPosition?.visibility = View.GONE
 
-            // 🔧 ВИПРАВЛЕННЯ URL ФОТО (нічого більше не чіпаємо)
+            // 🔧 ВИПРАВЛЕННЯ URL + НОВИЙ CROP (без обрізання голови)
             if (player.photo.isNotEmpty()) {
                 Glide.with(itemView.context)
                     .load(player.photo.replace("http://", "https://"))
-                    .circleCrop()
+                    .centerCrop() // ← ЗАМІСТЬ circleCrop
                     .placeholder(android.R.drawable.ic_menu_gallery)
                     .error(android.R.drawable.ic_menu_gallery)
                     .into(ivPhoto)
