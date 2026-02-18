@@ -1,5 +1,9 @@
 package ua.lviv.maf
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.RectF
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -7,7 +11,10 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool
+import com.bumptech.glide.load.resource.bitmap.BitmapTransformation
 import ua.lviv.maf.models.Player
+import java.security.MessageDigest
 
 class PlayersAdapter(
     private val items: List<Any>,
@@ -61,15 +68,12 @@ class PlayersAdapter(
         fun bind(player: Player, onClick: (Player) -> Unit) {
             tvName.text = player.name
             tvNumber.text = if (player.number.isNotEmpty()) "#${player.number}" else ""
-
-            // Ховаємо позицію, бо є заголовок секції
             tvPosition?.visibility = View.GONE
 
-            // 🔧 ВИПРАВЛЕННЯ URL + НОВИЙ CROP (без обрізання голови)
             if (player.photo.isNotEmpty()) {
                 Glide.with(itemView.context)
                     .load(player.photo.replace("http://", "https://"))
-                    .centerCrop() // ← ЗАМІСТЬ circleCrop
+                    .transform(TopCropCircleTransformation()) // 🔥 Flashscore crop
                     .placeholder(android.R.drawable.ic_menu_gallery)
                     .error(android.R.drawable.ic_menu_gallery)
                     .into(ivPhoto)
@@ -79,5 +83,51 @@ class PlayersAdapter(
 
             itemView.setOnClickListener { onClick(player) }
         }
+    }
+}
+
+//
+// 🔥 Flashscore-style crop
+//
+class TopCropCircleTransformation : BitmapTransformation() {
+
+    override fun updateDiskCacheKey(messageDigest: MessageDigest) {
+        messageDigest.update("top_crop_circle".toByteArray())
+    }
+
+    override fun transform(
+        pool: BitmapPool,
+        toTransform: Bitmap,
+        outWidth: Int,
+        outHeight: Int
+    ): Bitmap {
+
+        val size = minOf(outWidth, outHeight)
+        val x = 0
+        val y = (toTransform.height * 0.15).toInt() // ← зміщення ВГОРУ (голова)
+
+        val cropped = Bitmap.createBitmap(
+            toTransform,
+            x,
+            y,
+            toTransform.width,
+            toTransform.height - y
+        )
+
+        val squared = Bitmap.createScaledBitmap(cropped, size, size, true)
+
+        val result = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(result)
+
+        val paint = Paint()
+        paint.isAntiAlias = true
+
+        val rect = RectF(0f, 0f, size.toFloat(), size.toFloat())
+        canvas.drawOval(rect, paint)
+
+        paint.xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.SRC_IN)
+        canvas.drawBitmap(squared, 0f, 0f, paint)
+
+        return result
     }
 }
