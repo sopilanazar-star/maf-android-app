@@ -17,7 +17,7 @@ class PlayerProfileActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_player_profile)
 
-        // 1. Знаходимо елементи (зв'язуємо код з макетом)
+        // 1. Знаходимо елементи
         val ivWatermark: ImageView = findViewById(R.id.ivWatermark)
         val ivPlayerPhoto: ImageView = findViewById(R.id.ivPlayerPhoto)
         val tvName: TextView = findViewById(R.id.tvPlayerName)
@@ -25,32 +25,46 @@ class PlayerProfileActivity : AppCompatActivity() {
         val tvPosition: TextView = findViewById(R.id.tvPosition)
         val tvDob: TextView = findViewById(R.id.tvDob)
 
-        // 2. ТЕСТОВІ ДАНІ (Щоб ми побачили картинку прямо зараз)
-        val playerName = "Микола Матвієнко"
-        val teamName = "ФК 'Темп' Гірське"
-        val position = "Захисник"
-        val dob = "02.05.1996 (29 років)"
+        // 2. ОТРИМУЄМО РЕАЛЬНІ ДАНІ (з Intent)
+        // Якщо даних немає, буде "Невідомий гравець"
+        val playerName = intent.getStringExtra("PLAYER_NAME") ?: "Невідомий гравець"
+        val playerPhotoUrl = intent.getStringExtra("PLAYER_PHOTO")
+        val playerNumber = intent.getStringExtra("PLAYER_NUMBER") ?: ""
+        val position = intent.getStringExtra("PLAYER_POSITION") ?: ""
         
-        // Посилання на фото (тестові)
-        val playerPhotoUrl = "https://ffl.org.ua/static/img/person_no_photo.jpg" // Або інше фото
-        val logoUrl = "https://maf.org.ua/wp-content/uploads/2025/11/cropped-logo-maf-2025-1.png" // Лого МАФ (приблизне)
+        // Назву команди ми поки передаємо як "Гравець клубу" (або можна передати реальну)
+        val teamName = intent.getStringExtra("TEAM_NAME") ?: "Гравець клубу"
+
+        // Лого асоціації (завжди однакове)
+        val logoUrl = "https://maf.org.ua/wp-content/uploads/2025/11/cropped-logo-maf-2025-1.png"
 
         // 3. Заповнюємо текст
         tvName.text = playerName
         tvTeam.text = teamName
-        tvPosition.text = position
-        tvDob.text = dob
-
-        // 4. Вантажимо КАРТИНКИ через твій Glide
         
-        // а) Фото гравця (робимо круглим)
-        Glide.with(this)
-            .load(playerPhotoUrl)
-            .circleCrop() 
-            .placeholder(android.R.drawable.ic_menu_camera)
-            .into(ivPlayerPhoto)
+        // Формуємо рядок позиції (наприклад: "Захисник • #12")
+        val positionText = if (playerNumber.isNotEmpty()) "$position • #$playerNumber" else position
+        tvPosition.text = positionText
+        
+        // Дату народження поки сховаємо, бо API її не передає у списку гравців
+        tvDob.text = "" 
 
-        // б) Водяний знак (Логотип асоціації на фон)
+        // 4. Вантажимо КАРТИНКИ
+        
+        // а) Фото гравця
+        if (!playerPhotoUrl.isNullOrEmpty()) {
+            Glide.with(this)
+                .load(playerPhotoUrl)
+                .circleCrop()
+                .placeholder(android.R.drawable.ic_menu_camera)
+                .error(android.R.drawable.ic_menu_camera)
+                .into(ivPlayerPhoto)
+        } else {
+            // Якщо фото немає, ставимо заглушку
+            ivPlayerPhoto.setImageResource(android.R.drawable.ic_menu_camera)
+        }
+
+        // б) Водяний знак
         Glide.with(this)
             .load(logoUrl)
             .into(ivWatermark)
@@ -63,11 +77,9 @@ class PlayerProfileActivity : AppCompatActivity() {
         val viewPager: ViewPager2 = findViewById(R.id.viewPager)
         val tabLayout: TabLayout = findViewById(R.id.tabLayout)
 
-        // Підключаємо адаптер вкладок
         val adapter = PlayerTabsAdapter(this)
         viewPager.adapter = adapter
 
-        // Підписуємо вкладки
         TabLayoutMediator(tabLayout, viewPager) { tab, position ->
             when (position) {
                 0 -> tab.text = "СТАТИСТИКА"
@@ -77,11 +89,10 @@ class PlayerProfileActivity : AppCompatActivity() {
     }
 }
 
-// Простий клас, щоб вкладки перемикалися (навіть якщо вони поки пусті)
 class PlayerTabsAdapter(activity: AppCompatActivity) : FragmentStateAdapter(activity) {
     override fun getItemCount(): Int = 2
-
     override fun createFragment(position: Int): Fragment {
-        return Fragment() // Повертає пустий білий екран для вкладок
+        // Поки що повертаємо пусті екрани
+        return Fragment() 
     }
 }
