@@ -17,7 +17,7 @@
             android:id="@+id/ivWatermark"
             android:layout_width="200dp"
             android:layout_height="200dp"
-            android:src="@android:drawable/ic_menu_gallery"
+            android:src="@drawable/maf_logo"
             android:alpha="0.10"
             android:rotation="-15"
             android:scaleType="fitCenter"
@@ -25,16 +25,28 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <androidx.cardview.widget.CardView
-            android:id="@+id/cardPlayerPhoto"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:layout_marginTop="32dp"
-            android:layout_marginStart="24dp"
-            app:cardCornerRadius="50dp"
-            app:cardElevation="4dp"
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/abc_ic_ab_back_material" 
+            app:tint="#FFFFFF"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            app:layout_constraintTop_toTopOf="parent"
+            tools:ignore="ContentDescription" />
+            <androidx.cardview.widget.CardView
+            android:id="@+id/cardPlayerPhoto"
+            android:layout_width="110dp"
+            android:layout_height="110dp"
+            android:layout_marginTop="16dp" 
+            android:layout_marginStart="24dp"
+            app:cardCornerRadius="55dp"
+            app:cardElevation="8dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/btnBack">
 
             <ImageView
                 android:id="@+id/ivPlayerPhoto"
@@ -48,9 +60,10 @@
             android:id="@+id/tvPlayerName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="20dp"
             android:layout_marginEnd="16dp"
-            android:text="Ім'я Прізвище"
+            android:layout_marginTop="12dp"
+            tools:text="Микола Матвієнко"
             android:textColor="@color/text_primary"
             android:textSize="22sp"
             android:textStyle="bold"
@@ -58,43 +71,59 @@
             app:layout_constraintTop_toTopOf="@id/cardPlayerPhoto"
             app:layout_constraintEnd_toEndOf="parent" />
 
-        <TextView
-            android:id="@+id/tvTeamName"
+        <LinearLayout
+            android:id="@+id/teamLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
             android:layout_marginTop="4dp"
-            android:text="Назва Команди"
-            android:textColor="@color/text_secondary"
-            android:textSize="14sp"
             app:layout_constraintStart_toStartOf="@id/tvPlayerName"
             app:layout_constraintTop_toBottomOf="@id/tvPlayerName"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <ImageView
+                android:id="@+id/ivTeamLogoSmall"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginEnd="6dp"
+                tools:src="@drawable/maf_logo"
+                android:scaleType="fitCenter"/>
+
+            <TextView
+                android:id="@+id/tvTeamName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                tools:text="ФК 'Темп' Гірське"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/tvPosition"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:background="#33000000"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:paddingTop="2dp"
-            android:paddingBottom="2dp"
-            android:text="Позиція"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_position_pill"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            tools:text="Захисник"
             android:textColor="@color/text_primary"
-            android:textSize="12sp"
+            android:textSize="13sp"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="@id/tvPlayerName"
-            app:layout_constraintTop_toBottomOf="@id/tvTeamName" />
+            app:layout_constraintTop_toBottomOf="@id/teamLayout" />
 
         <TextView
             android:id="@+id/tvDob"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="01.01.1990 (35 років)"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp"
+            android:layout_marginTop="6dp"
+            tools:text="02.05.1996 (29 років)"
+            android:textColor="#DDDDDD"
+            android:textSize="13sp"
             app:layout_constraintStart_toStartOf="@id/tvPlayerName"
             app:layout_constraintTop_toBottomOf="@id/tvPosition" />
 
@@ -109,17 +138,14 @@
         app:tabSelectedTextColor="@color/text_primary"
         app:tabIndicatorColor="@color/maf_red_start"
         app:tabIndicatorHeight="3dp">
-
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="СТАТИСТИКА" />
-
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="МАТЧІ" />
-
     </com.google.android.material.tabs.TabLayout>
 
     <androidx.viewpager2.widget.ViewPager2
