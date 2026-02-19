@@ -4,20 +4,20 @@
     android:layout_height="match_parent"
     android:background="#1A1D23"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="12dp">
 
     <Spinner
         android:id="@+id/spinnerTournaments"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="12dp"
         android:background="@android:drawable/btn_dropdown"
         android:theme="@style/ThemeOverlay.AppCompat.Dark" />
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scrollbarThumbVertical="@null">
+        android:scrollbars="none">
 
         <GridLayout
             android:id="@+id/statsGrid"
