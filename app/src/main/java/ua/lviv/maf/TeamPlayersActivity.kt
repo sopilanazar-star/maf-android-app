@@ -1,6 +1,5 @@
 package ua.lviv.maf
 
-import android.graphics.Color
 import android.os.Bundle
 import android.widget.ImageButton
 import android.widget.TextView
@@ -15,11 +14,14 @@ class TeamPlayersActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_team_players) // Переконайся, що XML файл існує (код нижче)
+        setContentView(R.layout.activity_team_players)
 
         val teamIdInt = intent.getIntExtra("team_id", 0)
         val teamId = if (teamIdInt != 0) teamIdInt.toString() else intent.getStringExtra("team_id") ?: ""
         val teamName = intent.getStringExtra("team_name") ?: "Команда"
+        
+        // 🔥 Отримуємо логотип команди
+        val teamLogoUrl = intent.getStringExtra("team_logo") ?: ""
 
         // Налаштування заголовка
         findViewById<TextView>(R.id.tvTeamName).text = teamName
@@ -34,8 +36,9 @@ class TeamPlayersActivity : AppCompatActivity() {
 
             override fun createFragment(position: Int): Fragment {
                 return when (position) {
-                    0 -> TeamSquadFragment.newInstance(teamId) // Вкладка Склад
-                    else -> TeamMatchesFragment.newInstance(teamId) // Вкладка Матчі
+                    // 🔥 Передаємо логотип у TeamSquadFragment
+                    0 -> TeamSquadFragment.newInstance(teamId, teamName, teamLogoUrl) 
+                    else -> TeamMatchesFragment.newInstance(teamId)
                 }
             }
         }
