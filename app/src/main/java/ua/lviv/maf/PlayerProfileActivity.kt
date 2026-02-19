@@ -1,9 +1,5 @@
 package ua.lviv.maf
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.RectF
 import android.os.Bundle
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -13,11 +9,8 @@ import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool
-import com.bumptech.glide.load.resource.bitmap.BitmapTransformation
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
-import java.security.MessageDigest
 
 class PlayerProfileActivity : AppCompatActivity() {
 
@@ -40,7 +33,7 @@ class PlayerProfileActivity : AppCompatActivity() {
         val tvDob: TextView = findViewById(R.id.tvDob)
 
         // 3. Отримання даних
-        val playerId = intent.getStringExtra("PLAYER_ID") ?: "" // 🔥 ДОДАНО ДЛЯ МАТЧІВ
+        val playerId = intent.getStringExtra("PLAYER_ID") ?: ""
         val playerName = intent.getStringExtra("PLAYER_NAME") ?: ""
         val playerPhotoUrl = intent.getStringExtra("PLAYER_PHOTO")
         val playerNumber = intent.getStringExtra("PLAYER_NUMBER") ?: ""
@@ -49,7 +42,6 @@ class PlayerProfileActivity : AppCompatActivity() {
         val teamName = intent.getStringExtra("TEAM_NAME") ?: "Команда"
         val teamLogoUrl = intent.getStringExtra("TEAM_LOGO") 
 
-        // Нові дані: Дата народження та вік
         val birthDate = intent.getStringExtra("PLAYER_BIRTHDATE") ?: ""
         val age = intent.getIntExtra("PLAYER_AGE", 0)
 
@@ -57,7 +49,6 @@ class PlayerProfileActivity : AppCompatActivity() {
         tvName.text = playerName
         tvTeam.text = teamName
 
-        // Позиція
         val fullPositionName = when (positionCode.lowercase()) {
             "g", "gk" -> "Воротар"
             "d", "df" -> "Захисник"
@@ -68,7 +59,6 @@ class PlayerProfileActivity : AppCompatActivity() {
         val posText = if (playerNumber.isNotEmpty()) "$fullPositionName • #$playerNumber" else fullPositionName
         tvPosition.text = posText
         
-        // Відображаємо день народження
         if (birthDate.isNotEmpty() && age > 0) {
             tvDob.text = "$birthDate ($age років)"
         } else if (birthDate.isNotEmpty()) {
@@ -83,7 +73,7 @@ class PlayerProfileActivity : AppCompatActivity() {
         if (!playerPhotoUrl.isNullOrEmpty()) {
             Glide.with(this)
                 .load(playerPhotoUrl)
-                .transform(PlayerTopCropTransformation()) // 🔥 ПРАВИЛЬНИЙ КРОП ВІД МАКІВКИ
+                .transform(PlayerTopCropTransformation()) 
                 .placeholder(android.R.drawable.ic_menu_camera)
                 .into(ivPlayerPhoto)
         }
@@ -98,13 +88,13 @@ class PlayerProfileActivity : AppCompatActivity() {
              ivTeamLogoSmall.setImageResource(R.drawable.maf_logo) 
         }
 
-        setupTabs(playerId) // Передаємо ID гравця у вкладки
+        setupTabs(playerId)
     }
 
     private fun setupTabs(playerId: String) {
         val viewPager: ViewPager2 = findViewById(R.id.viewPager)
         val tabLayout: TabLayout = findViewById(R.id.tabLayout)
-        viewPager.adapter = PlayerTabsAdapter(this, playerId) // Передаємо ID в Адаптер
+        viewPager.adapter = PlayerTabsAdapter(this, playerId)
         TabLayoutMediator(tabLayout, viewPager) { tab, position ->
             when (position) {
                 0 -> tab.text = "СТАТИСТИКА"
@@ -114,35 +104,13 @@ class PlayerProfileActivity : AppCompatActivity() {
     }
 }
 
-// 🔥 ОНОВЛЕНИЙ АДАПТЕР ВКЛАДОК
 class PlayerTabsAdapter(activity: AppCompatActivity, private val playerId: String) : FragmentStateAdapter(activity) {
     override fun getItemCount(): Int = 2
     override fun createFragment(position: Int): Fragment {
         return when (position) {
-            0 -> Fragment() // Тут буде статистика (поки пусто)
-            1 -> PlayerMatchesFragment.newInstance(playerId) // 🔥 ПІДКЛЮЧИЛИ НОВИЙ ЕКРАН МАТЧІВ
+            0 -> Fragment() 
+            1 -> PlayerMatchesFragment.newInstance(playerId) 
             else -> Fragment()
         }
-    }
-}
-
-// 🔥 КЛАС ДЛЯ ІДЕАЛЬНОЇ ОБРІЗКИ ФОТО (ВІД ВЕРХУ)
-class PlayerTopCropTransformation : BitmapTransformation() {
-    override fun updateDiskCacheKey(messageDigest: MessageDigest) {
-        messageDigest.update("player_top_crop".toByteArray())
-    }
-    override fun transform(pool: BitmapPool, toTransform: Bitmap, outWidth: Int, outHeight: Int): Bitmap {
-        val size = Math.min(toTransform.width, toTransform.height)
-        val x = (toTransform.width - size) / 2
-        val y = 0 // Беремо від самісінького верху!
-        val squared = Bitmap.createBitmap(toTransform, x, y, size, size)
-        val result = pool.get(size, size, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(result)
-        val paint = Paint().apply { isAntiAlias = true }
-        val rect = RectF(0f, 0f, size.toFloat(), size.toFloat())
-        canvas.drawOval(rect, paint)
-        paint.xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.SRC_IN)
-        canvas.drawBitmap(squared, 0f, 0f, paint)
-        return result
     }
 }
