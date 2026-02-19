@@ -1,9 +1,5 @@
 package ua.lviv.maf
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.RectF
 import android.os.Bundle
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -13,11 +9,8 @@ import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool
-import com.bumptech.glide.load.resource.bitmap.BitmapTransformation
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
-import java.security.MessageDigest
 
 class PlayerProfileActivity : AppCompatActivity() {
 
@@ -27,7 +20,7 @@ class PlayerProfileActivity : AppCompatActivity() {
 
         // 1. Кнопка НАЗАД
         findViewById<ImageButton>(R.id.btnBack).setOnClickListener {
-            finish() // Закриває вікно і повертає назад
+            finish()
         }
 
         // 2. Елементи
@@ -45,28 +38,36 @@ class PlayerProfileActivity : AppCompatActivity() {
         val playerNumber = intent.getStringExtra("PLAYER_NUMBER") ?: ""
         val positionCode = intent.getStringExtra("PLAYER_POSITION") ?: ""
         
-        // Отримуємо команду і лого (які ми передамо з Адаптера)
         val teamName = intent.getStringExtra("TEAM_NAME") ?: "Команда"
         val teamLogoUrl = intent.getStringExtra("TEAM_LOGO") 
+
+        // Нові дані: Дата народження та вік
+        val birthDate = intent.getStringExtra("PLAYER_BIRTHDATE") ?: ""
+        val age = intent.getIntExtra("PLAYER_AGE", 0)
 
         // 4. Заповнення
         tvName.text = playerName
         tvTeam.text = teamName
 
-        // Розшифровка позиції
+        // Позиція
         val fullPositionName = when (positionCode.lowercase()) {
             "g", "gk" -> "Воротар"
             "d", "df" -> "Захисник"
             "m", "mf" -> "Півзахисник"
             "f", "fw" -> "Нападник"
-            else -> positionCode // Якщо код невідомий
+            else -> positionCode
         }
-        
         val posText = if (playerNumber.isNotEmpty()) "$fullPositionName • #$playerNumber" else fullPositionName
         tvPosition.text = posText
         
-        // Дата народження (поки пусто, треба передати дані)
-        tvDob.text = "" 
+        // Відображаємо день народження
+        if (birthDate.isNotEmpty() && age > 0) {
+            tvDob.text = "$birthDate ($age років)"
+        } else if (birthDate.isNotEmpty()) {
+            tvDob.text = birthDate
+        } else {
+            tvDob.text = "Дата народження невідома"
+        }
 
         // 5. Картинки
         Glide.with(this).load(R.drawable.maf_logo).into(ivWatermark)
@@ -74,7 +75,8 @@ class PlayerProfileActivity : AppCompatActivity() {
         if (!playerPhotoUrl.isNullOrEmpty()) {
             Glide.with(this)
                 .load(playerPhotoUrl)
-                .transform(TopCropCircleTransformation()) 
+                .centerCrop()
+                .circleCrop()
                 .placeholder(android.R.drawable.ic_menu_camera)
                 .into(ivPlayerPhoto)
         }
@@ -86,7 +88,6 @@ class PlayerProfileActivity : AppCompatActivity() {
                 .placeholder(R.drawable.maf_logo)
                 .into(ivTeamLogoSmall)
         } else {
-             // Якщо лого немає, ховаємо або ставимо заглушку
              ivTeamLogoSmall.setImageResource(R.drawable.maf_logo) 
         }
 
@@ -109,25 +110,4 @@ class PlayerProfileActivity : AppCompatActivity() {
 class PlayerTabsAdapter(activity: AppCompatActivity) : FragmentStateAdapter(activity) {
     override fun getItemCount(): Int = 2
     override fun createFragment(position: Int): Fragment = Fragment()
-}
-
-class TopCropCircleTransformation : BitmapTransformation() {
-    override fun updateDiskCacheKey(messageDigest: MessageDigest) {
-        messageDigest.update("top_crop_circle_v2".toByteArray())
-    }
-    override fun transform(pool: BitmapPool, toTransform: Bitmap, outWidth: Int, outHeight: Int): Bitmap {
-        val size = minOf(outWidth, outHeight)
-        val y = (toTransform.height * 0.15).toInt() 
-        val cropped = Bitmap.createBitmap(toTransform, 0, y, toTransform.width, toTransform.height - y)
-        val squared = Bitmap.createScaledBitmap(cropped, size, size, true)
-        val result = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(result)
-        val paint = Paint()
-        paint.isAntiAlias = true
-        val rect = RectF(0f, 0f, size.toFloat(), size.toFloat())
-        canvas.drawOval(rect, paint)
-        paint.xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.SRC_IN)
-        canvas.drawBitmap(squared, 0f, 0f, paint)
-        return result
-    }
 }
