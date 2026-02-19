@@ -25,17 +25,8 @@
         android:paddingLeft="4dp"
         android:paddingRight="4dp"
         android:paddingTop="4dp"
-        
-        /* Нижній відступ (88dp), щоб остання команда 
-           піднімалася над панеллю навігації 
-        */
         android:paddingBottom="88dp"
-        
-        /* Дозволяє списку прокручуватися під відступом, 
-           але зупиняє його вище панелі в самому кінці 
-        */
         android:clipToPadding="false"
-        
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
 </LinearLayout>
