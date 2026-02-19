@@ -1,37 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="#1A1D23"
+    android:orientation="vertical"
     android:padding="16dp">
 
     <Spinner
         android:id="@+id/spinnerTournaments"
         android:layout_width="match_parent"
-        android:layout_height="45dp"
+        android:layout_height="48dp"
         android:layout_marginBottom="16dp"
-        android:background="@drawable/bg_spinner"
+        android:background="@android:drawable/btn_dropdown"
         android:theme="@style/ThemeOverlay.AppCompat.Dark" />
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:scrollbarThumbVertical="@null">
 
-        <LinearLayout
+        <androidx.gridlayout.widget.GridLayout
+            android:id="@+id/statsGrid"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <androidx.gridlayout.widget.GridLayout
-                android:id="@+id/statsGrid"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:columnCount="2"
-                xmlns:app="http://schemas.android.com/apk/res-auto">
-
-                </androidx.gridlayout.widget.GridLayout>
-
-        </LinearLayout>
+            app:columnCount="2"
+            app:alignmentMode="alignBounds">
+            </androidx.gridlayout.widget.GridLayout>
     </ScrollView>
 </LinearLayout>
