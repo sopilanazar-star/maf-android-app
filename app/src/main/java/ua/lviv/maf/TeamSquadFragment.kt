@@ -1,18 +1,15 @@
 package ua.lviv.maf
 
-import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
-import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.Gson
 import com.google.gson.JsonParser
 import okhttp3.*
 import java.io.IOException
@@ -35,13 +32,11 @@ class TeamSquadFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        // Можна використовувати той самий макет, що був для списку, або створити простий з RecyclerView
         val view = inflater.inflate(R.layout.fragment_team_squad, container, false)
         recyclerView = view.findViewById(R.id.recyclerViewSquad)
         progressBar = view.findViewById(R.id.progressBarSquad)
         return view
     }
-    // Примітка: Створи fragment_team_squad.xml з RecyclerView та ProgressBar, якщо немає.
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -71,8 +66,7 @@ class TeamSquadFragment : Fragment() {
                         val jsonElement = JsonParser.parseString(rawJson)
                         val rawList = ArrayList<Player>()
 
-                        // ... (Логіка парсингу JSON з попередніх відповідей) ...
-                         if (jsonElement.isJsonArray) {
+                        if (jsonElement.isJsonArray) {
                             val jsonArray = jsonElement.asJsonArray
                             for (element in jsonArray) rawList.add(parsePlayerSafe(element.asJsonObject))
                         } else if (jsonElement.isJsonObject) {
@@ -86,11 +80,15 @@ class TeamSquadFragment : Fragment() {
                         }
 
                         if (rawList.isNotEmpty()) {
-                            // 🔥 ТУТ ВІДБУВАЄТЬСЯ МАГІЯ СОРТУВАННЯ
                             val groupedItems = prepareGroupedList(rawList)
-                            recyclerView.adapter = PlayersAdapter(groupedItems) { player ->
-                                // Клік по гравцю
-                                Toast.makeText(context, "${player.name}", Toast.LENGTH_SHORT).show()
+                            
+                            // 🔥 ВИТЯГУЄМО ДАНІ КОМАНДИ З ГОЛОВНОГО ВІКНА
+                            val teamName = activity?.intent?.getStringExtra("team_name") ?: "Команда"
+                            val teamLogo = activity?.intent?.getStringExtra("team_logo") ?: ""
+
+                            // 🔥 ПЕРЕДАЄМО ЇХ В АДАПТЕР
+                            recyclerView.adapter = PlayersAdapter(groupedItems, teamName, teamLogo) { player ->
+                                // Клік тепер повноцінно працює всередині самого PlayersAdapter
                             }
                         }
 
@@ -100,45 +98,35 @@ class TeamSquadFragment : Fragment() {
         })
     }
 
-    // 🔥 ФУНКЦІЯ СОРТУВАННЯ ТА ПЕРЕЙМЕНУВАННЯ
     private fun prepareGroupedList(players: List<Player>): List<Any> {
         val resultList = ArrayList<Any>()
-
-        // 1. Групуємо гравців за їх "сирою" позицією (G, D, M, F)
         val groupedMap = players.groupBy { it.position.trim().lowercase() }
-
-        // 2. Визначаємо правильний порядок: 1-Воротар, 2-Захисник, 3-Півзахисник, 4-Нападник
-        // Ми перевіряємо всі можливі варіанти написання (g, gk, goalkeeper, воротар...)
         val sortedKeys = groupedMap.keys.sortedBy { pos ->
             when (pos) {
                 "g", "gk", "goalkeeper", "воротар" -> 1
                 "d", "def", "defender", "захисник" -> 2
                 "m", "mid", "midfielder", "півзахисник" -> 3
                 "f", "fwd", "forward", "нападник" -> 4
-                else -> 99 // Якщо позиція невідома - в кінець
+                else -> 99
             }
         }
 
-        // 3. Формуємо фінальний список із правильними назвами заголовків
         for (key in sortedKeys) {
             val playersInGroup = groupedMap[key] ?: continue
-            
-            // Перейменовуємо "F" -> "НАПАДНИКИ"
             val headerTitle = when (key) {
                 "g", "gk", "goalkeeper", "воротар" -> "ВОРОТАРІ"
                 "d", "def", "defender", "захисник" -> "ЗАХИСНИКИ"
                 "m", "mid", "midfielder", "півзахисник" -> "ПІВЗАХИСНИКИ"
                 "f", "fwd", "forward", "нападник" -> "НАПАДНИКИ"
-                else -> key.uppercase() // Якщо щось інше, показуємо як є
+                else -> key.uppercase()
             }
-
             resultList.add(headerTitle)
             resultList.addAll(playersInGroup)
         }
-
         return resultList
     }
 
+    // 🔥 ОНОВЛЕНИЙ ПАРСЕР (Тепер бачить ДН і Вік)
     private fun parsePlayerSafe(obj: com.google.gson.JsonObject): Player {
         fun getString(key: String): String {
             if (!obj.has(key) || obj.get(key).isJsonNull) return ""
@@ -149,6 +137,24 @@ class TeamSquadFragment : Fragment() {
             }
             return ""
         }
-        return Player(getString("id"), getString("name"), getString("number"), getString("position"), getString("photo"))
+        
+        fun getInt(key: String): Int {
+            if (!obj.has(key) || obj.get(key).isJsonNull) return 0
+            val p = obj.get(key)
+            if (p.isJsonPrimitive && p.asJsonPrimitive.isNumber) {
+                return p.asInt
+            }
+            return 0
+        }
+
+        return Player(
+            id = getString("id"), 
+            name = getString("name"), 
+            number = getString("number"), 
+            position = getString("position"), 
+            photo = getString("photo"),
+            birthDate = getString("birth_date"), // Читаємо ДН
+            age = getInt("age")                  // Читаємо Вік
+        )
     }
 }
