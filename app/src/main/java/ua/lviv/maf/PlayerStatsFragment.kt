@@ -3,26 +3,31 @@ package ua.lviv.maf
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
-import android.view.Gravity
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.fragment.app.Fragment
 import androidx.gridlayout.widget.GridLayout
+import okhttp3.*
+import org.json.JSONObject
+import java.io.IOException
 
 class PlayerStatsFragment : Fragment() {
 
     private lateinit var statsGrid: GridLayout
     private lateinit var spinner: Spinner
-    private var playerPosition: String = ""
+    private var playerId: String = ""
+    private var position: String = ""
 
     companion object {
         fun newInstance(playerId: String, position: String): PlayerStatsFragment {
             val fragment = PlayerStatsFragment()
-            val args = Bundle()
-            args.putString("player_id", playerId)
-            args.putString("position", position)
+            val args = Bundle().apply {
+                putString("player_id", playerId)
+                putString("position", position)
+            }
             fragment.arguments = args
             return fragment
         }
@@ -32,77 +37,87 @@ class PlayerStatsFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_player_stats, container, false)
         statsGrid = view.findViewById(R.id.statsGrid)
         spinner = view.findViewById(R.id.spinnerTournaments)
-        playerPosition = arguments?.getString("position") ?: ""
+        
+        playerId = arguments?.getString("player_id") ?: ""
+        position = arguments?.getString("position") ?: ""
 
-        setupTournamentSpinner()
+        setupSpinner()
+        loadStats()
         return view
     }
 
-    private fun setupTournamentSpinner() {
-        // Список турнірів (потім можна брати з API)
-        val tournaments = arrayOf("Загальна статистика", "Кубок Пролісок", "Кубок Весни", "Перша ліга", "Кубок Золота Осінь")
+    private fun setupSpinner() {
+        val tournaments = arrayOf("Загальна статистика за сезон", "Перша ліга", "Кубок Пролісок", "Кубок Весни")
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, tournaments)
         spinner.adapter = adapter
+    }
 
-        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                updateStatsTable()
+    private fun loadStats() {
+        val url = "https://maf.lviv.ua/wp-json/maf/v2/player-stats?id=$playerId"
+        val request = Request.Builder().url(url).build()
+
+        OkHttpClient().newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) { Log.e("Stats", "Failed: ${e.message}") }
+
+            override fun onResponse(call: Call, response: Response) {
+                val json = response.body?.string() ?: return
+                activity?.runOnUiThread { parseAndDisplay(json) }
             }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
+        })
     }
 
-    private fun updateStatsTable() {
-        statsGrid.removeAllViews()
+    private fun parseAndDisplay(json: String) {
+        try {
+            val data = JSONObject(json)
+            statsGrid.removeAllViews()
 
-        val isGK = playerPosition.lowercase() == "g" || playerPosition.lowercase() == "gk"
+            val isGK = position.lowercase() == "g" || position.lowercase() == "gk"
 
-        if (isGK) {
-            // ВАРІАНТ А: ВОРОТАР (5 рядків)
-            addStatRow("Зіграні матчі", "12", "У старті", "12")
-            addStatRow("Вийшов на заміну", "0", "Хвилини на полі", "1080'")
-            addStatRow("Жовті картки", "1", "Другі жовті", "0")
-            addStatRow("Вилучення", "0", "Голи", "0")
-            addStatRow("Пропущені голи", "8", "Сухі матчі", "5")
-        } else {
-            // ВАРІАНТ Б: ПОЛЬОВИЙ (4 рядки)
-            addStatRow("Зіграні матчі", "10", "У старті", "8")
-            addStatRow("Вийшов на заміну", "2", "Хвилини на полі", "740'")
-            addStatRow("Жовті картки", "2", "Другі жовті", "1")
-            addStatRow("Вилучення", "0", "ГОЛИ", "4")
-        }
+            // Спільні поля
+            addStatItem("Зіграні матчі", data.optString("matches"))
+            addStatItem("У старті", data.optString("starts"))
+            addStatItem("Вийшов на заміну", data.optString("subs_in"))
+            addStatItem("Хвилини на полі", "${data.optString("minutes")}'")
+            addStatItem("Жовті картки", data.optString("yellow"))
+            addStatItem("Другі жовті", data.optString("yellow_red"))
+            addStatItem("Вилучення", data.optString("red"))
+
+            if (isGK) {
+                addStatItem("Голи", data.optString("goals"))
+                addStatItem("Пропущені голи", data.optString("conceded"))
+                addStatItem("Сухі матчі", data.optString("clean_sheets"))
+            } else {
+                addStatItem("ГОЛИ", data.optString("goals"), highlight = true)
+            }
+
+        } catch (e: Exception) { e.printStackTrace() }
     }
 
-    private fun addStatRow(label1: String, val1: String, label2: String, val2: String) {
-        statsGrid.addView(createStatItem(label1, val1))
-        statsGrid.addView(createStatItem(label2, val2))
-    }
-
-    private fun createStatItem(label: String, value: String): View {
-        val layout = LinearLayout(context).apply {
+    private fun addStatItem(label: String, value: String, highlight: Boolean = false) {
+        val container = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(0, 15, 0, 15)
-            val params = GridLayout.LayoutParams()
-            params.width = 0
-            params.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
-            layoutParams = params
+            setPadding(0, 20, 0, 20)
+            layoutParams = GridLayout.LayoutParams(
+                GridLayout.spec(GridLayout.UNDEFINED, 1f),
+                GridLayout.spec(GridLayout.UNDEFINED, 1f)
+            ).apply { width = 0 }
+        }
+
+        val tvValue = TextView(context).apply {
+            text = if (value == "null" || value.isEmpty()) "0" else value
+            textSize = 20f
+            setTextColor(if (highlight) Color.parseColor("#00E676") else Color.WHITE)
+            typeface = Typeface.DEFAULT_BOLD
         }
 
         val tvLabel = TextView(context).apply {
             text = label
-            setTextColor(Color.parseColor("#BCBCBC"))
             textSize = 12f
+            setTextColor(Color.parseColor("#BCBCBC"))
         }
 
-        val tvValue = TextView(context).apply {
-            text = value
-            setTextColor(Color.WHITE)
-            textSize = 16f
-            typeface = Typeface.DEFAULT_BOLD
-        }
-
-        layout.addView(tvLabel)
-        layout.addView(tvValue)
-        return layout
+        container.addView(tvValue)
+        container.addView(tvLabel)
+        statsGrid.addView(container)
     }
 }
