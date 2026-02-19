@@ -7,5 +7,7 @@ data class Player(
     @SerializedName("name") val name: String,
     @SerializedName("number") val number: String,
     @SerializedName("position") val position: String,
-    @SerializedName("photo") val photo: String
+    @SerializedName("photo") val photo: String,
+    @SerializedName("birth_date") val birthDate: String? = "",
+    @SerializedName("age") val age: Int? = 0
 )
