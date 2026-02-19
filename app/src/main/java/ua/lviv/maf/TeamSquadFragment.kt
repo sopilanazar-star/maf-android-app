@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -20,12 +19,17 @@ class TeamSquadFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
     private var teamId: String = ""
+    private var teamName: String = ""
+    private var teamLogo: String = ""
 
     companion object {
-        fun newInstance(teamId: String): TeamSquadFragment {
+        // 🔥 Оновлено: тепер приймаємо назву та логотип команди
+        fun newInstance(teamId: String, teamName: String, teamLogo: String): TeamSquadFragment {
             val fragment = TeamSquadFragment()
             val args = Bundle()
             args.putString("team_id", teamId)
+            args.putString("team_name", teamName)
+            args.putString("team_logo", teamLogo)
             fragment.arguments = args
             return fragment
         }
@@ -40,7 +44,10 @@ class TeamSquadFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        // Беремо дані з аргументів
         teamId = arguments?.getString("team_id") ?: ""
+        teamName = arguments?.getString("team_name") ?: "Команда"
+        teamLogo = arguments?.getString("team_logo") ?: ""
         
         recyclerView.layoutManager = LinearLayoutManager(context)
         loadPlayers()
@@ -82,13 +89,9 @@ class TeamSquadFragment : Fragment() {
                         if (rawList.isNotEmpty()) {
                             val groupedItems = prepareGroupedList(rawList)
                             
-                            // 🔥 ВИТЯГУЄМО ДАНІ КОМАНДИ З ГОЛОВНОГО ВІКНА
-                            val teamName = activity?.intent?.getStringExtra("team_name") ?: "Команда"
-                            val teamLogo = activity?.intent?.getStringExtra("team_logo") ?: ""
-
-                            // 🔥 ПЕРЕДАЄМО ЇХ В АДАПТЕР
+                            // 🔥 Використовуємо teamName та teamLogo, які отримали при створенні фрагмента
                             recyclerView.adapter = PlayersAdapter(groupedItems, teamName, teamLogo) { player ->
-                                // Клік тепер повноцінно працює всередині самого PlayersAdapter
+                                // Клік обробляється в адаптері
                             }
                         }
 
@@ -126,7 +129,6 @@ class TeamSquadFragment : Fragment() {
         return resultList
     }
 
-    // 🔥 ОНОВЛЕНИЙ ПАРСЕР (Тепер бачить ДН і Вік)
     private fun parsePlayerSafe(obj: com.google.gson.JsonObject): Player {
         fun getString(key: String): String {
             if (!obj.has(key) || obj.get(key).isJsonNull) return ""
@@ -141,9 +143,7 @@ class TeamSquadFragment : Fragment() {
         fun getInt(key: String): Int {
             if (!obj.has(key) || obj.get(key).isJsonNull) return 0
             val p = obj.get(key)
-            if (p.isJsonPrimitive && p.asJsonPrimitive.isNumber) {
-                return p.asInt
-            }
+            if (p.isJsonPrimitive && p.asJsonPrimitive.isNumber) return p.asInt
             return 0
         }
 
@@ -153,8 +153,8 @@ class TeamSquadFragment : Fragment() {
             number = getString("number"), 
             position = getString("position"), 
             photo = getString("photo"),
-            birthDate = getString("birth_date"), // Читаємо ДН
-            age = getInt("age")                  // Читаємо Вік
+            birthDate = getString("birth_date"),
+            age = getInt("age")
         )
     }
 }
