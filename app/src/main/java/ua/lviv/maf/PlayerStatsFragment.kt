@@ -71,58 +71,55 @@ class PlayerStatsFragment : Fragment() {
 
             val isGK = position.lowercase() == "g" || position.lowercase() == "gk"
 
-            // 1. Спільні блоки для всіх
-            addStatItem("Зіграні матчі", data.optString("matches"), R.drawable.ic_matches)
-            addStatItem("У старті", data.optString("starts"), R.drawable.ic_lineup)
-            addStatItem("Вийшов на заміну", data.optString("subs_in"), R.drawable.ic_substitution)
-            addStatItem("Хвилини на полі", "${data.optString("minutes")}'", R.drawable.ic_time)
+            // Спільні блоки для всіх
+            addStatItem("Зіграні матчі", data.optString("matches"), R.drawable.ic_matches, null, false)
+            addStatItem("У старті", data.optString("starts"), R.drawable.ic_lineup, null, false)
+            addStatItem("Вийшов на заміну", data.optString("subs_in"), R.drawable.ic_substitution, null, false)
+            addStatItem("Хвилини на полі", "${data.optString("minutes")}'", R.drawable.ic_time, null, false)
             
-            // 2. Картки (використовуємо ic_card з кольоровими фільтрами)
-            addStatItem("Жовті картки", data.optString("yellow"), R.drawable.ic_card, Color.YELLOW)
-            addStatItem("Другі жовті", data.optString("yellow_red"), R.drawable.ic_second_yellow)
-            addStatItem("Вилучення", data.optString("red"), R.drawable.ic_card, Color.RED)
+            // Картки з кольоровими фільтрами
+            addStatItem("Жовті картки", data.optString("yellow"), R.drawable.ic_card, Color.YELLOW, false)
+            addStatItem("Другі жовті", data.optString("yellow_red"), R.drawable.ic_second_yellow, null, false)
+            addStatItem("Вилучення", data.optString("red"), R.drawable.ic_card, Color.RED, false)
 
-            // 3. Специфічні блоки
+            // Специфічні блоки
             if (isGK) {
-                addStatItem("Голи (забиті)", data.optString("goals"), R.drawable.ic_ball)
-                addStatItem("Пропущені голи", data.optString("conceded"), R.drawable.ic_goal_conceded)
-                addStatItem("Сухі матчі", data.optString("clean_sheets"), R.drawable.ic_clean_sheet)
+                addStatItem("Голи (забиті)", data.optString("goals"), R.drawable.ic_ball, null, false)
+                addStatItem("Пропущені голи", data.optString("conceded"), R.drawable.ic_goal_conceded, null, false)
+                addStatItem("Сухі матчі", data.optString("clean_sheets"), R.drawable.ic_clean_sheet, null, false)
             } else {
-                // Для польового виділяємо ГОЛИ зеленим
-                addStatItem("ГОЛИ", data.optString("goals"), R.drawable.ic_ball, highlight = true)
+                // ГОЛИ для польового (передаємо true для виділення зеленим кольором)
+                addStatItem("ГОЛИ", data.optString("goals"), R.drawable.ic_ball, null, true)
             }
 
         } catch (e: Exception) { e.printStackTrace() }
     }
 
-    private fun addStatItem(label: String, value: String, iconRes: Int, iconColor: Int? = null, highlight: Boolean = false) {
-        // Інфлейтимо наш новий макет плитки
-        val view = layoutInflater.inflate(R.layout.item_stat_block, statsGrid, false)
+    // Виправлена функція, яка гарантовано не видасть "Variable expected"
+    private fun addStatItem(label: String, value: String, iconRes: Int, iconColor: Int?, highlight: Boolean) {
+        val statView: View = layoutInflater.inflate(R.layout.item_stat_block, statsGrid, false)
         
-        val tvValue: TextView = view.findViewById(R.id.tvStatValue)
-        val tvLabel: TextView = view.findViewById(R.id.tvStatLabel)
-        val ivIcon: ImageView = view.findViewById(R.id.ivStatIcon)
+        val tvValue: TextView = statView.findViewById(R.id.tvStatValue)
+        val tvLabel: TextView = statView.findViewById(R.id.tvStatLabel)
+        val ivIcon: ImageView = statView.findViewById(R.id.ivStatIcon)
 
         tvValue.text = if (value == "null" || value.isEmpty() || value == "0'") "0" else value
         tvLabel.text = label
 
-        // Налаштування іконки
         ivIcon.setImageResource(iconRes)
         if (iconColor != null) {
             ivIcon.setColorFilter(iconColor)
         }
         
-        // Якщо це ГОЛИ для польового - робимо колір цифри яскравим
         if (highlight) {
             tvValue.setTextColor(Color.parseColor("#00E676"))
         }
 
-        // Параметри для GridLayout (2 колонки)
         val params = GridLayout.LayoutParams()
         params.width = 0
         params.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
-        view.layoutParams = params
+        statView.layoutParams = params
 
-        statsGrid.addView(view)
+        statsGrid.addView(statView)
     }
 }
