@@ -3,7 +3,6 @@ package ua.lviv.maf
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,16 +18,15 @@ class PlayerStatsFragment : Fragment() {
     private lateinit var statsGrid: GridLayout
     private lateinit var spinner: Spinner
     private var playerId: String = ""
-    private var position: String = ""
+    private var playerPos: String = ""
 
     companion object {
         fun newInstance(playerId: String, position: String): PlayerStatsFragment {
             val fragment = PlayerStatsFragment()
-            val args = Bundle().apply {
+            fragment.arguments = Bundle().apply {
                 putString("player_id", playerId)
                 putString("position", position)
             }
-            fragment.arguments = args
             return fragment
         }
     }
@@ -39,62 +37,65 @@ class PlayerStatsFragment : Fragment() {
         spinner = view.findViewById(R.id.spinnerTournaments)
         
         playerId = arguments?.getString("player_id") ?: ""
-        position = arguments?.getString("position") ?: ""
+        playerPos = arguments?.getString("position") ?: ""
 
         setupSpinner()
-        loadStats()
+        loadData()
         return view
     }
 
     private fun setupSpinner() {
-        val tournaments = arrayOf("Загальна статистика за сезон", "Перша ліга", "Кубок Пролісок", "Кубок Весни")
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, tournaments)
+        val list = arrayOf("Загальна статистика за сезон", "Перша ліга", "Кубок Пролісок", "Кубок Весни")
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, list)
         spinner.adapter = adapter
     }
 
-    private fun loadStats() {
+    private fun loadData() {
         val url = "https://maf.lviv.ua/wp-json/maf/v2/player-stats?id=$playerId"
-        val request = Request.Builder().url(url).build()
-
-        OkHttpClient().newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) { Log.e("Stats", "Failed: ${e.message}") }
-
+        OkHttpClient().newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {}
             override fun onResponse(call: Call, response: Response) {
                 val json = response.body?.string() ?: return
-                activity?.runOnUiThread { parseAndDisplay(json) }
+                activity?.runOnUiThread { parseAndShow(json) }
             }
         })
     }
 
-    private fun parseAndDisplay(json: String) {
+    private fun parseAndShow(json: String) {
         try {
-            val data = JSONObject(json)
+            val d = JSONObject(json)
             statsGrid.removeAllViews()
 
-            val isGK = position.lowercase() == "g" || position.lowercase() == "gk"
+            val isGK = playerPos.lowercase() in listOf("g", "gk")
 
-            // Спільні поля
-            addStatItem("Зіграні матчі", data.optString("matches"))
-            addStatItem("У старті", data.optString("starts"))
-            addStatItem("Вийшов на заміну", data.optString("subs_in"))
-            addStatItem("Хвилини на полі", "${data.optString("minutes")}'")
-            addStatItem("Жовті картки", data.optString("yellow"))
-            addStatItem("Другі жовті", data.optString("yellow_red"))
-            addStatItem("Вилучення", data.optString("red"))
+            // Рядок 1
+            addCell("Зіграні матчі", d.optString("matches"))
+            addCell("У старті", d.optString("starts"))
+            
+            // Рядок 2
+            addCell("Вийшов на заміну", d.optString("subs_in"))
+            addCell("Хвилини на полі", "${d.optString("minutes")}'")
+            
+            // Рядок 3
+            addCell("Жовті картки", d.optString("yellow"))
+            addCell("Другі жовті", d.optString("yellow_red"))
 
             if (isGK) {
-                addStatItem("Голи", data.optString("goals"))
-                addStatItem("Пропущені голи", data.optString("conceded"))
-                addStatItem("Сухі матчі", data.optString("clean_sheets"))
+                // Варіант А: Воротар
+                addCell("Вилучення", d.optString("red"))
+                addCell("Голи (забиті)", d.optString("goals"))
+                addCell("Пропущені голи", d.optString("conceded"))
+                addCell("Сухі матчі", d.optString("clean_sheets"))
             } else {
-                addStatItem("ГОЛИ", data.optString("goals"), highlight = true)
+                // Варіант Б: Польовий
+                addCell("Вилучення", d.optString("red"))
+                addCell("ГОЛИ", d.optString("goals"), true)
             }
-
-        } catch (e: Exception) { e.printStackTrace() }
+        } catch (e: Exception) {}
     }
 
-    private fun addStatItem(label: String, value: String, highlight: Boolean = false) {
-        val container = LinearLayout(context).apply {
+    private fun addCell(label: String, value: String, isGoal: Boolean = false) {
+        val layout = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(0, 20, 0, 20)
             layoutParams = GridLayout.LayoutParams(
@@ -103,21 +104,21 @@ class PlayerStatsFragment : Fragment() {
             ).apply { width = 0 }
         }
 
-        val tvValue = TextView(context).apply {
+        val tvVal = TextView(context).apply {
             text = if (value == "null" || value.isEmpty()) "0" else value
-            textSize = 20f
-            setTextColor(if (highlight) Color.parseColor("#00E676") else Color.WHITE)
+            textSize = 18f
             typeface = Typeface.DEFAULT_BOLD
+            setTextColor(if (isGoal) Color.parseColor("#00E676") else Color.WHITE)
         }
 
-        val tvLabel = TextView(context).apply {
+        val tvLab = TextView(context).apply {
             text = label
-            textSize = 12f
+            textSize = 11f
             setTextColor(Color.parseColor("#BCBCBC"))
         }
 
-        container.addView(tvValue)
-        container.addView(tvLabel)
-        statsGrid.addView(container)
+        layout.addView(tvVal)
+        layout.addView(tvLab)
+        statsGrid.addView(layout)
     }
 }
