@@ -3,7 +3,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#1A1D23"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    
+    android:paddingBottom="88dp"
+    android:clipToPadding="false">
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -34,7 +37,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:divider="@null" />
+            android:divider="@null"
+            
+            android:paddingBottom="20dp" />
 
     </RelativeLayout>
 </ScrollView>
