@@ -33,26 +33,26 @@ class PlayerMatchesFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        // Використовуємо той самий макет, що й для матчів команди
+        // Тут ми підключаємо наш XML макет
         val view = inflater.inflate(R.layout.fragment_team_matches, container, false)
+        
+        // Знаходимо елементи за тими самими ID, що в XML
         recyclerView = view.findViewById(R.id.recyclerViewMatches)
         progressBar = view.findViewById(R.id.progressBarMatches)
+        tvEmptyInfo = view.findViewById(R.id.tvEmptyInfo)
         
-        // Знаходимо текст для пустого списку (якщо є в макеті)
-        tvEmptyInfo = view.findViewById(R.id.tvEmptyInfo) ?: TextView(context)
         return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         playerId = arguments?.getString("player_id") ?: ""
-        
         recyclerView.layoutManager = LinearLayoutManager(context)
         loadPlayerMatches()
     }
 
     private fun loadPlayerMatches() {
-        // 🔥 ПЕРЕВІР ТА ЗМІНИ ЦЕ ПОСИЛАННЯ НА СВОЄ API МАТЧІВ ГРАВЦЯ, ЯКЩО ВОНО ІНШЕ
+        progressBar.visibility = View.VISIBLE
         val url = "https://maf.lviv.ua/wp-json/maf/v2/player-matches?id=$playerId"
         val request = Request.Builder().url(url).build()
 
@@ -63,15 +63,8 @@ class PlayerMatchesFragment : Fragment() {
 
             override fun onResponse(call: Call, response: Response) {
                 val rawJson = response.body?.string()?.trim() ?: ""
-
                 activity?.runOnUiThread {
                     progressBar.visibility = View.GONE
-                    if (!response.isSuccessful || rawJson.isEmpty() || rawJson == "[]") {
-                        tvEmptyInfo.visibility = View.VISIBLE
-                        tvEmptyInfo.text = "Матчів не знайдено"
-                        return@runOnUiThread
-                    }
-
                     try {
                         val jsonArray = JSONArray(rawJson)
                         val matchesList = ArrayList<JSONObject>()
@@ -81,16 +74,13 @@ class PlayerMatchesFragment : Fragment() {
 
                         if (matchesList.isNotEmpty()) {
                             tvEmptyInfo.visibility = View.GONE
-                            // 🔥 ВИКОРИСТОВУЄМО ТВІЙ ГОТОВИЙ АДАПТЕР
-                            recyclerView.adapter = TeamMatchesAdapter(matchesList) { match ->
-                                // Клік по матчу вже прописаний всередині адаптера
-                            }
+                            // Використовуємо твій існуючий TeamMatchesAdapter
+                            recyclerView.adapter = TeamMatchesAdapter(matchesList) { }
                         } else {
                             tvEmptyInfo.visibility = View.VISIBLE
-                            tvEmptyInfo.text = "Матчів не знайдено"
                         }
                     } catch (e: Exception) {
-                        Log.e("PlayerMatches", "Error parsing: ${e.message}")
+                        tvEmptyInfo.visibility = View.VISIBLE
                     }
                 }
             }
