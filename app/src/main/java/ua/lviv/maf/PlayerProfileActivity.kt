@@ -19,9 +19,7 @@ class PlayerProfileActivity : AppCompatActivity() {
         setContentView(R.layout.activity_player_profile)
 
         // 1. Кнопка НАЗАД
-        findViewById<ImageButton>(R.id.btnBack).setOnClickListener {
-            finish()
-        }
+        findViewById<ImageButton>(R.id.btnBack).setOnClickListener { finish() }
 
         // 2. Елементи
         val ivWatermark: ImageView = findViewById(R.id.ivWatermark)
@@ -45,7 +43,7 @@ class PlayerProfileActivity : AppCompatActivity() {
         val birthDate = intent.getStringExtra("PLAYER_BIRTHDATE") ?: ""
         val age = intent.getIntExtra("PLAYER_AGE", 0)
 
-        // 4. Заповнення
+        // 4. Заповнення заголовка
         tvName.text = playerName
         tvTeam.text = teamName
 
@@ -84,32 +82,38 @@ class PlayerProfileActivity : AppCompatActivity() {
                 .fitCenter()
                 .placeholder(R.drawable.maf_logo)
                 .into(ivTeamLogoSmall)
-        } else {
-             ivTeamLogoSmall.setImageResource(R.drawable.maf_logo) 
         }
 
-        setupTabs(playerId)
+        // Передаємо ID та Код позиції у вкладки
+        setupTabs(playerId, positionCode)
     }
 
-    private fun setupTabs(playerId: String) {
+    private fun setupTabs(playerId: String, position: String) {
         val viewPager: ViewPager2 = findViewById(R.id.viewPager)
         val tabLayout: TabLayout = findViewById(R.id.tabLayout)
-        viewPager.adapter = PlayerTabsAdapter(this, playerId)
-        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
-            when (position) {
-                0 -> tab.text = "СТАТИСТИКА"
-                1 -> tab.text = "МАТЧІ"
-            }
+        
+        // Оновлений адаптер приймає позицію
+        viewPager.adapter = PlayerTabsAdapter(this, playerId, position)
+        
+        TabLayoutMediator(tabLayout, viewPager) { tab, positionIndex ->
+            tab.text = if (positionIndex == 0) "СТАТИСТИКА" else "МАТЧІ"
         }.attach()
     }
 }
 
-class PlayerTabsAdapter(activity: AppCompatActivity, private val playerId: String) : FragmentStateAdapter(activity) {
+// 🔥 Адаптер, який створює правильні фрагменти
+class PlayerTabsAdapter(
+    activity: AppCompatActivity, 
+    private val playerId: String, 
+    private val position: String
+) : FragmentStateAdapter(activity) {
+    
     override fun getItemCount(): Int = 2
-    override fun createFragment(position: Int): Fragment {
-        return when (position) {
-            0 -> Fragment() 
-            1 -> PlayerMatchesFragment.newInstance(playerId) 
+    
+    override fun createFragment(positionIndex: Int): Fragment {
+        return when (positionIndex) {
+            0 -> PlayerStatsFragment.newInstance(playerId, position) // Вкладка зі статистикою
+            1 -> PlayerMatchesFragment.newInstance(playerId) // Вкладка з матчами
             else -> Fragment()
         }
     }
