@@ -1,88 +1,30 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="22dp"
-    android:height="22dp"
+    android:width="100dp"
+    android:height="100dp"
     android:viewportWidth="100"
     android:viewportHeight="100">
 
-    <!-- зовнішнє коло -->
     <path
-        android:fillColor="@android:color/transparent"
+        android:pathData="M50,50m-48,0a48,48 0,1 1,96 0a48,48 0,1 1,-96 0"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="6"
-        android:pathData="M50,5 A45,45 0 1,1 49.9,5"/>
+        android:strokeWidth="2"
+        android:fillColor="#00000000"/>
 
-    <!-- центральний п'ятикутник -->
     <path
-        android:fillColor="@android:color/transparent"
+        android:pathData="M50,35 L64.3,45.4 L58.8,62.1 L41.2,62.1 L35.7,45.4 Z"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="5"
-        android:pathData="
-            M50,28
-            L68,40
-            L62,64
-            L38,64
-            L32,40 Z"/>
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:strokeLineJoin="round"/>
 
-    <!-- верхній шестикутник -->
     <path
-        android:fillColor="@android:color/transparent"
+        android:pathData="M50,35 L50,2
+                          M64.3,45.4 L95.6,35.2
+                          M58.8,62.1 L78.2,88.8
+                          M41.2,62.1 L21.8,88.8
+                          M35.7,45.4 L4.4,35.2"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="4"
-        android:pathData="
-            M50,5
-            L62,20
-            L68,40
-            L50,28
-            L32,40
-            L38,20 Z"/>
+        android:strokeWidth="2"
+        android:strokeLineCap="round"/>
 
-    <!-- правий верхній -->
-    <path
-        android:fillColor="@android:color/transparent"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="4"
-        android:pathData="
-            M88,28
-            L72,34
-            L68,40
-            L62,64
-            L80,54
-            L90,42 Z"/>
-
-    <!-- правий нижній -->
-    <path
-        android:fillColor="@android:color/transparent"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="4"
-        android:pathData="
-            M74,90
-            L62,64
-            L50,72
-            L50,95
-            L66,92 Z"/>
-
-    <!-- лівий нижній -->
-    <path
-        android:fillColor="@android:color/transparent"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="4"
-        android:pathData="
-            M26,90
-            L38,64
-            L50,72
-            L50,95
-            L34,92 Z"/>
-
-    <!-- лівий верхній -->
-    <path
-        android:fillColor="@android:color/transparent"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="4"
-        android:pathData="
-            M12,28
-            L28,34
-            L32,40
-            L38,64
-            L20,54
-            L10,42 Z"/>
 </vector>
