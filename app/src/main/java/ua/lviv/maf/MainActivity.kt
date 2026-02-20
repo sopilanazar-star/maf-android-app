@@ -42,6 +42,11 @@ class MainActivity : AppCompatActivity() {
     private var allMatches = mutableListOf<TournamentRow>()
     private val seasons = arrayOf("2026", "2025", "2024")
 
+    // ПРАВКА: Функція для адаптації відступів під будь-який екран
+    private fun dpToPx(dp: Int): Int {
+        return (dp * resources.displayMetrics.density).toInt()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -140,14 +145,16 @@ class MainActivity : AppCompatActivity() {
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
-            setPadding(0, 0, 0, 0)
+            // ПРАВКА: Динамічний відступ знизу 90 dp, щоб список не ховався за меню
+            setPadding(0, 0, 0, dpToPx(90))
             clipToPadding = false
         }
 
         newsRecyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
-            setPadding(0, 0, 0, 0)
+            // ПРАВКА: Такий самий відступ для списку новин
+            setPadding(0, 0, 0, dpToPx(90))
             clipToPadding = false
             visibility = View.VISIBLE
         }
