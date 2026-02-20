@@ -48,7 +48,9 @@ class StandingFragment : Fragment() {
     // ===============================
     private fun loadCompetitions() {
         val client = OkHttpClient()
-        val request = Request.Builder().url(COMPS_URL).build()
+        // ПРАВКА: Додаємо передачу глобального року до запиту турнірів
+        val url = "$COMPS_URL?year=${AppConfig.selectedYear}"
+        val request = Request.Builder().url(url).build()
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
@@ -123,9 +125,9 @@ class StandingFragment : Fragment() {
     // ===============================
     private fun loadStanding(compId: String) {
         val client = OkHttpClient()
-        val request = Request.Builder()
-            .url("$STANDING_URL?competition_id=$compId")
-            .build()
+        // ПРАВКА: Додаємо передачу глобального року до запиту таблиці турніру
+        val url = "$STANDING_URL?competition_id=$compId&year=${AppConfig.selectedYear}"
+        val request = Request.Builder().url(url).build()
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
