@@ -38,11 +38,18 @@ class MainActivity : AppCompatActivity() {
     private val MAF_NEWS_URL = "https://maf.lviv.ua/wp-json/maf/v2/news"
     private val MAF_STANDINGS_URL = "https://maf.lviv.ua/wp-json/maf/v2/standing"
     
-    private var currentYear = "2025"
     private var allMatches = mutableListOf<TournamentRow>()
-    private val seasons = arrayOf("2026", "2025", "2024")
+    
+    // ПРАВКА: Динамічний список сезонів від поточного року до 2024
+    private val seasons: List<String> = generateSeasons()
 
-    // ПРАВКА: Функція для адаптації відступів під будь-який екран
+    private fun generateSeasons(): List<String> {
+        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+        val maxYear = if (currentYear >= 2024) currentYear else 2024
+        return (maxYear downTo 2024).map { it.toString() }
+    }
+
+    // Функція для адаптації відступів під будь-який екран
     private fun dpToPx(dp: Int): Int {
         return (dp * resources.displayMetrics.density).toInt()
     }
@@ -111,15 +118,22 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             this.adapter = spinnerAdapter
-            setSelection(1) 
+            
+            // ПРАВКА: Встановлюємо вибраний рік з глобального AppConfig
+            val selectedIndex = seasons.indexOf(AppConfig.selectedYear)
+            if (selectedIndex != -1) {
+                setSelection(selectedIndex)
+            } else {
+                setSelection(0)
+            }
         }
 
         seasonSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val selectedYear = seasons[position]
-                if (currentYear != selectedYear) {
-                    currentYear = selectedYear
-                    loadFromApi(currentYear)
+                val selectedYearStr = seasons[position]
+                if (AppConfig.selectedYear != selectedYearStr) {
+                    AppConfig.selectedYear = selectedYearStr // Зберігаємо глобально!
+                    loadFromApi(AppConfig.selectedYear)
                 }
             }
             override fun onNothingSelected(p0: AdapterView<*>?) {}
@@ -145,7 +159,6 @@ class MainActivity : AppCompatActivity() {
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
-            // ПРАВКА: Динамічний відступ знизу 90 dp, щоб список не ховався за меню
             setPadding(0, 0, 0, dpToPx(90))
             clipToPadding = false
         }
@@ -153,7 +166,6 @@ class MainActivity : AppCompatActivity() {
         newsRecyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
-            // ПРАВКА: Такий самий відступ для списку новин
             setPadding(0, 0, 0, dpToPx(90))
             clipToPadding = false
             visibility = View.VISIBLE
@@ -231,7 +243,8 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        loadFromApi(currentYear)
+        // ПРАВКА: Завантажуємо дані для глобально збереженого року
+        loadFromApi(AppConfig.selectedYear)
         loadNewsFromApi()
     }
 
@@ -296,6 +309,9 @@ class MainActivity : AppCompatActivity() {
                         if (dateList.isNotEmpty()) {
                             dateList[0].isSelected = true
                             filterMatches(dateList[0].date)
+                        } else {
+                            // Очищаємо екран матчів, якщо для обраного року немає даних
+                            recyclerView.adapter = TournamentAdapter(emptyList())
                         }
                     }
                 } catch (e: Exception) { e.printStackTrace() }
