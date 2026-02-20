@@ -38,7 +38,6 @@ class StandingFragment : Fragment() {
         adapter = StandingAdapter(emptyList())
         recyclerView.adapter = adapter
 
-        setupTabListener()
         loadCompetitions()
 
         return view
@@ -54,30 +53,38 @@ class StandingFragment : Fragment() {
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 activity?.runOnUiThread {
-                    Toast.makeText(context, "Помилка завантаження ліг", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Помилка зв'язку (Турніри)", Toast.LENGTH_SHORT).show()
                 }
             }
 
             override fun onResponse(call: Call, response: Response) {
-                val json = response.body?.string() ?: ""
+                // Відрізаємо можливі невидимі пробіли від WordPress
+                val json = response.body?.string()?.trim() ?: "" 
+                
                 try {
                     val array = JSONArray(json)
                     competitions.clear()
 
                     for (i in 0 until array.length()) {
                         val obj = array.getJSONObject(i)
-                        competitions.add(
-                            Competition(
-                                obj.getString("id"),
-                                obj.getString("title")
-                            )
-                        )
+                        
+                        // 🔥 БЕЗПЕЧНИЙ ПАРСИНГ: шукаємо id, якщо немає - term_id
+                        val compId = obj.optString("id", obj.optString("term_id", ""))
+                        // Шукаємо title, якщо немає - name
+                        val compTitle = obj.optString("title", obj.optString("name", "Турнір"))
+                        
+                        if (compId.isNotEmpty()) {
+                            competitions.add(Competition(compId, compTitle))
+                        }
                     }
 
                     activity?.runOnUiThread { updateTabs() }
 
                 } catch (e: Exception) {
                     e.printStackTrace()
+                    activity?.runOnUiThread {
+                        Toast.makeText(context, "Помилка обробки турнірів", Toast.LENGTH_LONG).show()
+                    }
                 }
             }
         })
@@ -85,10 +92,14 @@ class StandingFragment : Fragment() {
 
     private fun updateTabs() {
         tabLayout.removeAllTabs()
+        tabLayout.clearOnTabSelectedListeners() // Щоб не дублювати запити
+
         for (comp in competitions) {
             tabLayout.addTab(tabLayout.newTab().setText(comp.title))
         }
-        // Завантажуємо першу лігу зі списку (або конкретну, якщо треба)
+
+        setupTabListener()
+
         if (competitions.isNotEmpty()) {
             loadStanding(competitions[0].id)
         }
@@ -112,7 +123,6 @@ class StandingFragment : Fragment() {
     // ===============================
     private fun loadStanding(compId: String) {
         val client = OkHttpClient()
-        // Формуємо URL: .../standing?competition_id=992
         val request = Request.Builder()
             .url("$STANDING_URL?competition_id=$compId")
             .build()
@@ -120,12 +130,12 @@ class StandingFragment : Fragment() {
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 activity?.runOnUiThread {
-                    Toast.makeText(context, "Помилка таблиці", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Помилка зв'язку (Таблиця)", Toast.LENGTH_SHORT).show()
                 }
             }
 
             override fun onResponse(call: Call, response: Response) {
-                val json = response.body?.string() ?: ""
+                val json = response.body?.string()?.trim() ?: ""
 
                 try {
                     val array = JSONArray(json)
@@ -134,7 +144,6 @@ class StandingFragment : Fragment() {
                     for (i in 0 until array.length()) {
                         val obj = array.getJSONObject(i)
 
-                        // Парсинг форми (W, D, L)
                         val formArray = obj.optJSONArray("form")
                         val formList = mutableListOf<String>()
                         if (formArray != null) {
@@ -143,8 +152,6 @@ class StandingFragment : Fragment() {
                             }
                         }
 
-                        // Важливо: зчитуємо team_id як String, щоб уникнути помилок
-                        // Використовуємо optString, бо в JSON це рядок "32"
                         val teamIdStr = obj.optString("team_id", "")
 
                         list.add(
@@ -173,6 +180,9 @@ class StandingFragment : Fragment() {
 
                 } catch (e: Exception) {
                     e.printStackTrace()
+                    activity?.runOnUiThread {
+                        Toast.makeText(context, "Помилка обробки таблиці: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
                 }
             }
         })
