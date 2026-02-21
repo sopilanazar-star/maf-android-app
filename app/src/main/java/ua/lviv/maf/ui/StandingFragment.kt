@@ -12,6 +12,9 @@ import com.google.android.material.tabs.TabLayout
 import okhttp3.*
 import org.json.JSONArray
 import java.io.IOException
+import ua.lviv.maf.AppConfig
+import ua.lviv.maf.R
+import ua.lviv.maf.models.StandingItem
 
 class StandingFragment : Fragment() {
 
@@ -24,11 +27,7 @@ class StandingFragment : Fragment() {
     private val COMPS_URL = "https://maf.lviv.ua/wp-json/maf/v2/competitions"
     private val STANDING_URL = "https://maf.lviv.ua/wp-json/maf/v2/standing"
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val view = inflater.inflate(R.layout.fragment_standing, container, false)
 
         tabLayout = view.findViewById(R.id.tabLayoutCompetitions)
@@ -44,7 +43,7 @@ class StandingFragment : Fragment() {
     }
 
     // =========================
-    // ЗАВАНТАЖУЄМО ТУРНІРИ
+    // ТУРНІРИ
     // =========================
     private fun loadCompetitions() {
         val client = OkHttpClient()
@@ -60,8 +59,8 @@ class StandingFragment : Fragment() {
 
             override fun onResponse(call: Call, response: Response) {
                 val json = response.body?.string()?.trim() ?: ""
-
                 val array = JSONArray(json)
+
                 competitions.clear()
 
                 for (i in 0 until array.length()) {
@@ -101,7 +100,7 @@ class StandingFragment : Fragment() {
     }
 
     // =========================
-    // ЗАВАНТАЖУЄМО ТАБЛИЦЮ
+    // ТАБЛИЦЯ
     // =========================
     private fun loadStanding(compId: Int) {
         val client = OkHttpClient()
@@ -121,22 +120,28 @@ class StandingFragment : Fragment() {
                     val obj = array.getJSONObject(i)
 
                     if (obj.optBoolean("is_group_header")) {
+
                         list.add(
                             StandingItem.GroupHeader(
                                 obj.getString("group_name")
                             )
                         )
+
+                        list.add(StandingItem.TableHeader())
+
                     } else {
+
                         list.add(
                             StandingItem.TeamRow(
                                 position = obj.getInt("position"),
-                                teamName = obj.getString("team_name"),
+                                name = obj.getString("team_name"),
                                 logo = obj.getString("logo"),
                                 games = obj.getInt("games"),
                                 win = obj.getInt("win"),
                                 draw = obj.getInt("draw"),
                                 loss = obj.getInt("loss"),
-                                goals = "${obj.getInt("goals_for")}-${obj.getInt("goals_against")}",
+                                goalsFor = obj.getInt("goals_for"),
+                                goalsAgainst = obj.getInt("goals_against"),
                                 points = obj.getInt("points")
                             )
                         )
@@ -144,9 +149,14 @@ class StandingFragment : Fragment() {
                 }
 
                 activity?.runOnUiThread {
-                    adapter.setItems(list)
+                    adapter.submit(list)
                 }
             }
         })
     }
 }
+
+data class Competition(
+    val id: Int,
+    val title: String
+)
