@@ -1,0 +1,43 @@
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="44dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="6dp"
+    android:paddingEnd="6dp"
+    android:background="#0F141B">
+
+    <TextView
+        android:id="@+id/position"
+        android:layout_width="28dp"
+        android:textColor="#FFFFFF"/>
+
+    <ImageView
+        android:id="@+id/logo"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_marginEnd="4dp"/>
+
+    <TextView
+        android:id="@+id/teamName"
+        android:layout_weight="1"
+        android:textColor="#FFFFFF"
+        android:maxLines="1"
+        android:ellipsize="end"/>
+
+    <TextView android:id="@+id/games" android:layout_width="32dp" android:textColor="#FFFFFF"/>
+    <TextView android:id="@+id/win"   android:layout_width="32dp" android:textColor="#FFFFFF"/>
+    <TextView android:id="@+id/draw"  android:layout_width="32dp" android:textColor="#FFFFFF"/>
+    <TextView android:id="@+id/loss"  android:layout_width="32dp" android:textColor="#FFFFFF"/>
+
+    <TextView
+        android:id="@+id/goals"
+        android:layout_width="56dp"
+        android:textColor="#FFFFFF"/>
+
+    <TextView
+        android:id="@+id/points"
+        android:layout_width="32dp"
+        android:textColor="#FF2E2E"
+        android:textStyle="bold"/>
+</LinearLayout>
