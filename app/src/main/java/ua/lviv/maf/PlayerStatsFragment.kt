@@ -52,7 +52,9 @@ class PlayerStatsFragment : Fragment() {
     }
 
     private fun loadStats() {
-        val url = "https://maf.lviv.ua/wp-json/maf/v2/player-stats?id=$playerId"
+        // 🔥 ПРАВКА: Додаємо параметр року, який вибрав користувач, щоб сервер віддав правильні цифри
+        val year = AppConfig.selectedYear
+        val url = "https://maf.lviv.ua/wp-json/maf/v2/player-stats?id=$playerId&year=$year"
         val request = Request.Builder().url(url).build()
 
         OkHttpClient().newCall(request).enqueue(object : Callback {
