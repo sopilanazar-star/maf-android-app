@@ -54,7 +54,10 @@ class TeamSquadFragment : Fragment() {
     }
 
     private fun loadPlayers() {
-        val url = "https://maf.lviv.ua/wp-json/maf/v2/team-players?id=$teamId"
+        // 🔥 ПРАВКА: Передаємо обраний рік у запит, щоб сервер віддав заявку саме за цей сезон
+        val year = AppConfig.selectedYear
+        val url = "https://maf.lviv.ua/wp-json/maf/v2/team-players?id=$teamId&year=$year"
+        
         val request = Request.Builder().url(url).build()
 
         OkHttpClient().newCall(request).enqueue(object : Callback {
