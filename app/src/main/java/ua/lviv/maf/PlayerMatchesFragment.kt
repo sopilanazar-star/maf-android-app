@@ -53,7 +53,10 @@ class PlayerMatchesFragment : Fragment() {
 
     private fun loadPlayerMatches() {
         progressBar.visibility = View.VISIBLE
-        val url = "https://maf.lviv.ua/wp-json/maf/v2/player-matches?id=$playerId"
+        
+        // 🔥 ПРАВКА 1: Додаємо наш глобальний рік до запиту!
+        val year = AppConfig.selectedYear
+        val url = "https://maf.lviv.ua/wp-json/maf/v2/player-matches?id=$playerId&year=$year"
         val request = Request.Builder().url(url).build()
 
         OkHttpClient().newCall(request).enqueue(object : Callback {
@@ -66,20 +69,37 @@ class PlayerMatchesFragment : Fragment() {
                 activity?.runOnUiThread {
                     progressBar.visibility = View.GONE
                     try {
-                        val jsonArray = JSONArray(rawJson)
                         val matchesList = ArrayList<JSONObject>()
-                        for (i in 0 until jsonArray.length()) {
-                            matchesList.add(jsonArray.getJSONObject(i))
+                        
+                        // 🔥 ПРАВКА 2: Безпечний парсинг (Масив АБО Об'єкт)
+                        if (rawJson.isNotEmpty() && rawJson != "[]" && rawJson != "{}") {
+                            if (rawJson.startsWith("[")) {
+                                val jsonArray = JSONArray(rawJson)
+                                for (i in 0 until jsonArray.length()) {
+                                    matchesList.add(jsonArray.getJSONObject(i))
+                                }
+                            } else if (rawJson.startsWith("{")) {
+                                val jsonObject = JSONObject(rawJson)
+                                val keys = jsonObject.keys()
+                                while (keys.hasNext()) {
+                                    val item = jsonObject.optJSONObject(keys.next())
+                                    if (item != null) matchesList.add(item)
+                                }
+                            }
                         }
 
                         if (matchesList.isNotEmpty()) {
                             tvEmptyInfo.visibility = View.GONE
                             // Використовуємо твій існуючий TeamMatchesAdapter
-                            recyclerView.adapter = TeamMatchesAdapter(matchesList) { }
+                            recyclerView.adapter = TeamMatchesAdapter(matchesList) { matchJson -> 
+                                // Тут можна додати перехід на деталі матчу, якщо потрібно
+                            }
                         } else {
                             tvEmptyInfo.visibility = View.VISIBLE
                         }
                     } catch (e: Exception) {
+                        // Додав логування, щоб ти бачив у Logcat, якщо парсер знову спіткнеться
+                        Log.e("PlayerMatches", "Error parsing JSON: ${e.message}") 
                         tvEmptyInfo.visibility = View.VISIBLE
                     }
                 }
