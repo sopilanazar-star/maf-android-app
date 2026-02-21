@@ -47,7 +47,9 @@ class StandingFragment : Fragment() {
     // 1. ЗАВАНТАЖЕННЯ СПИСКУ ЛІГ
     // ===============================
     private fun loadCompetitions() {
-        val client = OkHttpClient()
+        val client = OkHttpClient.Builder()
+    .cache(null)
+    .build()
         // ПРАВКА: Додаємо передачу глобального року до запиту турнірів
         val url = "$COMPS_URL?year=${AppConfig.selectedYear}"
         val request = Request.Builder().url(url).build()
