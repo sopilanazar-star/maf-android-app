@@ -23,6 +23,7 @@ import org.json.JSONArray
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
+import ua.lviv.maf.ui.StandingFragment
 
 class MainActivity : AppCompatActivity() {
 
