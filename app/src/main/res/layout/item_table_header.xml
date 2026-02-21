@@ -1,4 +1,5 @@
-<LinearLayout
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="#1A2028"
@@ -7,26 +8,29 @@
 
     <TextView
         android:layout_width="28dp"
+        android:layout_height="wrap_content"
         android:text="#"
         android:textColor="#9AA4AF"
         android:textSize="12sp"/>
 
     <TextView
         android:layout_width="28dp"
-        android:text=""
-        android:textColor="#9AA4AF"
-        android:textSize="12sp"/>
+        android:layout_height="wrap_content"
+        android:text=""/>
 
     <TextView
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
         android:layout_weight="1"
         android:text="Команда"
         android:textColor="#9AA4AF"
         android:textSize="12sp"/>
 
-    <TextView android:layout_width="32dp" android:text="І" android:textColor="#9AA4AF"/>
-    <TextView android:layout_width="32dp" android:text="В" android:textColor="#9AA4AF"/>
-    <TextView android:layout_width="32dp" android:text="Н" android:textColor="#9AA4AF"/>
-    <TextView android:layout_width="32dp" android:text="П" android:textColor="#9AA4AF"/>
-    <TextView android:layout_width="56dp" android:text="ЗМ-ПМ" android:textColor="#9AA4AF"/>
-    <TextView android:layout_width="32dp" android:text="О" android:textColor="#FF2E2E"/>
+    <TextView android:layout_width="32dp" android:layout_height="wrap_content" android:text="І" android:textColor="#9AA4AF"/>
+    <TextView android:layout_width="32dp" android:layout_height="wrap_content" android:text="В" android:textColor="#9AA4AF"/>
+    <TextView android:layout_width="32dp" android:layout_height="wrap_content" android:text="Н" android:textColor="#9AA4AF"/>
+    <TextView android:layout_width="32dp" android:layout_height="wrap_content" android:text="П" android:textColor="#9AA4AF"/>
+    <TextView android:layout_width="56dp" android:layout_height="wrap_content" android:text="ЗМ-ПМ" android:textColor="#9AA4AF"/>
+    <TextView android:layout_width="32dp" android:layout_height="wrap_content" android:text="О" android:textColor="#FF2E2E"/>
+
 </LinearLayout>
