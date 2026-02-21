@@ -1,0 +1,32 @@
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#1A2028"
+    android:padding="6dp"
+    android:orientation="horizontal">
+
+    <TextView
+        android:layout_width="28dp"
+        android:text="#"
+        android:textColor="#9AA4AF"
+        android:textSize="12sp"/>
+
+    <TextView
+        android:layout_width="28dp"
+        android:text=""
+        android:textColor="#9AA4AF"
+        android:textSize="12sp"/>
+
+    <TextView
+        android:layout_weight="1"
+        android:text="Команда"
+        android:textColor="#9AA4AF"
+        android:textSize="12sp"/>
+
+    <TextView android:layout_width="32dp" android:text="І" android:textColor="#9AA4AF"/>
+    <TextView android:layout_width="32dp" android:text="В" android:textColor="#9AA4AF"/>
+    <TextView android:layout_width="32dp" android:text="Н" android:textColor="#9AA4AF"/>
+    <TextView android:layout_width="32dp" android:text="П" android:textColor="#9AA4AF"/>
+    <TextView android:layout_width="56dp" android:text="ЗМ-ПМ" android:textColor="#9AA4AF"/>
+    <TextView android:layout_width="32dp" android:text="О" android:textColor="#FF2E2E"/>
+</LinearLayout>
