@@ -1,117 +1,108 @@
-package ua.lviv.maf
+package ua.lviv.maf.ui
 
-import android.content.Intent
-import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import ua.lviv.maf.R
+import ua.lviv.maf.models.StandingItem
 
-class StandingAdapter(private var items: List<StandingRow>) :
-    RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class StandingAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    companion object {
-        private const val TYPE_HEADER = 0
-        private const val TYPE_TEAM = 1
-    }
+    private val items = mutableListOf<StandingItem>()
 
-    override fun getItemViewType(position: Int): Int {
-        return if (items[position].is_group_header) TYPE_HEADER else TYPE_TEAM
-    }
-
-    class TeamViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val tvPosition: TextView = view.findViewById(R.id.tvPosition)
-        val ivTeamLogo: ImageView = view.findViewById(R.id.ivTeamLogo)
-        val tvTeamName: TextView = view.findViewById(R.id.tvTeamName)
-        val tvGames: TextView = view.findViewById(R.id.tvGames)
-        val tvGoalsDiff: TextView = view.findViewById(R.id.tvGoalsDiff)
-        val tvPoints: TextView = view.findViewById(R.id.tvPoints)
-        val layoutForm: LinearLayout = view.findViewById(R.id.layoutForm)
-    }
-
-    class HeaderViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val tvGroupName: TextView = view.findViewById(R.id.tvGroupName)
-    }
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        val inflater = LayoutInflater.from(parent.context)
-        return if (viewType == TYPE_HEADER) {
-            HeaderViewHolder(inflater.inflate(R.layout.item_standing_header, parent, false))
-        } else {
-            TeamViewHolder(inflater.inflate(R.layout.item_standing, parent, false))
-        }
-    }
-
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        val item = items[position]
-
-        if (holder is HeaderViewHolder) {
-            holder.tvGroupName.text = item.group_name ?: "Група"
-            return
-        }
-
-        if (holder is TeamViewHolder) {
-            holder.tvPosition.text = "${item.position}."
-            holder.tvTeamName.text = item.team_name
-            holder.tvGames.text = item.games.toString()
-            holder.tvGoalsDiff.text = "${item.goals_for}-${item.goals_against}"
-            holder.tvPoints.text = item.points.toString()
-
-            drawForm(holder.layoutForm, item.form)
-
-            Glide.with(holder.itemView.context)
-                .load(item.logo)
-                .placeholder(R.drawable.ic_ball)
-                .into(holder.ivTeamLogo)
-
-            // 🔥 ТЕПЕР ПЕРЕДАЄМО ЛОГОТИП КОМАНДИ
-            holder.itemView.setOnClickListener {
-                if (item.team_id.isNotEmpty() && item.team_id != "0") {
-                    val intent = Intent(it.context, TeamPlayersActivity::class.java)
-                    intent.putExtra("team_id", item.team_id)
-                    intent.putExtra("team_name", item.team_name)
-                    intent.putExtra("team_logo", item.logo) // ОСЬ ЦЕЙ РЯДОК ВСЕ ПОЛАГОДИТЬ
-                    it.context.startActivity(intent)
-                }
-            }
-        }
-    }
-
-    private fun drawForm(layout: LinearLayout, formList: List<String>?) {
-        layout.removeAllViews()
-        if (formList.isNullOrEmpty()) return
-        val density = layout.context.resources.displayMetrics.density
-        val size = (10 * density).toInt()
-        val margin = (2 * density).toInt()
-
-        formList.forEach { result ->
-            val circle = View(layout.context)
-            val params = LinearLayout.LayoutParams(size, size)
-            params.setMargins(margin, 0, margin, 0)
-            circle.layoutParams = params
-            val color = when (result.uppercase()) {
-                "W" -> Color.parseColor("#4CAF50")
-                "D" -> Color.parseColor("#9E9E9E")
-                "L" -> Color.parseColor("#F44336")
-                else -> Color.TRANSPARENT
-            }
-            circle.background = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                setColor(color)
-            }
-            layout.addView(circle)
-        }
+    fun submit(list: List<StandingItem>) {
+        items.clear()
+        items.addAll(list)
+        notifyDataSetChanged()
     }
 
     override fun getItemCount() = items.size
 
-    fun updateData(newItems: List<StandingRow>) {
-        items = newItems
-        notifyDataSetChanged()
+    override fun getItemViewType(position: Int): Int {
+        return when (items[position]) {
+            is StandingItem.GroupHeader -> 0
+            is StandingItem.TableHeader -> 1
+            is StandingItem.TeamRow -> 2
+            is StandingItem.PlayoffHeader -> 3
+            is StandingItem.PlayoffStage -> 4
+        }
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+
+        val inflater = LayoutInflater.from(parent.context)
+
+        return when (viewType) {
+            0 -> GroupHeaderVH(inflater.inflate(R.layout.item_group_header, parent, false))
+            1 -> TableHeaderVH(inflater.inflate(R.layout.item_table_header, parent, false))
+            2 -> TeamVH(inflater.inflate(R.layout.item_team, parent, false))
+            3 -> PlayoffHeaderVH(inflater.inflate(R.layout.item_playoff_header, parent, false))
+            else -> PlayoffStageVH(inflater.inflate(R.layout.item_playoff_stage, parent, false))
+        }
+    }
+
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        when (val item = items[position]) {
+            is StandingItem.GroupHeader -> (holder as GroupHeaderVH).bind(item)
+            is StandingItem.TableHeader -> {}
+            is StandingItem.TeamRow -> (holder as TeamVH).bind(item)
+            is StandingItem.PlayoffHeader -> (holder as PlayoffHeaderVH).bind(item)
+            is StandingItem.PlayoffStage -> (holder as PlayoffStageVH).bind(item)
+        }
+    }
+
+    class GroupHeaderVH(v: View) : RecyclerView.ViewHolder(v) {
+        private val title = v.findViewById<TextView>(R.id.groupTitle)
+        fun bind(item: StandingItem.GroupHeader) {
+            title.text = item.title.uppercase()
+        }
+    }
+
+    class TableHeaderVH(v: View) : RecyclerView.ViewHolder(v)
+
+    class TeamVH(v: View) : RecyclerView.ViewHolder(v) {
+
+        private val pos = v.findViewById<TextView>(R.id.position)
+        private val logo = v.findViewById<ImageView>(R.id.logo)
+        private val name = v.findViewById<TextView>(R.id.teamName)
+        private val games = v.findViewById<TextView>(R.id.games)
+        private val win = v.findViewById<TextView>(R.id.win)
+        private val draw = v.findViewById<TextView>(R.id.draw)
+        private val loss = v.findViewById<TextView>(R.id.loss)
+        private val goals = v.findViewById<TextView>(R.id.goals)
+        private val pts = v.findViewById<TextView>(R.id.points)
+
+        fun bind(item: StandingItem.TeamRow) {
+            pos.text = item.position.toString()
+            name.text = item.name
+            games.text = item.games.toString()
+            win.text = item.win.toString()
+            draw.text = item.draw.toString()
+            loss.text = item.loss.toString()
+            goals.text = "${item.goalsFor}-${item.goalsAgainst}"
+            pts.text = item.points.toString()
+
+            Glide.with(itemView.context)
+                .load(item.logo)
+                .into(logo)
+        }
+    }
+
+    class PlayoffHeaderVH(v: View) : RecyclerView.ViewHolder(v) {
+        private val title = v.findViewById<TextView>(R.id.playoffHeader)
+        fun bind(item: StandingItem.PlayoffHeader) {
+            title.text = item.title
+        }
+    }
+
+    class PlayoffStageVH(v: View) : RecyclerView.ViewHolder(v) {
+        private val title = v.findViewById<TextView>(R.id.stageTitle)
+        fun bind(item: StandingItem.PlayoffStage) {
+            title.text = item.title
+        }
     }
 }
