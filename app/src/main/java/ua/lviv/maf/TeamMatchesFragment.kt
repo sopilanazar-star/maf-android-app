@@ -74,7 +74,9 @@ class TeamMatchesFragment : Fragment() {
     }
 
     private fun loadMatches() {
-        val url = "https://maf.lviv.ua/wp-json/maf/v2/matches" 
+        // 🔥 ПРАВКА: Додаємо параметр року, який вибрав користувач
+        val year = AppConfig.selectedYear
+        val url = "https://maf.lviv.ua/wp-json/maf/v2/matches?year=$year" 
         val request = Request.Builder().url(url).build()
 
         OkHttpClient().newCall(request).enqueue(object : Callback {
