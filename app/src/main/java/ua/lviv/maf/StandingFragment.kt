@@ -1,129 +1,192 @@
-package ua.lviv.maf.ui
+package ua.lviv.maf
 
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.tabs.TabLayout
 import okhttp3.*
 import org.json.JSONArray
-import ua.lviv.maf.R
-import ua.lviv.maf.models.StandingItem
 import java.io.IOException
 
-class StandingFragment : Fragment(R.layout.fragment_standing) {
+class StandingFragment : Fragment() {
 
+    private lateinit var tabLayout: TabLayout
+    private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: StandingAdapter
-    private val tournaments = mutableListOf<org.json.JSONObject>()
 
-    private val URL = "https://maf.lviv.ua/wp-json/maf/v2/tables"
+    private var competitions = mutableListOf<Competition>()
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    private val COMPS_URL = "https://maf.lviv.ua/wp-json/maf/v2/competitions"
+    private val STANDING_URL = "https://maf.lviv.ua/wp-json/maf/v2/standing"
 
-        val rv = view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvStanding)
-        val tabs = view.findViewById<TabLayout>(R.id.tabLayoutCompetitions)
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        val view = inflater.inflate(R.layout.fragment_standing, container, false)
 
-        adapter = StandingAdapter()
-        rv.layoutManager = LinearLayoutManager(requireContext())
-        rv.adapter = adapter
+        tabLayout = view.findViewById(R.id.tabLayoutCompetitions)
+        recyclerView = view.findViewById(R.id.rvStanding)
 
-        loadData(tabs)
+        recyclerView.layoutManager = LinearLayoutManager(context)
+        adapter = StandingAdapter(emptyList())
+        recyclerView.adapter = adapter
+
+        loadCompetitions()
+
+        return view
     }
 
-    private fun loadData(tabs: TabLayout) {
-
+    // ===============================
+    // 1. ЗАВАНТАЖЕННЯ СПИСКУ ЛІГ
+    // ===============================
+    private fun loadCompetitions() {
         val client = OkHttpClient()
-        val request = Request.Builder().url(URL).build()
+        // ПРАВКА: Додаємо передачу глобального року до запиту турнірів
+        val url = "$COMPS_URL?year=${AppConfig.selectedYear}"
+        val request = Request.Builder().url(url).build()
 
         client.newCall(request).enqueue(object : Callback {
-
-            override fun onFailure(call: Call, e: IOException) {}
+            override fun onFailure(call: Call, e: IOException) {
+                activity?.runOnUiThread {
+                    Toast.makeText(context, "Помилка зв'язку (Турніри)", Toast.LENGTH_SHORT).show()
+                }
+            }
 
             override fun onResponse(call: Call, response: Response) {
+                // Відрізаємо можливі невидимі пробіли від WordPress
+                val json = response.body?.string()?.trim() ?: "" 
+                
+                try {
+                    val array = JSONArray(json)
+                    competitions.clear()
 
-                val json = response.body?.string()?.trim() ?: "[]"
-                val array = JSONArray(json)
-
-                tournaments.clear()
-
-                for (i in 0 until array.length()) {
-                    tournaments.add(array.getJSONObject(i))
-                }
-
-                activity?.runOnUiThread {
-                    tabs.removeAllTabs()
-
-                    tournaments.forEach {
-                        tabs.addTab(tabs.newTab().setText(it.getString("title")))
+                    for (i in 0 until array.length()) {
+                        val obj = array.getJSONObject(i)
+                        
+                        // 🔥 БЕЗПЕЧНИЙ ПАРСИНГ: шукаємо id, якщо немає - term_id
+                        val compId = obj.optString("id", obj.optString("term_id", ""))
+                        // Шукаємо title, якщо немає - name
+                        val compTitle = obj.optString("title", obj.optString("name", "Турнір"))
+                        
+                        if (compId.isNotEmpty()) {
+                            competitions.add(Competition(compId, compTitle))
+                        }
                     }
 
-                    tabs.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
-                        override fun onTabSelected(tab: TabLayout.Tab?) {
-                            showTournament(tab?.position ?: 0)
-                        }
-                        override fun onTabUnselected(tab: TabLayout.Tab?) {}
-                        override fun onTabReselected(tab: TabLayout.Tab?) {}
-                    })
+                    activity?.runOnUiThread { updateTabs() }
 
-                    if (tournaments.isNotEmpty()) {
-                        showTournament(0)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    activity?.runOnUiThread {
+                        Toast.makeText(context, "Помилка обробки турнірів", Toast.LENGTH_LONG).show()
                     }
                 }
             }
         })
     }
 
-    private fun showTournament(index: Int) {
+    private fun updateTabs() {
+        tabLayout.removeAllTabs()
+        tabLayout.clearOnTabSelectedListeners() // Щоб не дублювати запити
 
-        val obj = tournaments[index]
-        val list = mutableListOf<StandingItem>()
+        for (comp in competitions) {
+            tabLayout.addTab(tabLayout.newTab().setText(comp.title))
+        }
 
-        val table = obj.optJSONArray("table")
+        setupTabListener()
 
-        if (table != null) {
+        if (competitions.isNotEmpty()) {
+            loadStanding(competitions[0].id)
+        }
+    }
 
-            for (i in 0 until table.length()) {
-
-                val row = table.getJSONObject(i)
-
-                if (row.optBoolean("is_group_header")) {
-                    list.add(StandingItem.GroupHeader(row.optString("group_name")))
-                    list.add(StandingItem.TableHeader)
-                } else {
-                    list.add(
-                        StandingItem.TeamRow(
-                            position = row.optInt("position"),
-                            name = row.optString("team_name"),
-                            logo = row.optString("logo"),
-                            games = row.optInt("games"),
-                            win = row.optInt("win"),
-                            draw = row.optInt("draw"),
-                            loss = row.optInt("loss"),
-                            goalsFor = row.optInt("goals_for"),
-                            goalsAgainst = row.optInt("goals_against"),
-                            points = row.optInt("points")
-                        )
-                    )
+    private fun setupTabListener() {
+        tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab?) {
+                val pos = tab?.position ?: 0
+                if (pos < competitions.size) {
+                    loadStanding(competitions[pos].id)
                 }
             }
-        }
+            override fun onTabUnselected(tab: TabLayout.Tab?) {}
+            override fun onTabReselected(tab: TabLayout.Tab?) {}
+        })
+    }
 
-        val playoff = obj.optJSONArray("playoff")
+    // ===============================
+    // 2. ЗАВАНТАЖЕННЯ ТАБЛИЦІ (JSON)
+    // ===============================
+    private fun loadStanding(compId: String) {
+        val client = OkHttpClient()
+        // ПРАВКА: Додаємо передачу глобального року до запиту таблиці турніру
+        val url = "$STANDING_URL?competition_id=$compId&year=${AppConfig.selectedYear}"
+        val request = Request.Builder().url(url).build()
 
-        if (playoff != null && playoff.length() > 0) {
-
-            list.add(StandingItem.PlayoffHeader("ПЛЕЙ-ОФ"))
-
-            for (i in 0 until playoff.length()) {
-                val stage = playoff.getJSONObject(i)
-                list.add(
-                    StandingItem.PlayoffStage(
-                        stage.getString("group_name")
-                    )
-                )
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                activity?.runOnUiThread {
+                    Toast.makeText(context, "Помилка зв'язку (Таблиця)", Toast.LENGTH_SHORT).show()
+                }
             }
-        }
 
-        adapter.submit(list)
+            override fun onResponse(call: Call, response: Response) {
+                val json = response.body?.string()?.trim() ?: ""
+
+                try {
+                    val array = JSONArray(json)
+                    val list = mutableListOf<StandingRow>()
+
+                    for (i in 0 until array.length()) {
+                        val obj = array.getJSONObject(i)
+
+                        val formArray = obj.optJSONArray("form")
+                        val formList = mutableListOf<String>()
+                        if (formArray != null) {
+                            for (j in 0 until formArray.length()) {
+                                formList.add(formArray.getString(j))
+                            }
+                        }
+
+                        val teamIdStr = obj.optString("team_id", "")
+
+                        list.add(
+                            StandingRow(
+                                team_id = teamIdStr,
+                                position = obj.optInt("position", 0),
+                                team_name = obj.optString("team_name", ""),
+                                logo = obj.optString("logo", ""),
+                                games = obj.optInt("games", 0),
+                                win = obj.optInt("win", 0),
+                                draw = obj.optInt("draw", 0),
+                                loss = obj.optInt("loss", 0),
+                                goals_for = obj.optInt("goals_for", 0),
+                                goals_against = obj.optInt("goals_against", 0),
+                                points = obj.optInt("points", 0),
+                                is_group_header = obj.optBoolean("is_group_header", false),
+                                group_name = obj.optString("group_name", ""),
+                                form = formList
+                            )
+                        )
+                    }
+
+                    activity?.runOnUiThread {
+                        adapter.updateData(list)
+                    }
+
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    activity?.runOnUiThread {
+                        Toast.makeText(context, "Помилка обробки таблиці: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        })
     }
 }
