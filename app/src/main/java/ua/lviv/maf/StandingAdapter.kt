@@ -11,6 +11,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import java.util.Locale
 
 class StandingAdapter(private var items: List<StandingRow>) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -25,6 +26,7 @@ class StandingAdapter(private var items: List<StandingRow>) :
     }
 
     class TeamViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val positionMarker: View = view.findViewById(R.id.positionMarker) // ДОДАНО
         val tvPosition: TextView = view.findViewById(R.id.tvPosition)
         val ivTeamLogo: ImageView = view.findViewById(R.id.ivTeamLogo)
         val tvTeamName: TextView = view.findViewById(R.id.tvTeamName)
@@ -62,31 +64,54 @@ class StandingAdapter(private var items: List<StandingRow>) :
             holder.tvGoalsDiff.text = "${item.goals_for}-${item.goals_against}"
             holder.tvPoints.text = item.points.toString()
 
+            // 🔥 ВИЗНАЧАЄМО КОЛЬОРОВЕ МАРКУВАННЯ (Лідер / Аутсайдер)
+            val isFirstPlace = item.position == 1
+            // Якщо наступний елемент - це заголовок нової групи, АБО це останній елемент у всьому списку
+            val isLastPlace = (position == items.size - 1) || (items[position + 1].is_group_header)
+
+            when {
+                isFirstPlace -> {
+                    holder.positionMarker.setBackgroundColor(Color.parseColor("#4CAF50")) // Зелений
+                    holder.tvPosition.setTextColor(Color.parseColor("#4CAF50"))
+                }
+                isLastPlace && item.position > 1 -> {
+                    holder.positionMarker.setBackgroundColor(Color.parseColor("#F44336")) // Червоний
+                    holder.tvPosition.setTextColor(Color.parseColor("#F44336"))
+                }
+                else -> {
+                    holder.positionMarker.setBackgroundColor(Color.TRANSPARENT) // Ховаємо маркер
+                    holder.tvPosition.setTextColor(Color.parseColor("#BCBCBC")) // Стандартний сірий
+                }
+            }
+
+            // Малюємо форму
             drawForm(holder.layoutForm, item.form)
 
             Glide.with(holder.itemView.context)
                 .load(item.logo)
-                .placeholder(R.drawable.ic_ball)
+                .placeholder(R.drawable.ic_ball) // Якщо у вас є іконка м'яча
                 .into(holder.ivTeamLogo)
 
-            // 🔥 ТЕПЕР ПЕРЕДАЄМО ЛОГОТИП КОМАНДИ
+            // Перехід на екран гравців команди
             holder.itemView.setOnClickListener {
                 if (item.team_id.isNotEmpty() && item.team_id != "0") {
                     val intent = Intent(it.context, TeamPlayersActivity::class.java)
                     intent.putExtra("team_id", item.team_id)
                     intent.putExtra("team_name", item.team_name)
-                    intent.putExtra("team_logo", item.logo) // ОСЬ ЦЕЙ РЯДОК ВСЕ ПОЛАГОДИТЬ
+                    intent.putExtra("team_logo", item.logo)
                     it.context.startActivity(intent)
                 }
             }
         }
     }
 
+    // 🔥 ФУНКЦІЯ МАЛЮВАННЯ ФОРМИ (Підтримує W/D/L та В/Н/П)
     private fun drawForm(layout: LinearLayout, formList: List<String>?) {
         layout.removeAllViews()
         if (formList.isNullOrEmpty()) return
+        
         val density = layout.context.resources.displayMetrics.density
-        val size = (10 * density).toInt()
+        val size = (12 * density).toInt() // Зробив кружечки трохи більшими (було 10)
         val margin = (2 * density).toInt()
 
         formList.forEach { result ->
@@ -94,12 +119,15 @@ class StandingAdapter(private var items: List<StandingRow>) :
             val params = LinearLayout.LayoutParams(size, size)
             params.setMargins(margin, 0, margin, 0)
             circle.layoutParams = params
-            val color = when (result.uppercase()) {
-                "W" -> Color.parseColor("#4CAF50")
-                "D" -> Color.parseColor("#9E9E9E")
-                "L" -> Color.parseColor("#F44336")
+            
+            // Розпізнаємо англійські та українські літери
+            val color = when (result.uppercase(Locale.getDefault())) {
+                "W", "В" -> Color.parseColor("#4CAF50") // Виграш (Зелений)
+                "D", "Н" -> Color.parseColor("#9E9E9E") // Нічия (Сірий)
+                "L", "П" -> Color.parseColor("#F44336") // Поразка (Червоний)
                 else -> Color.TRANSPARENT
             }
+            
             circle.background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 setColor(color)
