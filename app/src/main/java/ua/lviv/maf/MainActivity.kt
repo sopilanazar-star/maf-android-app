@@ -128,12 +128,21 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // 🔥 ОСНОВНА ПРАВКА ТУТ: Логіка при виборі року в спінері
         seasonSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 val selectedYearStr = seasons[position]
                 if (AppConfig.selectedYear != selectedYearStr) {
                     AppConfig.selectedYear = selectedYearStr // Зберігаємо глобально!
+                    
+                    // 1. Оновлюємо матчі
                     loadFromApi(AppConfig.selectedYear)
+                    
+                    // 2. ПРАВКА: Якщо відкритий фрагмент таблиць — оновлюємо його
+                    val currentFragment = supportFragmentManager.findFragmentByTag("StandingFragment")
+                    if (currentFragment is StandingFragment) {
+                        currentFragment.refreshData()
+                    }
                 }
             }
             override fun onNothingSelected(p0: AdapterView<*>?) {}
@@ -221,10 +230,12 @@ class MainActivity : AppCompatActivity() {
                     }
                     R.id.nav_tables -> {
                         contentLayout.visibility = View.GONE
-                        seasonSpinner.visibility = View.GONE
+                        seasonSpinner.visibility = View.VISIBLE // ПРАВКА: Залишаємо спінер видимим
                         fragmentContainer.visibility = View.VISIBLE
+                        
+                        // ПРАВКА: Додали тег "StandingFragment" для пошуку
                         supportFragmentManager.beginTransaction()
-                            .replace(fragmentContainer.id, StandingFragment())
+                            .replace(fragmentContainer.id, StandingFragment(), "StandingFragment")
                             .commit()
                     }
                 }
