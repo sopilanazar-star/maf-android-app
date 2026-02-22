@@ -13,9 +13,6 @@ import okhttp3.*
 import org.json.JSONArray
 import java.io.IOException
 
-// Модель даних для турніру
-data class Competition(val id: String, val title: String)
-
 class StandingFragment : Fragment() {
 
     private lateinit var tabLayout: TabLayout
@@ -85,6 +82,7 @@ class StandingFragment : Fragment() {
                         val compTitle = obj.optString("name", obj.optString("title", "Турнір"))
                         
                         if (compId.isNotEmpty()) {
+                            // Використовує клас Competition з файлу Competition.kt
                             competitions.add(Competition(compId, compTitle))
                         }
                     }
