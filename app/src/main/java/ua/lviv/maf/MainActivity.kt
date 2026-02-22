@@ -40,7 +40,7 @@ class MainActivity : AppCompatActivity() {
     
     private var allMatches = mutableListOf<TournamentRow>()
     
-    // ПРАВКА: Динамічний список сезонів від поточного року до 2024
+    // Динамічний список сезонів від поточного року до 2024
     private val seasons: List<String> = generateSeasons()
 
     private fun generateSeasons(): List<String> {
@@ -119,7 +119,7 @@ class MainActivity : AppCompatActivity() {
             }
             this.adapter = spinnerAdapter
             
-            // ПРАВКА: Встановлюємо вибраний рік з глобального AppConfig
+            // Встановлюємо вибраний рік з глобального AppConfig
             val selectedIndex = seasons.indexOf(AppConfig.selectedYear)
             if (selectedIndex != -1) {
                 setSelection(selectedIndex)
@@ -128,7 +128,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 🔥 ОСНОВНА ПРАВКА ТУТ: Логіка при виборі року в спінері
+        // Логіка при виборі року в спінері
         seasonSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 val selectedYearStr = seasons[position]
@@ -138,9 +138,11 @@ class MainActivity : AppCompatActivity() {
                     // 1. Оновлюємо матчі
                     loadFromApi(AppConfig.selectedYear)
                     
-                    // 2. ПРАВКА: Якщо відкритий фрагмент таблиць — оновлюємо його
-                    val currentFragment = supportFragmentManager.findFragmentByTag("StandingFragment")
+                    // 2. Оновлюємо відкритий фрагмент (Таблиці або Більше)
+                    val currentFragment = supportFragmentManager.findFragmentById(fragmentContainer.id)
                     if (currentFragment is StandingFragment) {
+                        currentFragment.refreshData()
+                    } else if (currentFragment is MoreFragment) {
                         currentFragment.refreshData()
                     }
                 }
@@ -230,18 +232,17 @@ class MainActivity : AppCompatActivity() {
                     }
                     R.id.nav_tables -> {
                         contentLayout.visibility = View.GONE
-                        seasonSpinner.visibility = View.VISIBLE // ПРАВКА: Залишаємо спінер видимим
+                        seasonSpinner.visibility = View.VISIBLE
                         fragmentContainer.visibility = View.VISIBLE
                         
-                        // ПРАВКА: Додали тег "StandingFragment" для пошуку
                         supportFragmentManager.beginTransaction()
                             .replace(fragmentContainer.id, StandingFragment(), "StandingFragment")
                             .commit()
                     }
-                    // 🔥 ДОДАНО: Логіка для вкладки "Більше"
-                    R.id.nav_more -> { // ВАЖЛИВО: Переконайся, що ID співпадає з тим, що в bottom_nav_menu.xml
+                    R.id.nav_more -> { 
                         contentLayout.visibility = View.GONE
-                        seasonSpinner.visibility = View.GONE // Ховаємо спінер
+                        // 🔥 Спінер тепер ВИДИМИЙ на вкладці "Більше"
+                        seasonSpinner.visibility = View.VISIBLE 
                         fragmentContainer.visibility = View.VISIBLE
                         
                         supportFragmentManager.beginTransaction()
@@ -264,7 +265,7 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        // ПРАВКА: Завантажуємо дані для глобально збереженого року
+        // Завантажуємо дані для глобально збереженого року
         loadFromApi(AppConfig.selectedYear)
         loadNewsFromApi()
     }
