@@ -13,7 +13,6 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
-// Модель для пункту меню
 data class MenuItem(val id: Int, val title: String)
 
 class MoreFragment : Fragment() {
@@ -30,12 +29,10 @@ class MoreFragment : Fragment() {
         val rvMoreMenu = view.findViewById<RecyclerView>(R.id.rvMoreMenu)
         val btnTelegram = view.findViewById<Button>(R.id.btnTelegram)
 
-        // 1. Налаштовуємо кнопку Telegram
         btnTelegram.setOnClickListener {
             openTelegramBot()
         }
 
-        // 2. Створюємо список пунктів меню
         val menuItems = listOf(
             MenuItem(1, "Прогноз на матчі"),
             MenuItem(2, "Дискваліфіковані гравці"),
@@ -46,7 +43,6 @@ class MoreFragment : Fragment() {
             MenuItem(7, "Арбітри")
         )
 
-        // 3. Налаштовуємо список
         rvMoreMenu.layoutManager = LinearLayoutManager(context)
         rvMoreMenu.adapter = MoreMenuAdapter(menuItems) { clickedItem ->
             handleMenuClick(clickedItem)
@@ -55,7 +51,14 @@ class MoreFragment : Fragment() {
         return view
     }
 
-    // Відкриття Telegram
+    // 🔥 ПРАВКА: Додано метод для реакції на зміну року у спінері
+    fun refreshData() {
+        if (isAdded) {
+            // Коли зробимо фрагменти бомбардирів, тут буде логіка оновлення
+            Toast.makeText(context, "Рік змінено на ${AppConfig.selectedYear}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun openTelegramBot() {
         try {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(TELEGRAM_BOT_URL))
@@ -65,19 +68,15 @@ class MoreFragment : Fragment() {
         }
     }
 
-    // Обробка кліків по пунктах меню
     private fun handleMenuClick(item: MenuItem) {
-        // Поки що виводимо Toast. Потім тут будемо відкривати нові фрагменти.
         Toast.makeText(context, "Відкриваємо: ${item.title} (В розробці)", Toast.LENGTH_SHORT).show()
-        
         when (item.id) {
-            1 -> { /* Відкрити Прогнози */ }
-            2 -> { /* Відкрити Дискваліфікації */ }
-            // ... і так далі
+            1 -> { /* Прогнози */ }
+            2 -> { /* Дискваліфікації */ }
+            // і т.д.
         }
     }
 
-    // --- Внутрішній адаптер для меню (щоб не створювати зайвих файлів) ---
     inner class MoreMenuAdapter(
         private val items: List<MenuItem>,
         private val onClick: (MenuItem) -> Unit
@@ -85,17 +84,13 @@ class MoreFragment : Fragment() {
 
         inner class MenuViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val tvMenuTitle: TextView = view.findViewById(R.id.tvMenuTitle)
-            
             init {
-                view.setOnClickListener {
-                    onClick(items[adapterPosition])
-                }
+                view.setOnClickListener { onClick(items[adapterPosition]) }
             }
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MenuViewHolder {
-            val view = LayoutInflater.from(parent.context)
-                .inflate(R.layout.item_more_menu, parent, false)
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_more_menu, parent, false)
             return MenuViewHolder(view)
         }
 
