@@ -238,6 +238,16 @@ class MainActivity : AppCompatActivity() {
                             .replace(fragmentContainer.id, StandingFragment(), "StandingFragment")
                             .commit()
                     }
+                    // 🔥 ДОДАНО: Логіка для вкладки "Більше"
+                    R.id.nav_more -> { // ВАЖЛИВО: Переконайся, що ID співпадає з тим, що в bottom_nav_menu.xml
+                        contentLayout.visibility = View.GONE
+                        seasonSpinner.visibility = View.GONE // Ховаємо спінер
+                        fragmentContainer.visibility = View.VISIBLE
+                        
+                        supportFragmentManager.beginTransaction()
+                            .replace(fragmentContainer.id, MoreFragment(), "MoreFragment")
+                            .commit()
+                    }
                 }
                 true
             }
