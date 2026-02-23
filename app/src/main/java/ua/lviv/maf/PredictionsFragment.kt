@@ -46,7 +46,7 @@ class PredictionsFragment : Fragment() {
         rvPredictions = view.findViewById(R.id.rvPredictions)
         btnAuthTelegram = view.findViewById(R.id.btnAuthTelegram)
 
-        // 🔥 ДОДАНО: Знаходимо кнопку Назад і вішаємо на неї клік
+        // Кнопка Назад (повернення в меню "Більше")
         val btnBack = view.findViewById<TextView>(R.id.btnBack)
         btnBack.setOnClickListener {
             parentFragmentManager.popBackStack()
@@ -80,7 +80,6 @@ class PredictionsFragment : Fragment() {
             val username = sharedPrefs.getString("tg_username", "Гравець") ?: "Гравець"
             layoutAuth.visibility = View.GONE
             rvPredictions.visibility = View.VISIBLE
-            
             loadDataForYear(AppConfig.selectedYear, username)
         } else {
             layoutAuth.visibility = View.VISIBLE
@@ -91,7 +90,6 @@ class PredictionsFragment : Fragment() {
 
     private fun startTelegramAuth() {
         val authSessionCode = UUID.randomUUID().toString().substring(0, 8)
-        
         val sharedPrefs = requireActivity().getSharedPreferences("MafPrefs", Context.MODE_PRIVATE)
         sharedPrefs.edit().putString("auth_session_code", authSessionCode).apply()
 
@@ -100,8 +98,7 @@ class PredictionsFragment : Fragment() {
         try {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(botUrl))
             startActivity(intent)
-            
-            Toast.makeText(context, "Переходимо в Telegram... Натисніть 'Розпочати'", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "Переходимо в Telegram...", Toast.LENGTH_LONG).show()
             startAuthPolling(authSessionCode)
         } catch (e: Exception) {
             Toast.makeText(context, "Telegram не встановлено!", Toast.LENGTH_SHORT).show()
@@ -134,37 +131,30 @@ class PredictionsFragment : Fragment() {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {}
-
             override fun onResponse(call: Call, response: Response) {
                 val responseData = response.body?.string() ?: return
                 try {
                     val json = JSONObject(responseData)
                     if (json.optString("status") == "success") {
                         val userObj = json.getJSONObject("user")
-                        val tgId = userObj.optString("tg_id")
-                        val tgUsername = userObj.optString("username")
-
                         activity?.runOnUiThread {
                             val sharedPrefs = requireActivity().getSharedPreferences("MafPrefs", Context.MODE_PRIVATE)
                             sharedPrefs.edit()
                                 .putBoolean("is_logged_in", true)
-                                .putString("tg_id", tgId)
-                                .putString("tg_username", tgUsername)
+                                .putString("tg_id", userObj.optString("tg_id"))
+                                .putString("tg_username", userObj.optString("username"))
                                 .apply()
 
                             stopAuthPolling()
-                            Toast.makeText(context, "Успішно! Вітаємо, $tgUsername ⚽️", Toast.LENGTH_SHORT).show()
                             checkAuthState()
                         }
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                } catch (e: Exception) { e.printStackTrace() }
             }
         })
     }
 
-    // 🔥 ОНОВЛЕНО: Парсинг турніру, етапу та групування для нового адаптера
+    // 🔥 ПОВНИЙ ПАРСИНГ ТА ГРУПУВАННЯ ПО ТУРАХ
     private fun fetchPredictionsFromApi() {
         val year = AppConfig.selectedYear
         val url = "https://maf.lviv.ua/wp-json/maf-bet/v1/matches-for-prediction?year=$year"
@@ -172,9 +162,7 @@ class PredictionsFragment : Fragment() {
         val request = Request.Builder().url(url).build()
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                activity?.runOnUiThread {
-                    Toast.makeText(context, "Помилка завантаження матчів", Toast.LENGTH_SHORT).show()
-                }
+                activity?.runOnUiThread { Toast.makeText(context, "Помилка мережі", Toast.LENGTH_SHORT).show() }
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -185,46 +173,37 @@ class PredictionsFragment : Fragment() {
                         val matchesArray = json.getJSONArray("matches")
                         val matchesList = mutableListOf<PredictionMatchModel>()
 
-                        // 1. Парсимо JSON у список моделей матчів
                         for (i in 0 until matchesArray.length()) {
-                            val matchObj = matchesArray.getJSONObject(i)
-                            matchesList.add(
-                                PredictionMatchModel(
-                                    id = matchObj.getInt("id"),
-                                    team1Name = matchObj.getString("team1_name"),
-                                    team1LogoUrl = matchObj.optString("team1_logo", ""),
-                                    team2Name = matchObj.getString("team2_name"),
-                                    team2LogoUrl = matchObj.optString("team2_logo", ""),
-                                    matchDateStr = matchObj.getString("match_date"),
-                                    tournament = matchObj.optString("tournament", "Турнір"), // Отримуємо турнір
-                                    stage = matchObj.optString("stage", "Етап"),             // Отримуємо тур/етап
-                                    deadlineTimestamp = matchObj.getLong("deadline_timestamp") * 1000L
-                                )
-                            )
+                            val obj = matchesArray.getJSONObject(i)
+                            matchesList.add(PredictionMatchModel(
+                                id = obj.getInt("id"),
+                                team1Name = obj.getString("team1_name"),
+                                team1LogoUrl = obj.optString("team1_logo", ""),
+                                team2Name = obj.getString("team2_name"),
+                                team2LogoUrl = obj.optString("team2_logo", ""),
+                                matchDateStr = obj.getString("match_date"),
+                                tournament = obj.optString("tournament", "Турнір"),
+                                stage = obj.optString("stage", "Тур"),
+                                deadlineTimestamp = obj.getLong("deadline_timestamp") * 1000L
+                            ))
                         }
 
-                        // 2. Групуємо матчі по турах (етапах)
+                        // ГРУПУВАННЯ ДЛЯ АДАПТЕРА
                         val groupedItems = mutableListOf<PredictionListItem>()
                         matchesList.groupBy { it.stage }.forEach { (stageName, matches) ->
-                            // Додаємо заголовок туру
                             groupedItems.add(PredictionListItem.StageHeader(stageName))
-                            // Додаємо всі матчі цього туру
-                            matches.forEach { match ->
-                                groupedItems.add(PredictionListItem.MatchItem(match))
-                            }
+                            matches.forEach { groupedItems.add(PredictionListItem.MatchItem(it)) }
                         }
 
-                        // 3. Передаємо згрупований список в адаптер
                         activity?.runOnUiThread {
                             rvPredictions.layoutManager = LinearLayoutManager(context)
-                            rvPredictions.adapter = PredictionAdapter(groupedItems) { match, score1, score2 ->
-                                Toast.makeText(context, "Прогноз на ${match.team1Name} - ${match.team2Name} ($score1:$score2) збережено локально. Готуємо API для відправки!", Toast.LENGTH_LONG).show()
+                            rvPredictions.adapter = PredictionAdapter(groupedItems) { match, s1, s2 ->
+                                // Це Toast перед відправкою, ми його замінимо на POST запит
+                                Toast.makeText(context, "Надсилаємо: ${match.team1Name} $s1:$s2 ${match.team2Name}", Toast.LENGTH_SHORT).show()
                             }
                         }
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                } catch (e: Exception) { e.printStackTrace() }
             }
         })
     }
