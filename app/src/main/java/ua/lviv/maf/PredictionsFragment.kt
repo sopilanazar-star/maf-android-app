@@ -25,6 +25,7 @@ import java.util.UUID
 
 class PredictionsFragment : Fragment() {
 
+    // Оголошення змінних (якщо їх немає - буде помилка Unresolved reference)
     private lateinit var tvYearTitle: TextView
     private lateinit var layoutAuth: LinearLayout
     private lateinit var rvPredictions: RecyclerView
@@ -43,11 +44,13 @@ class PredictionsFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_predictions, container, false)
 
+        // Ініціалізація View
         tvYearTitle = view.findViewById(R.id.tvYearTitle)
         layoutAuth = view.findViewById(R.id.layoutAuth)
         rvPredictions = view.findViewById(R.id.rvPredictions)
         btnAuthTelegram = view.findViewById(R.id.btnAuthTelegram)
 
+        // Кнопка Назад
         val btnBack = view.findViewById<TextView>(R.id.btnBack)
         btnBack.setOnClickListener {
             parentFragmentManager.popBackStack()
@@ -177,7 +180,7 @@ class PredictionsFragment : Fragment() {
                             val obj = matchesArray.getJSONObject(i)
                             matchesList.add(PredictionMatchModel(
                                 id = obj.getInt("id"),
-                                tournamentId = obj.getInt("tournament_id"), // 🔥 Читаємо ID турніру
+                                tournamentId = obj.getInt("tournament_id"),
                                 team1Name = obj.getString("team1_name"),
                                 team1LogoUrl = obj.optString("team1_logo", ""),
                                 team2Name = obj.getString("team2_name"),
@@ -198,7 +201,6 @@ class PredictionsFragment : Fragment() {
                         activity?.runOnUiThread {
                             rvPredictions.layoutManager = LinearLayoutManager(context)
                             rvPredictions.adapter = PredictionAdapter(groupedItems) { match, s1, s2 ->
-                                // 🔥 Тепер викликаємо реальну відправку на сервер
                                 savePredictionOnServer(match, s1, s2)
                             }
                         }
@@ -208,7 +210,6 @@ class PredictionsFragment : Fragment() {
         })
     }
 
-    // 🔥 НОВИЙ МЕТОД: ВІДПРАВКА ПРОГНОЗУ НА САЙТ
     private fun savePredictionOnServer(match: PredictionMatchModel, score1: String, score2: String) {
         val sharedPrefs = requireActivity().getSharedPreferences("MafPrefs", Context.MODE_PRIVATE)
         val tgId = sharedPrefs.getString("tg_id", "") ?: ""
@@ -219,7 +220,6 @@ class PredictionsFragment : Fragment() {
         }
 
         val url = "$BASE_URL/save-prediction"
-        
         val jsonBody = JSONObject().apply {
             put("tg_id", tgId)
             put("match_id", match.id)
