@@ -25,7 +25,6 @@ import java.util.UUID
 
 class PredictionsFragment : Fragment() {
 
-    // Оголошення змінних (якщо їх немає - буде помилка Unresolved reference)
     private lateinit var tvYearTitle: TextView
     private lateinit var layoutAuth: LinearLayout
     private lateinit var rvPredictions: RecyclerView
@@ -44,13 +43,11 @@ class PredictionsFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_predictions, container, false)
 
-        // Ініціалізація View
         tvYearTitle = view.findViewById(R.id.tvYearTitle)
         layoutAuth = view.findViewById(R.id.layoutAuth)
         rvPredictions = view.findViewById(R.id.rvPredictions)
         btnAuthTelegram = view.findViewById(R.id.btnAuthTelegram)
 
-        // Кнопка Назад
         val btnBack = view.findViewById<TextView>(R.id.btnBack)
         btnBack.setOnClickListener {
             parentFragmentManager.popBackStack()
@@ -158,9 +155,16 @@ class PredictionsFragment : Fragment() {
         })
     }
 
+    // 🔥 ТУТ ВИПРАВЛЕНО: передаємо tg_id та читаємо pred1 і pred2
     private fun fetchPredictionsFromApi() {
         val year = AppConfig.selectedYear
-        val url = "$BASE_URL/matches-for-prediction?year=$year"
+        
+        // Дістаємо ID користувача
+        val sharedPrefs = requireActivity().getSharedPreferences("MafPrefs", Context.MODE_PRIVATE)
+        val tgId = sharedPrefs.getString("tg_id", "") ?: ""
+
+        // Формуємо правильний URL
+        val url = "$BASE_URL/matches-for-prediction?year=$year&tg_id=$tgId"
 
         val request = Request.Builder().url(url).build()
         client.newCall(request).enqueue(object : Callback {
@@ -178,6 +182,11 @@ class PredictionsFragment : Fragment() {
 
                         for (i in 0 until matchesArray.length()) {
                             val obj = matchesArray.getJSONObject(i)
+                            
+                            // Читаємо голи, якщо вони є
+                            val p1 = obj.optString("pred1", "")
+                            val p2 = obj.optString("pred2", "")
+
                             matchesList.add(PredictionMatchModel(
                                 id = obj.getInt("id"),
                                 tournamentId = obj.getInt("tournament_id"),
@@ -188,7 +197,9 @@ class PredictionsFragment : Fragment() {
                                 matchDateStr = obj.getString("match_date"),
                                 tournament = obj.optString("tournament", "Турнір"),
                                 stage = obj.optString("stage", "Тур"),
-                                deadlineTimestamp = obj.getLong("deadline_timestamp") * 1000L
+                                deadlineTimestamp = obj.getLong("deadline_timestamp") * 1000L,
+                                predictedScore1 = if (p1.isNotEmpty()) p1 else null, // 🔥 Записуємо в модель
+                                predictedScore2 = if (p2.isNotEmpty()) p2 else null  // 🔥 Записуємо в модель
                             ))
                         }
 
