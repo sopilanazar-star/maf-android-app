@@ -46,6 +46,12 @@ class PredictionsFragment : Fragment() {
         rvPredictions = view.findViewById(R.id.rvPredictions)
         btnAuthTelegram = view.findViewById(R.id.btnAuthTelegram)
 
+        // 🔥 ДОДАНО: Знаходимо кнопку Назад і вішаємо на неї клік
+        val btnBack = view.findViewById<TextView>(R.id.btnBack)
+        btnBack.setOnClickListener {
+            parentFragmentManager.popBackStack()
+        }
+
         btnAuthTelegram.setOnClickListener {
             startTelegramAuth()
         }
@@ -158,6 +164,7 @@ class PredictionsFragment : Fragment() {
         })
     }
 
+    // 🔥 ОНОВЛЕНО: Парсинг турніру, етапу та групування для нового адаптера
     private fun fetchPredictionsFromApi() {
         val year = AppConfig.selectedYear
         val url = "https://maf.lviv.ua/wp-json/maf-bet/v1/matches-for-prediction?year=$year"
@@ -178,6 +185,7 @@ class PredictionsFragment : Fragment() {
                         val matchesArray = json.getJSONArray("matches")
                         val matchesList = mutableListOf<PredictionMatchModel>()
 
+                        // 1. Парсимо JSON у список моделей матчів
                         for (i in 0 until matchesArray.length()) {
                             val matchObj = matchesArray.getJSONObject(i)
                             matchesList.add(
@@ -188,16 +196,29 @@ class PredictionsFragment : Fragment() {
                                     team2Name = matchObj.getString("team2_name"),
                                     team2LogoUrl = matchObj.optString("team2_logo", ""),
                                     matchDateStr = matchObj.getString("match_date"),
-                                    league = matchObj.optString("league", "Турнір"),
+                                    tournament = matchObj.optString("tournament", "Турнір"), // Отримуємо турнір
+                                    stage = matchObj.optString("stage", "Етап"),             // Отримуємо тур/етап
                                     deadlineTimestamp = matchObj.getLong("deadline_timestamp") * 1000L
                                 )
                             )
                         }
 
+                        // 2. Групуємо матчі по турах (етапах)
+                        val groupedItems = mutableListOf<PredictionListItem>()
+                        matchesList.groupBy { it.stage }.forEach { (stageName, matches) ->
+                            // Додаємо заголовок туру
+                            groupedItems.add(PredictionListItem.StageHeader(stageName))
+                            // Додаємо всі матчі цього туру
+                            matches.forEach { match ->
+                                groupedItems.add(PredictionListItem.MatchItem(match))
+                            }
+                        }
+
+                        // 3. Передаємо згрупований список в адаптер
                         activity?.runOnUiThread {
                             rvPredictions.layoutManager = LinearLayoutManager(context)
-                            rvPredictions.adapter = PredictionAdapter(matchesList) { match, score1, score2 ->
-                                Toast.makeText(context, "Прогноз ${score1}:${score2} збережено. Готуємо API для відправки!", Toast.LENGTH_SHORT).show()
+                            rvPredictions.adapter = PredictionAdapter(groupedItems) { match, score1, score2 ->
+                                Toast.makeText(context, "Прогноз на ${match.team1Name} - ${match.team2Name} ($score1:$score2) збережено локально. Готуємо API для відправки!", Toast.LENGTH_LONG).show()
                             }
                         }
                     }
