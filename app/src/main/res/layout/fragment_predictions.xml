@@ -3,48 +3,40 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:background="#FFFFFF">
+    android:background="#1A1D23">
 
-    <TextView
-        android:id="@+id/tvYearTitle"
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:text="Прогнози на матчі"
-        android:layout_marginBottom="16dp"/>
-
-    <LinearLayout
-        android:id="@+id/layoutAuth"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:visibility="gone">
+        android:padding="16dp">
 
         <TextView
+            android:id="@+id/btnBack"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Щоб робити прогнози, потрібно авторизуватись через наш Telegram бот."
-            android:textAlignment="center"
+            android:text="← Назад"
+            android:textColor="#E30613"
             android:textSize="16sp"
-            android:layout_marginBottom="16dp"/>
+            android:textStyle="bold"
+            android:padding="8dp"/>
 
-        <Button
-            android:id="@+id/btnAuthTelegram"
+        <TextView
+            android:id="@+id/tvYearTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Увійти через Telegram"
-            android:backgroundTint="#0088CC"
-            android:textColor="#FFFFFF"/>
-    </LinearLayout>
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_centerInParent="true"
+            android:text="Прогнози на матчі"/>
+    </RelativeLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvPredictions"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="visible"/>
+        android:paddingBottom="100dp" 
+        android:clipToPadding="false"
+        android:layout_marginHorizontal="16dp"/>
 
 </LinearLayout>
