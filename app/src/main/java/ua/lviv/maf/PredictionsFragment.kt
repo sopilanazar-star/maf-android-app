@@ -17,6 +17,8 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.IOException
 import java.util.UUID
@@ -29,7 +31,7 @@ class PredictionsFragment : Fragment() {
     private lateinit var btnAuthTelegram: Button
 
     private val TELEGRAM_BOT_URL = "https://t.me/MAFLoginBot"
-    private val AUTH_CHECK_API_URL = "https://maf.lviv.ua/wp-json/maf-bet/v1/auth-check"
+    private val BASE_URL = "https://maf.lviv.ua/wp-json/maf-bet/v1"
 
     private val client = OkHttpClient()
     private var authCheckHandler: Handler? = null
@@ -46,7 +48,6 @@ class PredictionsFragment : Fragment() {
         rvPredictions = view.findViewById(R.id.rvPredictions)
         btnAuthTelegram = view.findViewById(R.id.btnAuthTelegram)
 
-        // Кнопка Назад (повернення в меню "Більше")
         val btnBack = view.findViewById<TextView>(R.id.btnBack)
         btnBack.setOnClickListener {
             parentFragmentManager.popBackStack()
@@ -126,7 +127,7 @@ class PredictionsFragment : Fragment() {
     }
 
     private fun checkAuthApi(authCode: String) {
-        val url = "$AUTH_CHECK_API_URL?auth_code=$authCode"
+        val url = "$BASE_URL/auth-check?auth_code=$authCode"
         val request = Request.Builder().url(url).build()
 
         client.newCall(request).enqueue(object : Callback {
@@ -154,15 +155,14 @@ class PredictionsFragment : Fragment() {
         })
     }
 
-    // 🔥 ПОВНИЙ ПАРСИНГ ТА ГРУПУВАННЯ ПО ТУРАХ
     private fun fetchPredictionsFromApi() {
         val year = AppConfig.selectedYear
-        val url = "https://maf.lviv.ua/wp-json/maf-bet/v1/matches-for-prediction?year=$year"
+        val url = "$BASE_URL/matches-for-prediction?year=$year"
 
         val request = Request.Builder().url(url).build()
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                activity?.runOnUiThread { Toast.makeText(context, "Помилка мережі", Toast.LENGTH_SHORT).show() }
+                activity?.runOnUiThread { Toast.makeText(context, "Помилка завантаження", Toast.LENGTH_SHORT).show() }
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -177,6 +177,7 @@ class PredictionsFragment : Fragment() {
                             val obj = matchesArray.getJSONObject(i)
                             matchesList.add(PredictionMatchModel(
                                 id = obj.getInt("id"),
+                                tournamentId = obj.getInt("tournament_id"), // 🔥 Читаємо ID турніру
                                 team1Name = obj.getString("team1_name"),
                                 team1LogoUrl = obj.optString("team1_logo", ""),
                                 team2Name = obj.getString("team2_name"),
@@ -188,7 +189,6 @@ class PredictionsFragment : Fragment() {
                             ))
                         }
 
-                        // ГРУПУВАННЯ ДЛЯ АДАПТЕРА
                         val groupedItems = mutableListOf<PredictionListItem>()
                         matchesList.groupBy { it.stage }.forEach { (stageName, matches) ->
                             groupedItems.add(PredictionListItem.StageHeader(stageName))
@@ -198,12 +198,58 @@ class PredictionsFragment : Fragment() {
                         activity?.runOnUiThread {
                             rvPredictions.layoutManager = LinearLayoutManager(context)
                             rvPredictions.adapter = PredictionAdapter(groupedItems) { match, s1, s2 ->
-                                // Це Toast перед відправкою, ми його замінимо на POST запит
-                                Toast.makeText(context, "Надсилаємо: ${match.team1Name} $s1:$s2 ${match.team2Name}", Toast.LENGTH_SHORT).show()
+                                // 🔥 Тепер викликаємо реальну відправку на сервер
+                                savePredictionOnServer(match, s1, s2)
                             }
                         }
                     }
                 } catch (e: Exception) { e.printStackTrace() }
+            }
+        })
+    }
+
+    // 🔥 НОВИЙ МЕТОД: ВІДПРАВКА ПРОГНОЗУ НА САЙТ
+    private fun savePredictionOnServer(match: PredictionMatchModel, score1: String, score2: String) {
+        val sharedPrefs = requireActivity().getSharedPreferences("MafPrefs", Context.MODE_PRIVATE)
+        val tgId = sharedPrefs.getString("tg_id", "") ?: ""
+
+        if (tgId.isEmpty()) {
+            Toast.makeText(context, "Авторизуйтесь через Telegram!", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val url = "$BASE_URL/save-prediction"
+        
+        val jsonBody = JSONObject().apply {
+            put("tg_id", tgId)
+            put("match_id", match.id)
+            put("pred1", score1.toInt())
+            put("pred2", score2.toInt())
+            put("tournament_id", match.tournamentId)
+        }
+
+        val requestBody = jsonBody.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
+        val request = Request.Builder().url(url).post(requestBody).build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                activity?.runOnUiThread { Toast.makeText(context, "Помилка підключення", Toast.LENGTH_SHORT).show() }
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val responseData = response.body?.string() ?: ""
+                activity?.runOnUiThread {
+                    try {
+                        val json = JSONObject(responseData)
+                        if (json.optString("status") == "success") {
+                            Toast.makeText(context, "✅ Прогноз збережено!", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "❌ Помилка: ${json.optString("message")}", Toast.LENGTH_LONG).show()
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Помилка обробки відповіді", Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         })
     }
