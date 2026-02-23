@@ -67,7 +67,7 @@ android {
 }
 
 dependencies {
-    // Бібліотека для запитів до мережі (необхідна для перевірки version.json)
+    // Бібліотека для запитів до мережі (необхідна для перевірки version.json та нашого API)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // Firebase BoM
@@ -89,10 +89,10 @@ dependencies {
     implementation("androidx.browser:browser:1.8.0")
     implementation("androidx.core:core-splashscreen:1.0.1")
 
-    // --- НОВІ БІБЛІОТЕКИ ДЛЯ ЛОГОТИПІВ ТА ПЕРШОЇ ЛІГИ 2025 ---
+    // --- БІБЛІОТЕКИ ДЛЯ РОБОТИ З API ТА ЗОБРАЖЕННЯМИ ---
     
     // Бібліотека для відображення логотипів команд у списку
-    implementation("com.github.bumptech.glide:glide:4.15.1")
+    implementation("com.github.bumptech.glide:glide:4.16.0")
     
     // Бібліотеки для читання даних з нашого API (Retrofit + GSON)
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
