@@ -17,7 +17,7 @@ data class MenuItem(val id: Int, val title: String)
 
 class MoreFragment : Fragment() {
 
-    // Твій лінк на бота. Заміни "ТВІЙ_БОТ" на реальний юзернейм (без @)
+    // Твій лінк на бота для зворотного зв'язку (залишаємо як було)
     private val TELEGRAM_BOT_URL = "https://t.me/MafFeedback_bot"
 
     override fun onCreateView(
@@ -68,12 +68,25 @@ class MoreFragment : Fragment() {
         }
     }
 
+    // 🔥 ПРАВКА: Оновлено логіку кліку з динамічним пошуком контейнера
     private fun handleMenuClick(item: MenuItem) {
-        Toast.makeText(context, "Відкриваємо: ${item.title} (В розробці)", Toast.LENGTH_SHORT).show()
         when (item.id) {
-            1 -> { /* Прогнози */ }
-            2 -> { /* Дискваліфікації */ }
-            // і т.д.
+            1 -> { 
+                // Отримуємо динамічний ID контейнера, в якому зараз сидить MoreFragment
+                val containerId = (requireView().parent as View).id
+                
+                val predictionsFragment = PredictionsFragment()
+                parentFragmentManager.beginTransaction()
+                    .replace(containerId, predictionsFragment) 
+                    .addToBackStack(null) // Додаємо в стек, щоб кнопка "Назад" повертала в меню
+                    .commit()
+            }
+            2 -> { Toast.makeText(context, "Відкриваємо: ${item.title} (В розробці)", Toast.LENGTH_SHORT).show() }
+            3 -> { Toast.makeText(context, "Відкриваємо: ${item.title} (В розробці)", Toast.LENGTH_SHORT).show() }
+            4 -> { Toast.makeText(context, "Відкриваємо: ${item.title} (В розробці)", Toast.LENGTH_SHORT).show() }
+            5 -> { Toast.makeText(context, "Відкриваємо: ${item.title} (В розробці)", Toast.LENGTH_SHORT).show() }
+            6 -> { Toast.makeText(context, "Відкриваємо: ${item.title} (В розробці)", Toast.LENGTH_SHORT).show() }
+            7 -> { Toast.makeText(context, "Відкриваємо: ${item.title} (В розробці)", Toast.LENGTH_SHORT).show() }
         }
     }
 
