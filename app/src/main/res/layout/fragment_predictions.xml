@@ -31,12 +31,40 @@
             android:text="Прогнози на матчі"/>
     </RelativeLayout>
 
+    <LinearLayout
+        android:id="@+id/layoutAuth"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Щоб робити прогнози, потрібно авторизуватись через наш Telegram бот."
+            android:textAlignment="center"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:layout_marginBottom="16dp"/>
+
+        <Button
+            android:id="@+id/btnAuthTelegram"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Увійти через Telegram"
+            android:backgroundTint="#0088CC"
+            android:textColor="#FFFFFF"/>
+    </LinearLayout>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvPredictions"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:paddingBottom="100dp" 
         android:clipToPadding="false"
-        android:layout_marginHorizontal="16dp"/>
+        android:layout_marginHorizontal="16dp"
+        android:visibility="visible"/>
 
 </LinearLayout>
