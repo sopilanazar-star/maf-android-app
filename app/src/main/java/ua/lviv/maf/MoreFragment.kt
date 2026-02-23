@@ -18,7 +18,7 @@ data class MenuItem(val id: Int, val title: String)
 class MoreFragment : Fragment() {
 
     // Твій лінк на бота. Заміни "ТВІЙ_БОТ" на реальний юзернейм (без @)
-    private val TELEGRAM_BOT_URL = "https://t.me/ТВІЙ_БОТ"
+    private val TELEGRAM_BOT_URL = "https://t.me/MafFeedback_bot"
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
