@@ -12,6 +12,7 @@ sealed class PredictionListItem {
 // Модель самого матчу (оновлена з новими полями з API)
 data class PredictionMatchModel(
     val id: Int,
+    val tournamentId: Int, // Додано
     val team1Name: String,
     val team1LogoUrl: String,
     val team2Name: String,
