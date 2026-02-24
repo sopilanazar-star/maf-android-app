@@ -15,5 +15,4 @@ data class TournamentRow(
     val stadium: String = "",
     val referee: String = "",
     val isHeader: Boolean = false,
-    val status: String = "" // ОЦЕЙ РЯДОК МАЄ БУТИ!
 )
