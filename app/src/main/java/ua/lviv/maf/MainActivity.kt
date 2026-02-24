@@ -20,7 +20,6 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import okhttp3.*
@@ -31,7 +30,7 @@ import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var viewPagerMatches: ViewPager2 // Замість recyclerView для підтримки свайпів
+    private lateinit var viewPagerMatches: ViewPager2
     private lateinit var dateRecyclerView: RecyclerView
     private lateinit var newsRecyclerView: RecyclerView
     private lateinit var titleHeader: TextView
@@ -46,7 +45,6 @@ class MainActivity : AppCompatActivity() {
     private var allMatches = mutableListOf<TournamentRow>()
     private var dateList = mutableListOf<DateModel>()
 
-    // 🔴 Твій оригінальний handler для автооновлення - ЗБЕРЕЖЕНО
     private val handler = Handler(Looper.getMainLooper())
     private val refreshRunnable = object : Runnable {
         override fun run() {
@@ -122,7 +120,6 @@ class MainActivity : AppCompatActivity() {
                     }
                     return v
                 }
-
                 override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
                     val v = super.getDropDownView(position, convertView, parent)
                     (v as TextView).apply {
@@ -134,7 +131,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             this.adapter = spinnerAdapter
-
             val selectedIndex = seasons.indexOf(AppConfig.selectedYear)
             if (selectedIndex != -1) setSelection(selectedIndex) else setSelection(0)
         }
@@ -145,7 +141,6 @@ class MainActivity : AppCompatActivity() {
                 if (AppConfig.selectedYear != selectedYearStr) {
                     AppConfig.selectedYear = selectedYearStr
                     loadFromApi(AppConfig.selectedYear)
-
                     val currentFragment = supportFragmentManager.findFragmentById(fragmentContainer.id)
                     if (currentFragment is StandingFragment) currentFragment.refreshData()
                     if (currentFragment is MoreFragment) currentFragment.refreshData()
@@ -213,7 +208,6 @@ class MainActivity : AppCompatActivity() {
             setOnItemSelectedListener { item ->
                 titleHeader.text = item.title
                 handler.removeCallbacks(refreshRunnable)
-
                 when (item.itemId) {
                     R.id.nav_matches -> {
                         fragmentContainer.visibility = View.GONE
@@ -237,27 +231,25 @@ class MainActivity : AppCompatActivity() {
                         contentLayout.visibility = View.GONE
                         seasonSpinner.visibility = View.VISIBLE
                         fragmentContainer.visibility = View.VISIBLE
-                        supportFragmentManager.beginTransaction()
-                            .replace(fragmentContainer.id, StandingFragment())
-                            .commit()
+                        supportFragmentManager.beginTransaction().replace(fragmentContainer.id, StandingFragment()).commit()
                     }
                     R.id.nav_more -> {
                         contentLayout.visibility = View.GONE
                         seasonSpinner.visibility = View.VISIBLE
                         fragmentContainer.visibility = View.VISIBLE
-                        supportFragmentManager.beginTransaction()
-                            .replace(fragmentContainer.id, MoreFragment())
-                            .commit()
+                        supportFragmentManager.beginTransaction().replace(fragmentContainer.id, MoreFragment()).commit()
                     }
                 }
                 true
             }
-            selectedItemId = R.id.nav_news
         }
 
         rootFrame.addView(mainContentContainer)
         rootFrame.addView(bottomNav)
         setContentView(rootFrame)
+
+        // Активуємо новини в самому кінці
+        bottomNav.selectedItemId = R.id.nav_news
 
         ViewCompat.setOnApplyWindowInsetsListener(bottomNav) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -282,13 +274,15 @@ class MainActivity : AppCompatActivity() {
             override fun onFailure(call: Call, e: IOException) {}
             override fun onResponse(call: Call, response: Response) {
                 val jsonData = response.body?.string() ?: ""
-                val array = JSONArray(jsonData)
-                val newsList = mutableListOf<NewsModel>()
-                for (i in 0 until array.length()) {
-                    val obj = array.getJSONObject(i)
-                    newsList.add(NewsModel(obj.optString("id"), obj.optString("title"), obj.optString("preview"), obj.optString("content"), obj.optString("date")))
-                }
-                runOnUiThread { newsRecyclerView.adapter = NewsAdapter(newsList) }
+                try {
+                    val array = JSONArray(jsonData)
+                    val newsList = mutableListOf<NewsModel>()
+                    for (i in 0 until array.length()) {
+                        val obj = array.getJSONObject(i)
+                        newsList.add(NewsModel(obj.optString("id"), obj.optString("title"), obj.optString("preview"), obj.optString("content"), obj.optString("date")))
+                    }
+                    runOnUiThread { newsRecyclerView.adapter = NewsAdapter(newsList) }
+                } catch (e: Exception) {}
             }
         })
     }
@@ -300,31 +294,34 @@ class MainActivity : AppCompatActivity() {
             override fun onFailure(call: Call, e: IOException) {}
             override fun onResponse(call: Call, response: Response) {
                 val jsonData = response.body?.string() ?: ""
-                val array = JSONArray(jsonData)
-                allMatches.clear()
-                for (i in 0 until array.length()) {
-                    val m = array.getJSONObject(i)
-                    allMatches.add(TournamentRow(
-                        id = m.optString("id"), home_team_id = m.optString("home_team_id"),
-                        away_team_id = m.optString("away_team_id"), team1 = m.optString("team1"),
-                        logo1 = m.optString("logo1"), team2 = m.optString("team2"),
-                        logo2 = m.optString("logo2"), score = m.optString("score"),
-                        date = m.optString("date"), league = m.optString("league"),
-                        stage = m.optString("stage"), stadium = m.optString("stadium"),
-                        referee = m.optString("referee"), status = m.optString("status"),
-                        isHeader = false
-                    ))
-                }
-
-                runOnUiThread {
-                    setupViewPager()
-                    checkAutoRefresh()
-                }
+                try {
+                    val array = JSONArray(jsonData)
+                    val tempMatches = mutableListOf<TournamentRow>()
+                    for (i in 0 until array.length()) {
+                        val m = array.getJSONObject(i)
+                        tempMatches.add(TournamentRow(
+                            id = m.optString("id"), home_team_id = m.optString("home_team_id"),
+                            away_team_id = m.optString("away_team_id"), team1 = m.optString("team1"),
+                            logo1 = m.optString("logo1"), team2 = m.optString("team2"),
+                            logo2 = m.optString("logo2"), score = m.optString("score"),
+                            date = m.optString("date"), league = m.optString("league"),
+                            stage = m.optString("stage"), stadium = m.optString("stadium"),
+                            referee = m.optString("referee"), status = m.optString("status")
+                        ))
+                    }
+                    allMatches = tempMatches
+                    runOnUiThread {
+                        setupViewPager()
+                        checkAutoRefresh()
+                    }
+                } catch (e: Exception) {}
             }
         })
     }
 
     private fun setupViewPager() {
+        if (!::viewPagerMatches.isInitialized) return
+        
         dateList = createDateList(allMatches).toMutableList()
         if (dateList.isEmpty()) return
 
@@ -334,13 +331,12 @@ class MainActivity : AppCompatActivity() {
         }
         dateRecyclerView.adapter = dateAdapter
 
-        val pagerAdapter = MatchPagerAdapter(this, dateList, allMatches)
-        viewPagerMatches.adapter = pagerAdapter
+        viewPagerMatches.adapter = MatchPagerAdapter(this, dateList, allMatches)
 
         viewPagerMatches.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
                 super.onPageSelected(position)
-                dateAdapter.updateSelection(position)
+                (dateRecyclerView.adapter as? DateAdapter)?.updateSelection(position)
                 dateRecyclerView.scrollToPosition(position)
             }
         })
@@ -350,7 +346,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun createDateList(matches: List<TournamentRow>): List<DateModel> {
         val uniqueDates = matches.map { it.date }.distinct().sortedByDescending {
-            SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).parse(it)
+            try { SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).parse(it) } catch (e: Exception) { null }
         }
         val inputFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
         val dayNameFormat = SimpleDateFormat("EEE", Locale("uk"))
@@ -358,7 +354,7 @@ class MainActivity : AppCompatActivity() {
         val monthFormat = SimpleDateFormat("MMM", Locale("uk"))
 
         return uniqueDates.mapNotNull { dateStr ->
-            val date = inputFormat.parse(dateStr) ?: return@mapNotNull null
+            val date = try { inputFormat.parse(dateStr) } catch (e: Exception) { null } ?: return@mapNotNull null
             DateModel(dateStr, dayNameFormat.format(date).uppercase(), dayNumFormat.format(date), monthFormat.format(date))
         }
     }
