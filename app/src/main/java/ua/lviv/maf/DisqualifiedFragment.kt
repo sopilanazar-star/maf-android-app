@@ -17,9 +17,10 @@ import ua.lviv.maf.models.DisqualifiedPlayer
 
 class DisqualifiedFragment : Fragment() {
 
-    private lateinit var adapter: DisqualifiedAdapter
-    private lateinit var tvHeaderYear: TextView
-    private lateinit var rvPlayers: RecyclerView
+    // Робимо змінні безпечними (nullable), щоб уникнути UninitializedPropertyAccessException
+    private var adapter: DisqualifiedAdapter? = null
+    private var tvHeaderYear: TextView? = null
+    private var rvPlayers: RecyclerView? = null
     private var allPlayers = listOf<DisqualifiedPlayer>()
 
     override fun onCreateView(
@@ -28,27 +29,31 @@ class DisqualifiedFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_disqualified, container, false)
         
-        val btnBack = view.findViewById<TextView>(R.id.btnBackText)
-        rvPlayers = view.findViewById(R.id.rvDisqualifiedPlayers)
-        tvHeaderYear = view.findViewById(R.id.tvHeaderYear)
+        try {
+            // Використовуємо View? та безпечний пошук
+            val btnBack: View? = view.findViewById(R.id.btnBackText)
+            rvPlayers = view.findViewById(R.id.rvDisqualifiedPlayers)
+            tvHeaderYear = view.findViewById(R.id.tvHeaderYear)
 
-        // Кнопка Назад (червоний текст як на скрині)
-        btnBack.setOnClickListener {
-            parentFragmentManager.popBackStack()
+            btnBack?.setOnClickListener {
+                parentFragmentManager.popBackStack()
+            }
+
+            tvHeaderYear?.text = AppConfig.selectedYear.toString()
+
+            // requireContext() обгорнуто в безпечний виклик, якщо контекст ще не готовий
+            context?.let {
+                rvPlayers?.layoutManager = LinearLayoutManager(it)
+            }
+            
+            loadPlayers()
+        } catch (e: Exception) {
+            e.printStackTrace() // Якщо щось не знайдено, просто пропустимо, але не впадемо
         }
-
-        // Встановлюємо початковий рік
-        tvHeaderYear.text = AppConfig.selectedYear.toString()
-
-        rvPlayers.layoutManager = LinearLayoutManager(context)
-        
-        // Завантажуємо реальні дані з API
-        loadPlayers()
         
         return view
     }
 
-    // 🔥 ПРАВКА: Завантаження даних через Retrofit
     private fun loadPlayers() {
         val year = AppConfig.selectedYear
         
@@ -57,35 +62,38 @@ class DisqualifiedFragment : Fragment() {
                 call: Call<List<DisqualifiedPlayer>>,
                 response: Response<List<DisqualifiedPlayer>>
             ) {
-                if (isAdded) { // Перевірка, чи фрагмент ще активний
+                // Захист: якщо користувач вже пішов з вкладки, нічого не робимо
+                if (!isAdded || context == null) return
+                
+                try {
                     if (response.isSuccessful) {
                         allPlayers = response.body() ?: emptyList()
                         updateList()
                     } else {
-                        Toast.makeText(context, "Помилка завантаження: ${response.code()}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Помилка: ${response.code()}", Toast.LENGTH_SHORT).show()
                     }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
 
             override fun onFailure(call: Call<List<DisqualifiedPlayer>>, t: Throwable) {
-                if (isAdded) {
-                    Toast.makeText(context, "Помилка мережі: ${t.message}", Toast.LENGTH_SHORT).show()
-                }
+                if (!isAdded || context == null) return
+                Toast.makeText(context, "Немає зв'язку з сервером", Toast.LENGTH_SHORT).show()
             }
         })
     }
 
-    // Метод для оновлення списку (викликається з MoreFragment при зміні року)
     fun updateYear() {
-        if (::tvHeaderYear.isInitialized) {
-            tvHeaderYear.text = AppConfig.selectedYear.toString()
-            loadPlayers() // Перезавантажуємо дані для нового року
+        if (tvHeaderYear != null) {
+            tvHeaderYear?.text = AppConfig.selectedYear.toString()
+            loadPlayers()
         }
     }
 
     private fun updateList() {
         adapter = DisqualifiedAdapter(allPlayers)
-        rvPlayers.adapter = adapter
+        rvPlayers?.adapter = adapter
     }
 
     inner class DisqualifiedAdapter(private val items: List<DisqualifiedPlayer>) : 
@@ -97,32 +105,40 @@ class DisqualifiedFragment : Fragment() {
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            val player = items[position]
-            
-            // 🔥 ВИПРАВЛЕНО ТУТ: Додано Елвіс-оператор (?: "") для захисту від null
-            val isActive = (player.status ?: "").lowercase() == "активна"
+            try {
+                val player = items[position]
+                
+                // 🔥 МАКСИМАЛЬНИЙ ЗАХИСТ ВІД NULL
+                val statusText = player.status ?: ""
+                val isActive = statusText.lowercase() == "активна"
 
-            holder.name.text = player.name
-            holder.team.text = player.teamName
+                // Захист на випадок, якщо Gson передав null замість імені чи команди
+                holder.name?.text = player.name ?: "Невідомо"
+                holder.team?.text = player.teamName ?: "Невідома команда"
 
-            if (isActive) {
-                holder.status.text = "Дискваліфікований на ${player.matches} матчі(в)"
-                holder.status.setTextColor(android.graphics.Color.parseColor("#FF5252")) // Червоний
-                holder.indicator.setBackgroundColor(android.graphics.Color.RED)
-            } else {
-                holder.status.text = "Завершена дискваліфікація"
-                holder.status.setTextColor(android.graphics.Color.GREEN)
-                holder.indicator.setBackgroundColor(android.graphics.Color.GREEN)
+                if (isActive) {
+                    val matchesCount = player.matches ?: 0
+                    holder.status?.text = "Дискваліфікований на $matchesCount матчі(в)"
+                    holder.status?.setTextColor(android.graphics.Color.parseColor("#FF5252")) // Червоний
+                    holder.indicator?.setBackgroundColor(android.graphics.Color.RED)
+                } else {
+                    holder.status?.text = "Завершена дискваліфікація"
+                    holder.status?.setTextColor(android.graphics.Color.GREEN)
+                    holder.indicator?.setBackgroundColor(android.graphics.Color.GREEN)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
 
         override fun getItemCount() = items.size
 
+        // Усі TextView тепер з ?, щоб не падати, якщо ID в XML не збігається
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-            val name: TextView = view.findViewById(R.id.tvPlayerName)
-            val team: TextView = view.findViewById(R.id.tvTeamName)
-            val status: TextView = view.findViewById(R.id.tvStatus)
-            val indicator: View = view.findViewById(R.id.statusIndicator)
+            val name: TextView? = view.findViewById(R.id.tvPlayerName)
+            val team: TextView? = view.findViewById(R.id.tvTeamName)
+            val status: TextView? = view.findViewById(R.id.tvStatus)
+            val indicator: View? = view.findViewById(R.id.statusIndicator)
         }
     }
 }
