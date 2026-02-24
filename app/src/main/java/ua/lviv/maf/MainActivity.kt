@@ -146,7 +146,6 @@ class MainActivity : AppCompatActivity() {
                     AppConfig.selectedYear = selectedYearStr
                     loadFromApi(AppConfig.selectedYear)
 
-                    // 🔴 Твій оригінальний виклик оновлення фрагментів - ПОВЕРНУТО
                     val currentFragment = supportFragmentManager.findFragmentById(fragmentContainer.id)
                     if (currentFragment is StandingFragment) currentFragment.refreshData()
                     if (currentFragment is MoreFragment) currentFragment.refreshData()
@@ -171,7 +170,6 @@ class MainActivity : AppCompatActivity() {
             clipToPadding = false
         }
 
-        // 🔴 ViewPager2 тепер замість старого RecyclerView - це єдина зміна в UI
         viewPagerMatches = ViewPager2(this).apply {
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
             setPadding(0, 0, 0, dpToPx(90))
@@ -271,7 +269,6 @@ class MainActivity : AppCompatActivity() {
         loadNewsFromApi()
     }
 
-    // 🔴 Твоя оригінальна логіка автооновлення - ЗБЕРЕЖЕНО
     private fun checkAutoRefresh() {
         val hasLive = allMatches.any { it.score.contains("'") || it.score == "HT" }
         handler.removeCallbacks(refreshRunnable)
@@ -364,48 +361,5 @@ class MainActivity : AppCompatActivity() {
             val date = inputFormat.parse(dateStr) ?: return@mapNotNull null
             DateModel(dateStr, dayNameFormat.format(date).uppercase(), dayNumFormat.format(date), monthFormat.format(date))
         }
-    }
-}
-
-// 🔥 Адаптер для сторінок ViewPager
-class MatchPagerAdapter(
-    activity: AppCompatActivity,
-    private val dates: List<DateModel>,
-    private val allMatches: List<TournamentRow>
-) : FragmentStateAdapter(activity) {
-    override fun getItemCount(): Int = dates.size
-    override fun createFragment(position: Int): Fragment {
-        val date = dates[position].date
-        return MatchPageFragment.newInstance(allMatches.filter { it.date == date })
-    }
-}
-
-// 🔥 Фрагмент однієї сторінки (один день матчів)
-class MatchPageFragment : Fragment() {
-    companion object {
-        fun newInstance(matches: List<TournamentRow>) = MatchPageFragment().apply { this.matches = matches }
-    }
-    var matches: List<TournamentRow> = emptyList()
-
-    override fun onCreateView(inflater: android.view.LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        val rv = RecyclerView(requireContext()).apply {
-            layoutManager = LinearLayoutManager(context)
-            layoutParams = ViewGroup.LayoutParams(-1, -1)
-            setPadding(0, 0, 0, (90 * resources.displayMetrics.density).toInt())
-            clipToPadding = false
-        }
-        rv.adapter = TournamentAdapter(groupMatches(matches))
-        return rv
-    }
-
-    private fun groupMatches(matches: List<TournamentRow>): List<TournamentRow> {
-        val result = mutableListOf<TournamentRow>()
-        val grouped = matches.groupBy { "${it.league}|${it.stage}" }
-        for ((key, leagueMatches) in grouped) {
-            val parts = key.split("|")
-            result.add(TournamentRow(league = parts[0], stage = parts.getOrElse(1) { "" }, isHeader = true))
-            result.addAll(leagueMatches)
-        }
-        return result
     }
 }
