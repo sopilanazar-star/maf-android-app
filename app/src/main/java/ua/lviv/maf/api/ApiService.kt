@@ -8,6 +8,6 @@ import ua.lviv.maf.models.DisqualifiedPlayer
 interface ApiService {
     @GET("wp-json/maf/v1/banned-players")
     fun getDisqualifiedPlayers(
-        @Query("year") year: Int
+        @Query("year") year: String
     ): Call<List<DisqualifiedPlayer>>
 }
