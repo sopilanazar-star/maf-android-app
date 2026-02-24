@@ -64,20 +64,17 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        // 1. Налаштування прозорості
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = Color.TRANSPARENT
         window.navigationBarColor = Color.TRANSPARENT
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = false
 
-        // 2. Створення UI (Головний контейнер)
         val rootFrame = FrameLayout(this).apply { setBackgroundColor(Color.parseColor("#1A1D23")) }
         val mainContentContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = FrameLayout.LayoutParams(-1, -1)
         }
 
-        // 3. Header
         val headerLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -86,7 +83,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         titleHeader = TextView(this).apply {
-            text = "Матчі"
+            text = "Новини"
             textSize = 28f
             setTextColor(Color.WHITE)
             typeface = Typeface.DEFAULT_BOLD
@@ -106,7 +103,6 @@ class MainActivity : AppCompatActivity() {
         headerLayout.addView(titleHeader)
         headerLayout.addView(seasonSpinner)
 
-        // 4. Content Layout (Списки)
         contentLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
@@ -132,7 +128,7 @@ class MainActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
             setPadding(0, 0, 0, dpToPx(90))
             clipToPadding = false
-            visibility = View.GONE
+            visibility = View.VISIBLE
         }
 
         contentLayout.addView(dateRecyclerView)
@@ -149,7 +145,6 @@ class MainActivity : AppCompatActivity() {
         mainContentContainer.addView(contentLayout)
         mainContentContainer.addView(fragmentContainer)
 
-        // 5. Bottom Navigation
         val navColors = ColorStateList(arrayOf(intArrayOf(android.R.attr.state_selected), intArrayOf(-android.R.attr.state_selected)), intArrayOf(Color.parseColor("#E30613"), Color.GRAY))
         bottomNav = BottomNavigationView(this).apply {
             inflateMenu(R.menu.bottom_nav_menu)
@@ -163,7 +158,6 @@ class MainActivity : AppCompatActivity() {
         rootFrame.addView(bottomNav)
         setContentView(rootFrame)
 
-        // 6. Налаштування логіки (ТІЛЬКИ ПІСЛЯ setContentView)
         setupNavigation()
 
         seasonSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -171,6 +165,10 @@ class MainActivity : AppCompatActivity() {
                 if (AppConfig.selectedYear != seasons[pos]) {
                     AppConfig.selectedYear = seasons[pos]
                     loadFromApi(AppConfig.selectedYear)
+                    
+                    val currentFragment = supportFragmentManager.findFragmentById(fragmentContainer.id)
+                    if (currentFragment is StandingFragment) currentFragment.refreshData()
+                    if (currentFragment is MoreFragment) currentFragment.refreshData()
                 }
             }
             override fun onNothingSelected(p: AdapterView<*>?) {}
@@ -181,9 +179,9 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        // Запуск
-        bottomNav.selectedItemId = R.id.nav_matches
-        loadFromApi(AppConfig.selectedYear)
+        // 🔴 СТАРТОВА ВКЛАДКА: НОВИНИ (як ти і просив)
+        bottomNav.selectedItemId = R.id.nav_news
+        loadFromApi(AppConfig.selectedYear) // Матчі завантажуються у фоні, щоб бути готовими
     }
 
     private fun setupNavigation() {
@@ -245,11 +243,23 @@ class MainActivity : AppCompatActivity() {
                     val temp = mutableListOf<TournamentRow>()
                     for (i in 0 until array.length()) {
                         val m = array.getJSONObject(i)
+                        // 🔴 СУВОРИЙ ПОРЯДОК: Захист від зсуву даних (виправляє помилку з "2026")
                         temp.add(TournamentRow(
-                            id = m.optString("id"), home_team_id = m.optString("home_team_id"), away_team_id = m.optString("away_team_id"),
-                            team1 = m.optString("team1"), logo1 = m.optString("logo1"), team2 = m.optString("team2"), logo2 = m.optString("logo2"),
-                            score = m.optString("score"), date = m.optString("date"), league = m.optString("league"), stage = m.optString("stage"),
-                            stadium = m.optString("stadium"), referee = m.optString("referee"), isHeader = false
+                            id = m.optString("id"), 
+                            team1 = m.optString("team1"), 
+                            logo1 = m.optString("logo1"),
+                            team2 = m.optString("team2"), 
+                            logo2 = m.optString("logo2"), 
+                            score = m.optString("score"), 
+                            date = m.optString("date"),   
+                            league = m.optString("league"), 
+                            stage = m.optString("stage"),
+                            isHeader = false,
+                            home_team_id = m.optString("home_team_id"),
+                            away_team_id = m.optString("away_team_id"),
+                            stadium = m.optString("stadium"), 
+                            referee = m.optString("referee"),
+                            status = m.optString("status")
                         ))
                     }
                     allMatches = temp
@@ -260,6 +270,8 @@ class MainActivity : AppCompatActivity() {
                         if (dateList.isNotEmpty()) {
                             dateList[0].isSelected = true
                             filterMatches(dateList[0].date)
+                        } else {
+                            if (::recyclerView.isInitialized) recyclerView.adapter = TournamentAdapter(emptyList())
                         }
                         checkAutoRefresh()
                     }
