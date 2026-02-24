@@ -98,8 +98,9 @@ class DisqualifiedFragment : Fragment() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val player = items[position]
-            // Використовуємо lowercase(), щоб уникнути проблем із регістром у JSON
-            val isActive = player.status.lowercase() == "активна"
+            
+            // 🔥 ВИПРАВЛЕНО ТУТ: Додано Елвіс-оператор (?: "") для захисту від null
+            val isActive = (player.status ?: "").lowercase() == "активна"
 
             holder.name.text = player.name
             holder.team.text = player.teamName
