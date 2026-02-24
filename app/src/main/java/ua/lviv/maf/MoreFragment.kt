@@ -51,10 +51,17 @@ class MoreFragment : Fragment() {
         return view
     }
 
-    // 🔥 ПРАВКА: Додано метод для реакції на зміну року у спінері
+    // 🔥 ПРАВКА: Оновлено метод для реакції на зміну року
     fun refreshData() {
         if (isAdded) {
-            // Коли зробимо фрагменти бомбардирів, тут буде логіка оновлення
+            // Пошук поточного активного фрагмента в контейнері для оновлення даних за роком
+            val containerId = (requireView().parent as View).id
+            val currentFragment = parentFragmentManager.findFragmentById(containerId)
+            
+            if (currentFragment is DisqualifiedFragment) {
+                currentFragment.updateYear() // Викликаємо оновлення у фрагменті дискваліфікацій
+            }
+            
             Toast.makeText(context, "Рік змінено на ${AppConfig.selectedYear}", Toast.LENGTH_SHORT).show()
         }
     }
@@ -68,20 +75,26 @@ class MoreFragment : Fragment() {
         }
     }
 
-    // 🔥 ПРАВКА: Оновлено логіку кліку з динамічним пошуком контейнера
+    // 🔥 ПРАВКА: Реалізовано перехід до DisqualifiedFragment
     private fun handleMenuClick(item: MenuItem) {
+        val containerId = (requireView().parent as View).id
+        
         when (item.id) {
             1 -> { 
-                // Отримуємо динамічний ID контейнера, в якому зараз сидить MoreFragment
-                val containerId = (requireView().parent as View).id
-                
                 val predictionsFragment = PredictionsFragment()
                 parentFragmentManager.beginTransaction()
                     .replace(containerId, predictionsFragment) 
-                    .addToBackStack(null) // Додаємо в стек, щоб кнопка "Назад" повертала в меню
+                    .addToBackStack(null)
                     .commit()
             }
-            2 -> { Toast.makeText(context, "Відкриваємо: ${item.title} (В розробці)", Toast.LENGTH_SHORT).show() }
+            2 -> { 
+                // Відкриваємо фрагмент дискваліфікованих гравців
+                val disqualifiedFragment = DisqualifiedFragment()
+                parentFragmentManager.beginTransaction()
+                    .replace(containerId, disqualifiedFragment) 
+                    .addToBackStack(null)
+                    .commit()
+            }
             3 -> { Toast.makeText(context, "Відкриваємо: ${item.title} (В розробці)", Toast.LENGTH_SHORT).show() }
             4 -> { Toast.makeText(context, "Відкриваємо: ${item.title} (В розробці)", Toast.LENGTH_SHORT).show() }
             5 -> { Toast.makeText(context, "Відкриваємо: ${item.title} (В розробці)", Toast.LENGTH_SHORT).show() }
@@ -98,7 +111,12 @@ class MoreFragment : Fragment() {
         inner class MenuViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val tvMenuTitle: TextView = view.findViewById(R.id.tvMenuTitle)
             init {
-                view.setOnClickListener { onClick(items[adapterPosition]) }
+                view.setOnClickListener { 
+                    val position = adapterPosition
+                    if (position != RecyclerView.NO_POSITION) {
+                        onClick(items[position])
+                    }
+                }
             }
         }
 
