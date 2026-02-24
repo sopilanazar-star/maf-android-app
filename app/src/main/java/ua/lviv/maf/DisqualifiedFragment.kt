@@ -4,23 +4,17 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
+import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import java.util.*
 
-data class DisqualifiedPlayer(
-    val name: String,
-    val team: String,
-    val expiryDate: Calendar,
-    val year: Int // Додаємо поле року для фільтрації
-)
-
 class DisqualifiedFragment : Fragment() {
 
     private lateinit var adapter: DisqualifiedAdapter
-    private var allPlayers = listOf<DisqualifiedPlayer>()
+    private lateinit var tvHeaderYear: TextView
+    private var allPlayers = listOf<DisqualifiedPlayer>() // Твоя модель даних
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -28,48 +22,49 @@ class DisqualifiedFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_disqualified, container, false)
         
-        val btnBack = view.findViewById<ImageButton>(R.id.btnBack)
+        val btnBack = view.findViewById<TextView>(R.id.btnBackText)
         val rvPlayers = view.findViewById<RecyclerView>(R.id.rvDisqualifiedPlayers)
+        tvHeaderYear = view.findViewById(R.id.tvHeaderYear)
 
-        // Кнопка назад - просто повертаємось по стеку фрагментів
+        // Кнопка Назад
         btnBack.setOnClickListener {
             parentFragmentManager.popBackStack()
         }
 
-        // Дані для прикладу (в реальності буде завантаження з API/БД)
+        // Встановлюємо поточний рік у заголовок
+        tvHeaderYear.text = AppConfig.selectedYear.toString()
+
+        // Твоя база даних гравців (приклад)
         allPlayers = listOf(
-            DisqualifiedPlayer("Олексій Смирнов", "СК Шериф", Calendar.getInstance().apply { set(2026, 2, 15) }, 2026),
-            DisqualifiedPlayer("Іван Петров", "ФК Зірка", Calendar.getInstance().apply { set(2025, 10, 5) }, 2025),
-            DisqualifiedPlayer("Дмитро Коваленко", "ФК Арсенал", Calendar.getInstance().apply { set(2026, 5, 20) }, 2026)
+            DisqualifiedPlayer("Олексій Смирнов", "СК Шериф", Calendar.getInstance().apply { set(2026, 5, 10) }, 2026),
+            DisqualifiedPlayer("Іван Петров", "ФК Зірка", Calendar.getInstance().apply { set(2025, 10, 5) }, 2025)
         )
 
         rvPlayers.layoutManager = LinearLayoutManager(context)
-        
-        // Фільтруємо список згідно з вибраним роком у глобальному конфігу
-        val filteredList = allPlayers.filter { it.year == AppConfig.selectedYear }
-        
-        adapter = DisqualifiedAdapter(filteredList)
-        rvPlayers.adapter = adapter
+        updateList() // Первинне завантаження
         
         return view
     }
 
-    // Метод для оновлення списку, якщо рік зміниться, поки фрагмент відкритий
+    // Метод для оновлення списку (викликається з MoreFragment при зміні року)
     fun updateYear() {
-        val newList = allPlayers.filter { it.year == AppConfig.selectedYear }
-        adapter.updateData(newList)
+        if (::tvHeaderYear.isInitialized) {
+            tvHeaderYear.text = AppConfig.selectedYear.toString()
+            updateList()
+        }
     }
 
-    inner class DisqualifiedAdapter(private var items: List<DisqualifiedPlayer>) : 
+    private fun updateList() {
+        val filteredList = allPlayers.filter { it.year == AppConfig.selectedYear }
+        adapter = DisqualifiedAdapter(filteredList)
+        val rvPlayers = view?.findViewById<RecyclerView>(R.id.rvDisqualifiedPlayers)
+        rvPlayers?.adapter = adapter
+    }
+
+    // --- Адаптер залишається таким же, як ми робили раніше ---
+    inner class DisqualifiedAdapter(private val items: List<DisqualifiedPlayer>) : 
         RecyclerView.Adapter<DisqualifiedAdapter.ViewHolder>() {
-
-        fun updateData(newItems: List<DisqualifiedPlayer>) {
-            items = newItems
-            notifyDataSetChanged()
-        }
-
-        // ... (onCreateViewHolder та ViewHolder залишаються такими ж, як у попередній відповіді)
-
+        
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             val v = LayoutInflater.from(parent.context).inflate(R.layout.item_disqualified_player, parent, false)
             return ViewHolder(v)
@@ -98,9 +93,9 @@ class DisqualifiedFragment : Fragment() {
         override fun getItemCount() = items.size
 
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-            val name: android.widget.TextView = view.findViewById(R.id.tvPlayerName)
-            val team: android.widget.TextView = view.findViewById(R.id.tvTeamName)
-            val status: android.widget.TextView = view.findViewById(R.id.tvStatus)
+            val name: TextView = view.findViewById(R.id.tvPlayerName)
+            val team: TextView = view.findViewById(R.id.tvTeamName)
+            val status: TextView = view.findViewById(R.id.tvStatus)
             val indicator: View = view.findViewById(R.id.statusIndicator)
         }
     }
