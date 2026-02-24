@@ -75,7 +75,7 @@ class MoreFragment : Fragment() {
         }
     }
 
-    // 🔥 ПРАВКА: Реалізовано перехід до DisqualifiedFragment
+    // 🔥 ПРАВКА: Реалізовано перехід до DisqualifiedFragment ТА ScorersFragment
     private fun handleMenuClick(item: MenuItem) {
         val containerId = (requireView().parent as View).id
         
@@ -95,12 +95,28 @@ class MoreFragment : Fragment() {
                     .addToBackStack(null)
                     .commit()
             }
-            3 -> { Toast.makeText(context, "Відкриваємо: ${item.title} (В розробці)", Toast.LENGTH_SHORT).show() }
-            4 -> { Toast.makeText(context, "Відкриваємо: ${item.title} (В розробці)", Toast.LENGTH_SHORT).show() }
-            5 -> { Toast.makeText(context, "Відкриваємо: ${item.title} (В розробці)", Toast.LENGTH_SHORT).show() }
-            6 -> { Toast.makeText(context, "Відкриваємо: ${item.title} (В розробці)", Toast.LENGTH_SHORT).show() }
+            3 -> openScorersFragment("І ліга", containerId)
+            4 -> openScorersFragment("ІІ ліга", containerId)
+            5 -> openScorersFragment("U-19 (І ліга)", containerId)
+            6 -> openScorersFragment("U-19 (ІІ ліга)", containerId)
             7 -> { Toast.makeText(context, "Відкриваємо: ${item.title} (В розробці)", Toast.LENGTH_SHORT).show() }
         }
+    }
+
+    // 🔥 ПРАВКА: Нова допоміжна функція для відкриття бомбардирів без дублювання коду
+    private fun openScorersFragment(leagueType: String, containerId: Int) {
+        val fragment = ScorersFragment()
+        val bundle = Bundle()
+        
+        bundle.putString("LEAGUE_TYPE", leagueType)
+        // Беремо глобальний рік з AppConfig, щоб віддавати його в API
+        bundle.putString("SELECTED_YEAR", AppConfig.selectedYear.toString()) 
+        fragment.arguments = bundle
+
+        parentFragmentManager.beginTransaction()
+            .replace(containerId, fragment)
+            .addToBackStack(null)
+            .commit()
     }
 
     inner class MoreMenuAdapter(
