@@ -17,8 +17,11 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.viewpager2.adapter.FragmentStateAdapter
+import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import okhttp3.*
 import org.json.JSONArray
@@ -28,7 +31,7 @@ import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var recyclerView: RecyclerView
+    private lateinit var viewPagerMatches: ViewPager2 // Замість recyclerView для підтримки свайпів
     private lateinit var dateRecyclerView: RecyclerView
     private lateinit var newsRecyclerView: RecyclerView
     private lateinit var titleHeader: TextView
@@ -41,8 +44,9 @@ class MainActivity : AppCompatActivity() {
     private val MAF_STANDINGS_URL = "https://maf.lviv.ua/wp-json/maf/v2/standing"
 
     private var allMatches = mutableListOf<TournamentRow>()
+    private var dateList = mutableListOf<DateModel>()
 
-    // 🔴 handler для автооновлення
+    // 🔴 Твій оригінальний handler для автооновлення - ЗБЕРЕЖЕНО
     private val handler = Handler(Looper.getMainLooper())
     private val refreshRunnable = object : Runnable {
         override fun run() {
@@ -142,6 +146,7 @@ class MainActivity : AppCompatActivity() {
                     AppConfig.selectedYear = selectedYearStr
                     loadFromApi(AppConfig.selectedYear)
 
+                    // 🔴 Твій оригінальний виклик оновлення фрагментів - ПОВЕРНУТО
                     val currentFragment = supportFragmentManager.findFragmentById(fragmentContainer.id)
                     if (currentFragment is StandingFragment) currentFragment.refreshData()
                     if (currentFragment is MoreFragment) currentFragment.refreshData()
@@ -166,8 +171,8 @@ class MainActivity : AppCompatActivity() {
             clipToPadding = false
         }
 
-        recyclerView = RecyclerView(this).apply {
-            layoutManager = LinearLayoutManager(this@MainActivity)
+        // 🔴 ViewPager2 тепер замість старого RecyclerView - це єдина зміна в UI
+        viewPagerMatches = ViewPager2(this).apply {
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
             setPadding(0, 0, 0, dpToPx(90))
             clipToPadding = false
@@ -182,7 +187,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         contentLayout.addView(dateRecyclerView)
-        contentLayout.addView(recyclerView)
+        contentLayout.addView(viewPagerMatches)
         contentLayout.addView(newsRecyclerView)
 
         fragmentContainer = FrameLayout(this).apply {
@@ -215,7 +220,7 @@ class MainActivity : AppCompatActivity() {
                     R.id.nav_matches -> {
                         fragmentContainer.visibility = View.GONE
                         contentLayout.visibility = View.VISIBLE
-                        recyclerView.visibility = View.VISIBLE
+                        viewPagerMatches.visibility = View.VISIBLE
                         dateRecyclerView.visibility = View.VISIBLE
                         newsRecyclerView.visibility = View.GONE
                         seasonSpinner.visibility = View.VISIBLE
@@ -224,7 +229,7 @@ class MainActivity : AppCompatActivity() {
                     R.id.nav_news -> {
                         fragmentContainer.visibility = View.GONE
                         contentLayout.visibility = View.VISIBLE
-                        recyclerView.visibility = View.GONE
+                        viewPagerMatches.visibility = View.GONE
                         dateRecyclerView.visibility = View.GONE
                         newsRecyclerView.visibility = View.VISIBLE
                         seasonSpinner.visibility = View.GONE
@@ -266,6 +271,7 @@ class MainActivity : AppCompatActivity() {
         loadNewsFromApi()
     }
 
+    // 🔴 Твоя оригінальна логіка автооновлення - ЗБЕРЕЖЕНО
     private fun checkAutoRefresh() {
         val hasLive = allMatches.any { it.score.contains("'") || it.score == "HT" }
         handler.removeCallbacks(refreshRunnable)
@@ -283,15 +289,7 @@ class MainActivity : AppCompatActivity() {
                 val newsList = mutableListOf<NewsModel>()
                 for (i in 0 until array.length()) {
                     val obj = array.getJSONObject(i)
-                    newsList.add(
-                        NewsModel(
-                            obj.optString("id"),
-                            obj.optString("title"),
-                            obj.optString("preview"),
-                            obj.optString("content"),
-                            obj.optString("date")
-                        )
-                    )
+                    newsList.add(NewsModel(obj.optString("id"), obj.optString("title"), obj.optString("preview"), obj.optString("content"), obj.optString("date")))
                 }
                 runOnUiThread { newsRecyclerView.adapter = NewsAdapter(newsList) }
             }
@@ -309,83 +307,103 @@ class MainActivity : AppCompatActivity() {
                 allMatches.clear()
                 for (i in 0 until array.length()) {
                     val m = array.getJSONObject(i)
-                    allMatches.add(
-                        TournamentRow(
-                            id = m.optString("id"),
-                            home_team_id = m.optString("home_team_id"),
-                            away_team_id = m.optString("away_team_id"),
-                            team1 = m.optString("team1"),
-                            logo1 = m.optString("logo1"),
-                            team2 = m.optString("team2"),
-                            logo2 = m.optString("logo2"),
-                            score = m.optString("score"),
-                            date = m.optString("date"),
-                            league = m.optString("league"),
-                            stage = m.optString("stage"),
-                            stadium = m.optString("stadium"),
-                            referee = m.optString("referee"),
-                            isHeader = false
-                        )
-                    )
+                    allMatches.add(TournamentRow(
+                        id = m.optString("id"), home_team_id = m.optString("home_team_id"),
+                        away_team_id = m.optString("away_team_id"), team1 = m.optString("team1"),
+                        logo1 = m.optString("logo1"), team2 = m.optString("team2"),
+                        logo2 = m.optString("logo2"), score = m.optString("score"),
+                        date = m.optString("date"), league = m.optString("league"),
+                        stage = m.optString("stage"), stadium = m.optString("stadium"),
+                        referee = m.optString("referee"), status = m.optString("status"),
+                        isHeader = false
+                    ))
                 }
 
                 runOnUiThread {
-                    val dateList = createDateList(allMatches)
-                    dateRecyclerView.adapter = DateAdapter(dateList) { filterMatches(it) }
-                    if (dateList.isNotEmpty()) {
-                        dateList[0].isSelected = true
-                        filterMatches(dateList[0].date)
-                    } else {
-                        recyclerView.adapter = TournamentAdapter(emptyList())
-                    }
+                    setupViewPager()
                     checkAutoRefresh()
                 }
             }
         })
     }
 
+    private fun setupViewPager() {
+        dateList = createDateList(allMatches).toMutableList()
+        if (dateList.isEmpty()) return
+
+        val dateAdapter = DateAdapter(dateList) { date ->
+            val pos = dateList.indexOfFirst { it.date == date }
+            if (pos != -1) viewPagerMatches.setCurrentItem(pos, true)
+        }
+        dateRecyclerView.adapter = dateAdapter
+
+        val pagerAdapter = MatchPagerAdapter(this, dateList, allMatches)
+        viewPagerMatches.adapter = pagerAdapter
+
+        viewPagerMatches.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                super.onPageSelected(position)
+                dateAdapter.updateSelection(position)
+                dateRecyclerView.scrollToPosition(position)
+            }
+        })
+        
+        viewPagerMatches.setCurrentItem(0, false)
+    }
+
     private fun createDateList(matches: List<TournamentRow>): List<DateModel> {
-        val calendarList = mutableListOf<DateModel>()
-        try {
-            val uniqueDates = matches.map { it.date }.distinct().sortedByDescending {
-                SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).parse(it)
-            }
-            val inputFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
-            val dayNameFormat = SimpleDateFormat("EEE", Locale("uk"))
-            val dayNumFormat = SimpleDateFormat("dd", Locale.getDefault())
-            val monthFormat = SimpleDateFormat("MMM", Locale("uk"))
+        val uniqueDates = matches.map { it.date }.distinct().sortedByDescending {
+            SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).parse(it)
+        }
+        val inputFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+        val dayNameFormat = SimpleDateFormat("EEE", Locale("uk"))
+        val dayNumFormat = SimpleDateFormat("dd", Locale.getDefault())
+        val monthFormat = SimpleDateFormat("MMM", Locale("uk"))
 
-            uniqueDates.forEach { dateStr ->
-                val date = inputFormat.parse(dateStr)
-                if (date != null) {
-                    calendarList.add(
-                        DateModel(
-                            dateStr,
-                            dayNameFormat.format(date).uppercase(),
-                            dayNumFormat.format(date),
-                            monthFormat.format(date)
-                        )
-                    )
-                }
-            }
-        } catch (e: Exception) {}
-        return calendarList
+        return uniqueDates.mapNotNull { dateStr ->
+            val date = inputFormat.parse(dateStr) ?: return@mapNotNull null
+            DateModel(dateStr, dayNameFormat.format(date).uppercase(), dayNumFormat.format(date), monthFormat.format(date))
+        }
+    }
+}
+
+// 🔥 Адаптер для сторінок ViewPager
+class MatchPagerAdapter(
+    activity: AppCompatActivity,
+    private val dates: List<DateModel>,
+    private val allMatches: List<TournamentRow>
+) : FragmentStateAdapter(activity) {
+    override fun getItemCount(): Int = dates.size
+    override fun createFragment(position: Int): Fragment {
+        val date = dates[position].date
+        return MatchPageFragment.newInstance(allMatches.filter { it.date == date })
+    }
+}
+
+// 🔥 Фрагмент однієї сторінки (один день матчів)
+class MatchPageFragment : Fragment() {
+    companion object {
+        fun newInstance(matches: List<TournamentRow>) = MatchPageFragment().apply { this.matches = matches }
+    }
+    var matches: List<TournamentRow> = emptyList()
+
+    override fun onCreateView(inflater: android.view.LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        val rv = RecyclerView(requireContext()).apply {
+            layoutManager = LinearLayoutManager(context)
+            layoutParams = ViewGroup.LayoutParams(-1, -1)
+            setPadding(0, 0, 0, (90 * resources.displayMetrics.density).toInt())
+            clipToPadding = false
+        }
+        rv.adapter = TournamentAdapter(groupMatches(matches))
+        return rv
     }
 
-    private fun filterMatches(date: String) {
-        val filtered = allMatches.filter { it.date == date }
-        val grouped = groupMatchesByLeagueAndStage(filtered)
-        recyclerView.adapter = TournamentAdapter(grouped)
-    }
-
-    private fun groupMatchesByLeagueAndStage(matches: List<TournamentRow>): List<TournamentRow> {
+    private fun groupMatches(matches: List<TournamentRow>): List<TournamentRow> {
         val result = mutableListOf<TournamentRow>()
         val grouped = matches.groupBy { "${it.league}|${it.stage}" }
         for ((key, leagueMatches) in grouped) {
             val parts = key.split("|")
-            val leagueName = parts[0]
-            val stageName = if (parts.size > 1) parts[1] else ""
-            result.add(TournamentRow(league = leagueName, stage = stageName, isHeader = true))
+            result.add(TournamentRow(league = parts[0], stage = parts.getOrElse(1) { "" }, isHeader = true))
             result.addAll(leagueMatches)
         }
         return result
