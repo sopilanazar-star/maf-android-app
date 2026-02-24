@@ -14,14 +14,19 @@ import com.bumptech.glide.Glide
 class TournamentAdapter(private val items: List<TournamentRow>) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    override fun getItemViewType(position: Int): Int = if (items[position].isHeader) 0 else 1
+    override fun getItemViewType(position: Int): Int =
+        if (items[position].isHeader) 0 else 1
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
         return if (viewType == 0) {
-            LeagueHeaderViewHolder(inflater.inflate(R.layout.item_league_header, parent, false))
+            LeagueHeaderViewHolder(
+                inflater.inflate(R.layout.item_league_header, parent, false)
+            )
         } else {
-            TournamentMatchViewHolder(inflater.inflate(R.layout.item_match, parent, false))
+            TournamentMatchViewHolder(
+                inflater.inflate(R.layout.item_match, parent, false)
+            )
         }
     }
 
@@ -29,7 +34,9 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val item = items[position]
 
         if (holder is LeagueHeaderViewHolder) {
+
             holder.tvLeagueName.text = item.league.uppercase()
+
             if (item.stage.isNotEmpty()) {
                 holder.tvStageName.visibility = View.VISIBLE
                 holder.tvStageName.text = item.stage
@@ -40,9 +47,10 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
             }
 
         } else if (holder is TournamentMatchViewHolder) {
+
             holder.tvTeam1.text = item.team1
             holder.tvTeam2.text = item.team2
-            
+
             if (item.stadium.isNotEmpty()) {
                 holder.tvStadium?.visibility = View.VISIBLE
                 holder.tvStadium?.text = item.stadium
@@ -57,35 +65,61 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                 holder.tvReferee?.visibility = View.GONE
             }
 
-            // --- ЛОГІКА ВИВОДУ: ЧАС АБО РАХУНОК ---
+            // 🔥 НОВА ПРАВИЛЬНА ЛОГІКА ВИВОДУ
             val scoreValue = item.score ?: ""
-            
-            // Перевіряємо, чи є реальний рахунок (не порожній і не дефолтні 0 : 0)
-            if (scoreValue.contains(" : ") && scoreValue != "0 : 0" && scoreValue != " : ") {
-                // МАТЧ ЗІГРАНО
-                holder.tvScore?.text = scoreValue
-                holder.ivTimeIcon.visibility = View.GONE 
-                holder.tvScore?.apply {
-                    setTextColor(Color.WHITE)
-                    textSize = 18f
-                    setTypeface(null, Typeface.BOLD)
+
+            holder.tvScore?.text = scoreValue
+
+            when {
+
+                // 🟢 Рахунок
+                scoreValue.contains(" : ") -> {
+                    holder.ivTimeIcon.visibility = View.GONE
+                    holder.tvScore?.apply {
+                        setTextColor(Color.WHITE)
+                        textSize = 18f
+                        setTypeface(null, Typeface.BOLD)
+                    }
                 }
-            } else {
-                // МАТЧ НЕ ЗІГРАНО - виводимо годину
-                // Витягуємо останні 5 символів з дати (наприклад, з "24.02 18:00" беремо "18:00")
-                val timeOnly = if (item.date.length >= 5) item.date.takeLast(5).trim() else item.date
-                holder.tvScore?.text = if (timeOnly.isNotEmpty()) timeOnly else "VS"
-                
-                holder.ivTimeIcon.visibility = View.VISIBLE 
-                holder.tvScore?.apply {
-                    setTextColor(Color.parseColor("#BCBCBC"))
-                    textSize = 14f
-                    setTypeface(null, Typeface.NORMAL)
+
+                // 🔴 LIVE хвилини
+                scoreValue.contains("'") -> {
+                    holder.ivTimeIcon.visibility = View.VISIBLE
+                    holder.tvScore?.apply {
+                        setTextColor(Color.RED)
+                        textSize = 16f
+                        setTypeface(null, Typeface.BOLD)
+                    }
+                }
+
+                // 🟡 Перерва
+                scoreValue == "HT" -> {
+                    holder.ivTimeIcon.visibility = View.VISIBLE
+                    holder.tvScore?.apply {
+                        setTextColor(Color.YELLOW)
+                        textSize = 16f
+                        setTypeface(null, Typeface.BOLD)
+                    }
+                }
+
+                // ⚫ Час початку
+                else -> {
+                    holder.ivTimeIcon.visibility = View.VISIBLE
+                    holder.tvScore?.apply {
+                        setTextColor(Color.parseColor("#BCBCBC"))
+                        textSize = 14f
+                        setTypeface(null, Typeface.NORMAL)
+                    }
                 }
             }
 
-            Glide.with(holder.itemView.context).load(item.logo1).into(holder.ivLogo1)
-            Glide.with(holder.itemView.context).load(item.logo2).into(holder.ivLogo2)
+            Glide.with(holder.itemView.context)
+                .load(item.logo1)
+                .into(holder.ivLogo1)
+
+            Glide.with(holder.itemView.context)
+                .load(item.logo2)
+                .into(holder.ivLogo2)
 
             holder.itemView.setOnClickListener {
                 val context = holder.itemView.context
