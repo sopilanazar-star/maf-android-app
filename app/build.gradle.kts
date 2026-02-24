@@ -13,7 +13,7 @@ android {
         minSdk = 24
         targetSdk = 34
 
-        // 🔴 ПОВЕРНУТО: Залишаємо версію 22 для тестів, як ти і просив
+        // Залишаємо версію 22 для тестів
         versionCode = 22        
         versionName = "2.2"     
 
@@ -31,7 +31,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
+            isMinifyEnabled = true // Це важливо! Потребує ProGuard правил
             signingConfig = signingConfigs.getByName("release") 
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -83,9 +83,7 @@ dependencies {
     implementation("androidx.browser:browser:1.8.0")
     implementation("androidx.core:core-splashscreen:1.0.1")
 
-    // 🔥 Ця бібліотека необхідна для свайпів, вона не впливає на версію додатка
-    implementation("androidx.viewpager2:viewpager2:1.1.0")
-
+    // Glide та Retrofit для роботи з даними
     implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
