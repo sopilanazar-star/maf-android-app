@@ -144,12 +144,14 @@ class DisqualifiedFragment : Fragment() {
                     holder.indicator?.setBackgroundColor(Color.GREEN)
                 }
 
-                // 4. Клік на всю картку для переходу в профіль гравця
+                // 🔥 КРОК 1: Клік з передачею повних даних, щоб уникнути "ноунейма"
                 holder.itemView.setOnClickListener {
                     val playerId = player.playerId
                     if (!playerId.isNullOrEmpty()) {
                         val intent = Intent(holder.itemView.context, PlayerProfileActivity::class.java)
                         intent.putExtra("PLAYER_ID", playerId)
+                        intent.putExtra("PLAYER_NAME", player.name ?: "Гравець") // Передаємо ім'я
+                        intent.putExtra("TEAM_NAME", player.teamName ?: "Команда") // Передаємо команду
                         holder.itemView.context.startActivity(intent)
                     } else {
                         Toast.makeText(holder.itemView.context, "ID гравця відсутній", Toast.LENGTH_SHORT).show()
