@@ -31,15 +31,11 @@ class DateAdapter(
         holder.tvDayNum.text = item.dayNumber
         holder.tvMonth.text = item.month
 
-        // Оновлюємо зовнішній вигляд залежно від того, чи вибрана дата
         if (item.isSelected) {
-            // АКТИВНИЙ СТАН: Білий текст на червоному фоні
             holder.container.setBackgroundResource(R.drawable.bg_date_selected)
-            holder.tvDayName.setTextColor(Color.parseColor("#EEEEEE")) 
             holder.tvDayNum.setTextColor(Color.WHITE)
             holder.tvMonth.setTextColor(Color.WHITE)
         } else {
-            // НЕАКТИВНИЙ СТАН: Сірі відтінки
             holder.container.setBackgroundColor(Color.TRANSPARENT)
             holder.tvDayName.setTextColor(Color.GRAY)
             holder.tvDayNum.setTextColor(Color.parseColor("#CCCCCC"))
@@ -47,28 +43,12 @@ class DateAdapter(
         }
 
         holder.itemView.setOnClickListener {
-            // При ручному кліку оновлюємо виділення
-            updateSelection(position)
-            // Викликаємо колбек (перегортаємо ViewPager)
+            dates.forEach { it.isSelected = false }
+            item.isSelected = true
+            notifyDataSetChanged()
             onDateSelected(item.date)
         }
     }
 
     override fun getItemCount() = dates.size
-
-    /**
-     * 🔥 НОВИЙ МЕТОД: дозволяє MainActivity оновлювати вибрану дату при свайпі.
-     * Нічого не видаляємо, просто додаємо функціонал синхронізації.
-     */
-    fun updateSelection(newPosition: Int) {
-        if (newPosition !in dates.indices) return
-
-        // Знімаємо виділення з усіх і ставимо тільки на нову позицію
-        dates.forEachIndexed { index, dateModel ->
-            dateModel.isSelected = (index == newPosition)
-        }
-        
-        // Повідомляємо адаптер, що дані змінилися, щоб він перемалював кольори
-        notifyDataSetChanged()
-    }
 }
