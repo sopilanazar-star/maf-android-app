@@ -268,9 +268,35 @@ class MainActivity : AppCompatActivity() {
                         val dateList = createDateList(allMatches)
                         dateRecyclerView.adapter = DateAdapter(dateList) { filterMatches(it) }
                         if (dateList.isNotEmpty()) {
-                            dateList[0].isSelected = true
-                            filterMatches(dateList[0].date)
-                        } else {
+
+    val todayStr = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date())
+    var selectedDate: DateModel? = null
+
+    // 1️⃣ якщо є сьогоднішня дата
+    selectedDate = dateList.find { it.date == todayStr }
+
+    // 2️⃣ якщо нема — шукаємо найближчу в майбутньому
+    if (selectedDate == null) {
+        val sdf = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+        val now = Date()
+
+        selectedDate = dateList
+            .mapNotNull {
+                val d = try { sdf.parse(it.date) } catch (e: Exception) { null }
+                if (d != null && !d.before(now)) Pair(it, d) else null
+            }
+            .minByOrNull { it.second }
+            ?.first
+    }
+
+    // 3️⃣ якщо взагалі нема майбутніх — беремо останню
+    if (selectedDate == null) {
+        selectedDate = dateList.last()
+    }
+
+    selectedDate.isSelected = true
+    filterMatches(selectedDate.date)
+} else {
                             if (::recyclerView.isInitialized) recyclerView.adapter = TournamentAdapter(emptyList())
                         }
                         checkAutoRefresh()
