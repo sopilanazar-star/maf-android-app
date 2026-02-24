@@ -3,8 +3,8 @@ package ua.lviv.maf.models
 import com.google.gson.annotations.SerializedName
 
 data class DisqualifiedPlayer(
-    @SerializedName("player") val name: String,   // ПІБ гравця
-    @SerializedName("team") val teamName: String, // Назва команди
-    @SerializedName("matches") val matches: Int,  // Кількість матчів
-    @SerializedName("status") val status: String  // "активна" або інше
+    @SerializedName("player") val name: String? = "Невідомий", 
+    @SerializedName("team") val teamName: String? = "Без команди",
+    @SerializedName("matches") val matches: Int? = 0,
+    @SerializedName("status") val status: String? = ""
 )
