@@ -13,7 +13,7 @@ android {
         minSdk = 24
         targetSdk = 34
 
-        // ВАЖЛИВО: Зараз встановлено 22. Для наступного оновлення змініть на 23.
+        // 🔴 ПОВЕРНУТО: Залишаємо версію 22 для тестів, як ти і просив
         versionCode = 22        
         versionName = "2.2"     
 
@@ -22,7 +22,6 @@ android {
 
     signingConfigs {
         create("release") {
-            // Використовуємо змінні середовища з GitHub Actions
             storeFile = file("maf-release.jks") 
             storePassword = System.getenv("SIGNING_STORE_PASSWORD")
             keyAlias = System.getenv("SIGNING_KEY_ALIAS")
@@ -47,7 +46,6 @@ android {
 
     buildFeatures {
         viewBinding = true
-        // Додаємо buildConfig, щоб MainActivity бачила версію додатка
         buildConfig = true
     }
 
@@ -67,18 +65,14 @@ android {
 }
 
 dependencies {
-    // Бібліотека для запитів до мережі (необхідна для перевірки version.json та нашого API)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
-    // Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-config-ktx")
     
-    // Google AdMob
     implementation("com.google.android.gms:play-services-ads:23.0.0")
 
-    // Існуючі залежності
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
@@ -89,12 +83,10 @@ dependencies {
     implementation("androidx.browser:browser:1.8.0")
     implementation("androidx.core:core-splashscreen:1.0.1")
 
-    // --- БІБЛІОТЕКИ ДЛЯ РОБОТИ З API ТА ЗОБРАЖЕННЯМИ ---
-    
-    // Бібліотека для відображення логотипів команд у списку
+    // 🔥 Ця бібліотека необхідна для свайпів, вона не впливає на версію додатка
+    implementation("androidx.viewpager2:viewpager2:1.1.0")
+
     implementation("com.github.bumptech.glide:glide:4.16.0")
-    
-    // Бібліотеки для читання даних з нашого API (Retrofit + GSON)
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
 }
