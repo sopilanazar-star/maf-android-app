@@ -21,7 +21,6 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         return if (viewType == 0) {
             LeagueHeaderViewHolder(inflater.inflate(R.layout.item_league_header, parent, false))
         } else {
-            // Використовуємо новий, унікальний клас
             TournamentMatchViewHolder(inflater.inflate(R.layout.item_match, parent, false))
         }
     }
@@ -40,7 +39,7 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                 holder.tvStageName.visibility = View.GONE
             }
 
-        } else if (holder is TournamentMatchViewHolder) { // Перевірка на новий клас
+        } else if (holder is TournamentMatchViewHolder) {
             holder.tvTeam1.text = item.team1
             holder.tvTeam2.text = item.team2
             
@@ -58,11 +57,13 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                 holder.tvReferee?.visibility = View.GONE
             }
 
+            // --- ЛОГІКА ВИВОДУ: ЧАС АБО РАХУНОК ---
             val scoreValue = item.score ?: ""
-            holder.tvScore?.text = scoreValue
-
-            // Тут більше не буде помилки, бо клас точно має цю змінну
-            if (scoreValue.contains(" : ")) {
+            
+            // Перевіряємо, чи є реальний рахунок (не порожній і не дефолтні 0 : 0)
+            if (scoreValue.contains(" : ") && scoreValue != "0 : 0" && scoreValue != " : ") {
+                // МАТЧ ЗІГРАНО
+                holder.tvScore?.text = scoreValue
                 holder.ivTimeIcon.visibility = View.GONE 
                 holder.tvScore?.apply {
                     setTextColor(Color.WHITE)
@@ -70,6 +71,11 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                     setTypeface(null, Typeface.BOLD)
                 }
             } else {
+                // МАТЧ НЕ ЗІГРАНО - виводимо годину
+                // Витягуємо останні 5 символів з дати (наприклад, з "24.02 18:00" беремо "18:00")
+                val timeOnly = if (item.date.length >= 5) item.date.takeLast(5).trim() else item.date
+                holder.tvScore?.text = if (timeOnly.isNotEmpty()) timeOnly else "VS"
+                
                 holder.ivTimeIcon.visibility = View.VISIBLE 
                 holder.tvScore?.apply {
                     setTextColor(Color.parseColor("#BCBCBC"))
@@ -110,7 +116,6 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val tvStageName: TextView = view.findViewById(R.id.tvStageName)
     }
 
-    // 🔥 ПЕРЕЙМЕНОВАНИЙ КЛАС (Унікальна назва)
     class TournamentMatchViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val ivLogo1: ImageView = view.findViewById(R.id.ivLogo1)
         val ivLogo2: ImageView = view.findViewById(R.id.ivLogo2)
@@ -119,8 +124,6 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val tvScore: TextView? = view.findViewById(R.id.tvScore)
         val tvStadium: TextView? = view.findViewById(R.id.tvStadium)
         val tvReferee: TextView? = view.findViewById(R.id.tvReferee)
-        
-        // Тут змінна точно є
         val ivTimeIcon: ImageView = view.findViewById(R.id.ivTimeIcon)
     }
 }
