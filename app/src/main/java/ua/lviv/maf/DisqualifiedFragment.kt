@@ -1,5 +1,7 @@
 package ua.lviv.maf
 
+import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -14,10 +16,11 @@ import retrofit2.Callback
 import retrofit2.Response
 import ua.lviv.maf.api.RetrofitClient
 import ua.lviv.maf.models.DisqualifiedPlayer
+import java.text.SimpleDateFormat
+import java.util.*
 
 class DisqualifiedFragment : Fragment() {
 
-    // Робимо змінні безпечними (nullable), щоб уникнути UninitializedPropertyAccessException
     private var adapter: DisqualifiedAdapter? = null
     private var tvHeaderYear: TextView? = null
     private var rvPlayers: RecyclerView? = null
@@ -30,7 +33,6 @@ class DisqualifiedFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_disqualified, container, false)
         
         try {
-            // Використовуємо View? та безпечний пошук
             val btnBack: View? = view.findViewById(R.id.btnBackText)
             rvPlayers = view.findViewById(R.id.rvDisqualifiedPlayers)
             tvHeaderYear = view.findViewById(R.id.tvHeaderYear)
@@ -41,28 +43,27 @@ class DisqualifiedFragment : Fragment() {
 
             tvHeaderYear?.text = AppConfig.selectedYear.toString()
 
-            // requireContext() обгорнуто в безпечний виклик, якщо контекст ще не готовий
             context?.let {
                 rvPlayers?.layoutManager = LinearLayoutManager(it)
             }
             
             loadPlayers()
         } catch (e: Exception) {
-            e.printStackTrace() // Якщо щось не знайдено, просто пропустимо, але не впадемо
+            e.printStackTrace()
         }
         
         return view
     }
 
     private fun loadPlayers() {
-        val year = AppConfig.selectedYear
+        // Отримуємо рік як String для запиту до API
+        val year = AppConfig.selectedYear.toString()
         
         RetrofitClient.instance.getDisqualifiedPlayers(year).enqueue(object : Callback<List<DisqualifiedPlayer>> {
             override fun onResponse(
                 call: Call<List<DisqualifiedPlayer>>,
                 response: Response<List<DisqualifiedPlayer>>
             ) {
-                // Захист: якщо користувач вже пішов з вкладки, нічого не робимо
                 if (!isAdded || context == null) return
                 
                 try {
@@ -70,7 +71,7 @@ class DisqualifiedFragment : Fragment() {
                         allPlayers = response.body() ?: emptyList()
                         updateList()
                     } else {
-                        Toast.makeText(context, "Помилка: ${response.code()}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Помилка сервера: ${response.code()}", Toast.LENGTH_SHORT).show()
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -108,24 +109,53 @@ class DisqualifiedFragment : Fragment() {
             try {
                 val player = items[position]
                 
-                // 🔥 МАКСИМАЛЬНИЙ ЗАХИСТ ВІД NULL
-                val statusText = player.status ?: ""
-                val isActive = statusText.lowercase() == "активна"
+                // 1. Безпечне визначення статусу
+                val statusValue = player.status ?: ""
+                val isActive = statusValue.lowercase() == "активна"
 
-                // Захист на випадок, якщо Gson передав null замість імені чи команди
+                // 2. Встановлення основних текстових полів
                 holder.name?.text = player.name ?: "Невідомо"
-                holder.team?.text = player.teamName ?: "Невідома команда"
+                holder.team?.text = player.teamName ?: "Без команди"
+
+                // 3. Форматування дати завершення (з yyyy-MM-dd у dd.MM.yyyy)
+                val rawDate = player.expiryDate ?: ""
+                var formattedDate = rawDate
+                if (rawDate.isNotEmpty()) {
+                    try {
+                        val parser = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                        val formatter = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+                        val date = parser.parse(rawDate)
+                        if (date != null) formattedDate = formatter.format(date)
+                    } catch (e: Exception) { /* залишити як є */ }
+                }
 
                 if (isActive) {
+                    // Формуємо детальний статус: Причина + Кількість матчів + Дата
+                    val reason = if (!player.reason.isNullOrEmpty()) "${player.reason}. " else ""
                     val matchesCount = player.matches ?: 0
-                    holder.status?.text = "Дискваліфікований на $matchesCount матчі(в)"
-                    holder.status?.setTextColor(android.graphics.Color.parseColor("#FF5252")) // Червоний
-                    holder.indicator?.setBackgroundColor(android.graphics.Color.RED)
+                    val dateInfo = if (formattedDate.isNotEmpty()) " до $formattedDate" else ""
+                    
+                    holder.status?.text = "${reason}Дискваліфікований на $matchesCount матчі(в)$dateInfo"
+                    holder.status?.setTextColor(Color.parseColor("#FF5252"))
+                    holder.indicator?.setBackgroundColor(Color.RED)
                 } else {
                     holder.status?.text = "Завершена дискваліфікація"
-                    holder.status?.setTextColor(android.graphics.Color.GREEN)
-                    holder.indicator?.setBackgroundColor(android.graphics.Color.GREEN)
+                    holder.status?.setTextColor(Color.GREEN)
+                    holder.indicator?.setBackgroundColor(Color.GREEN)
                 }
+
+                // 4. Клік на всю картку для переходу в профіль гравця
+                holder.itemView.setOnClickListener {
+                    val playerId = player.playerId
+                    if (!playerId.isNullOrEmpty()) {
+                        val intent = Intent(holder.itemView.context, PlayerProfileActivity::class.java)
+                        intent.putExtra("PLAYER_ID", playerId)
+                        holder.itemView.context.startActivity(intent)
+                    } else {
+                        Toast.makeText(holder.itemView.context, "ID гравця відсутній", Toast.LENGTH_SHORT).show()
+                    }
+                }
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -133,7 +163,6 @@ class DisqualifiedFragment : Fragment() {
 
         override fun getItemCount() = items.size
 
-        // Усі TextView тепер з ?, щоб не падати, якщо ID в XML не збігається
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val name: TextView? = view.findViewById(R.id.tvPlayerName)
             val team: TextView? = view.findViewById(R.id.tvTeamName)
