@@ -20,7 +20,6 @@ import ua.lviv.maf.models.Player
 class PlayerProfileActivity : AppCompatActivity() {
 
     private lateinit var ivPlayerPhoto: ImageView
-    private lateinit var ivTeamLogoSmall: ImageView
     private lateinit var tvName: TextView
     private lateinit var tvTeam: TextView
     private lateinit var tvPosition: TextView
@@ -30,12 +29,9 @@ class PlayerProfileActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_player_profile)
 
-        // кнопка назад
         findViewById<ImageButton>(R.id.btnBack).setOnClickListener { finish() }
 
-        // елементи
         ivPlayerPhoto = findViewById(R.id.ivPlayerPhoto)
-        ivTeamLogoSmall = findViewById(R.id.ivTeamLogoSmall)
         tvName = findViewById(R.id.tvPlayerName)
         tvTeam = findViewById(R.id.tvTeamName)
         tvPosition = findViewById(R.id.tvPosition)
@@ -44,22 +40,20 @@ class PlayerProfileActivity : AppCompatActivity() {
         val ivWatermark: ImageView = findViewById(R.id.ivWatermark)
         Glide.with(this).load(R.drawable.maf_logo).into(ivWatermark)
 
-        // дані з intent (placeholder)
+        // intent дані
         val playerId = intent.getStringExtra("PLAYER_ID") ?: ""
         val playerName = intent.getStringExtra("PLAYER_NAME") ?: ""
         val teamName = intent.getStringExtra("TEAM_NAME") ?: "Команда"
-        val playerPhotoUrl = intent.getStringExtra("PLAYER_PHOTO")
-        val teamLogoUrl = intent.getStringExtra("TEAM_LOGO")
         val positionCode = intent.getStringExtra("PLAYER_POSITION") ?: ""
         val playerNumber = intent.getStringExtra("PLAYER_NUMBER") ?: ""
         val birthDate = intent.getStringExtra("PLAYER_BIRTHDATE") ?: ""
         val age = intent.getIntExtra("PLAYER_AGE", 0)
+        val photoUrl = intent.getStringExtra("PLAYER_PHOTO")
 
-        // показуємо базові дані одразу
+        // placeholder дані
         tvName.text = playerName
         tvTeam.text = teamName
 
-        // позиція placeholder
         val fullPositionName = when (positionCode.lowercase()) {
             "g", "gk" -> "Воротар"
             "d", "df" -> "Захисник"
@@ -73,31 +67,21 @@ class PlayerProfileActivity : AppCompatActivity() {
                 "$fullPositionName • #$playerNumber"
             else fullPositionName
 
-        // дата народження placeholder
         tvDob.text = when {
             birthDate.isNotEmpty() && age > 0 -> "$birthDate ($age років)"
             birthDate.isNotEmpty() -> birthDate
             else -> "Дата народження невідома"
         }
 
-        // фото placeholder
-        if (!playerPhotoUrl.isNullOrEmpty()) {
+        if (!photoUrl.isNullOrEmpty()) {
             Glide.with(this)
-                .load(playerPhotoUrl)
+                .load(photoUrl)
                 .transform(PlayerTopCropTransformation())
                 .placeholder(android.R.drawable.ic_menu_camera)
                 .into(ivPlayerPhoto)
         }
 
-        if (!teamLogoUrl.isNullOrEmpty()) {
-            Glide.with(this)
-                .load(teamLogoUrl)
-                .fitCenter()
-                .placeholder(R.drawable.maf_logo)
-                .into(ivTeamLogoSmall)
-        }
-
-        // 🔥 ГОЛОВНЕ: завжди довантажуємо повний профіль
+        // 🔥 головне — завжди підтягуємо повний профіль
         if (playerId.isNotEmpty()) {
             loadFullPlayer(playerId)
         }
@@ -116,13 +100,8 @@ class PlayerProfileActivity : AppCompatActivity() {
                     runOnUiThread {
 
                         // ім'я
-                        if (!p.name.isNullOrEmpty()) {
+                        if (p.name.isNotEmpty()) {
                             tvName.text = p.name
-                        }
-
-                        // команда
-                        if (!p.teamName.isNullOrEmpty()) {
-                            tvTeam.text = p.teamName
                         }
 
                         // дата народження
@@ -133,37 +112,28 @@ class PlayerProfileActivity : AppCompatActivity() {
                         }
 
                         // позиція
-                        val remotePos = when (p.position?.lowercase()) {
+                        val remotePos = when (p.position.lowercase()) {
                             "g", "gk" -> "Воротар"
                             "d", "df" -> "Захисник"
                             "m", "mf" -> "Півзахисник"
                             "f", "fw" -> "Нападник"
-                            else -> p.position ?: ""
+                            else -> p.position
                         }
 
                         if (remotePos.isNotEmpty()) {
                             tvPosition.text =
-                                if (!p.number.isNullOrEmpty())
+                                if (p.number.isNotEmpty())
                                     "$remotePos • #${p.number}"
                                 else remotePos
                         }
 
                         // фото
-                        if (!p.photo.isNullOrEmpty()) {
+                        if (p.photo.isNotEmpty()) {
                             Glide.with(this@PlayerProfileActivity)
                                 .load(p.photo)
                                 .transform(PlayerTopCropTransformation())
                                 .placeholder(android.R.drawable.ic_menu_camera)
                                 .into(ivPlayerPhoto)
-                        }
-
-                        // лого
-                        if (!p.teamLogo.isNullOrEmpty()) {
-                            Glide.with(this@PlayerProfileActivity)
-                                .load(p.teamLogo)
-                                .fitCenter()
-                                .placeholder(R.drawable.maf_logo)
-                                .into(ivTeamLogoSmall)
                         }
                     }
                 }
