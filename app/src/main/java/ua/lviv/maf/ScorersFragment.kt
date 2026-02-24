@@ -31,7 +31,7 @@ class ScorersFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_scorers, container, false)
         
-        // Отримуємо тип ліги з аргументів (I ліга, II ліга, U-19 тощо)
+        // Отримуємо тип ліги з аргументів
         leagueType = arguments?.getString("LEAGUE_TYPE") ?: ""
 
         // Ініціалізація View
@@ -45,8 +45,7 @@ class ScorersFragment : Fragment() {
 
         btnBack?.setOnClickListener { parentFragmentManager.popBackStack() }
 
-        // Якщо це U-19 — показуємо пусту сторінку згідно з ТЗ
-        if (leagueType.contains("U-19")) {
+        if (leagueType.isEmpty()) {
             showEmptyState()
         } else {
             fetchScorersData()
@@ -59,12 +58,22 @@ class ScorersFragment : Fragment() {
         progressBar.visibility = View.VISIBLE
         recyclerView.visibility = View.GONE
 
+        // Мапа турнірів (Назва ліги -> ID турніру для API)
+        // ВАЖЛИВО: Обов'язково підстав свої реальні ID для інших ліг замість 1404 та 1405!
+        val tournamentId = when (leagueType) {
+            "Вища ліга" -> "1404" 
+            "Перша ліга" -> "1405" 
+            "U-19" -> "1406"
+            else -> "1406" 
+        }
+
         val client = OkHttpClient()
         
-        // Вставляємо реальний URL твого API на WordPress
-        // Потім зможеш додати параметри турніру: "?competition_id=12"
-        val apiUrl = "https://maf.lviv.ua/wp-json/maf/v1/top-scorers"
+        // Використовуємо твоє робоче v2 API
+        val apiUrl = "https://maf.lviv.ua/wp-json/maf/v2/top-scorers?tournament_id=$tournamentId&year=$selectedYear"
         
+        Log.d("Scorers", "Requesting URL: $apiUrl")
+
         val request = Request.Builder()
             .url(apiUrl)
             .build()
@@ -92,7 +101,6 @@ class ScorersFragment : Fragment() {
         })
     }
 
-    // Змінено на JSONObject, щоб не створювати зайвих класів і легко читати відповідь WP API
     private fun parseJson(json: String): List<JSONObject> {
         val list = mutableListOf<JSONObject>()
         try {
@@ -110,8 +118,8 @@ class ScorersFragment : Fragment() {
         recyclerView.visibility = View.VISIBLE
         recyclerView.layoutManager = LinearLayoutManager(context)
         recyclerView.adapter = ScorersAdapter(data) { playerId ->
-            // Тут буде логіка відкриття картки гравця, яку ми обговорювали раніше
-            Log.d("ScorersFragment", "Клік по гравцю: $playerId")
+            // Тут ми потім додамо перехід на картку гравця
+            Log.d("ScorersFragment", "Клік по гравцю з ID: $playerId")
         }
     }
 
@@ -122,7 +130,6 @@ class ScorersFragment : Fragment() {
     }
 }
 
-// Адаптер з виділенням перших трьох (адаптовано під item_top_scorer.xml)
 class ScorersAdapter(
     private val items: List<JSONObject>,
     private val onPlayerClick: (String) -> Unit
@@ -139,7 +146,6 @@ class ScorersAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        // Зв'язуємо з нашим новим макетом
         val v = LayoutInflater.from(parent.context).inflate(R.layout.item_top_scorer, parent, false)
         return ViewHolder(v)
     }
@@ -147,63 +153,53 @@ class ScorersAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
 
-        // Функція "пилосос", як у твоїх попередніх адаптерах
-        fun getValue(vararg keys: String): String {
-            for (key in keys) {
-                if (item.has(key) && !item.isNull(key)) {
-                    val v = item.optString(key)
-                    if (v.isNotEmpty() && v != "false" && v != "null") return v
-                }
-            }
-            return ""
-        }
+        // 1. ДІСТАЄМО ДАНІ З ВКЛАДЕНИХ ОБ'ЄКТІВ (player та team)
+        val playerObj = item.optJSONObject("player")
+        val teamObj = item.optJSONObject("team")
 
-        val playerId = getValue("player_id", "id")
-        val rankStr = getValue("rank")
-        val name = getValue("name", "player_name")
-        val matches = getValue("matches", "total_matches", "played")
-        val goals = getValue("goals", "total_goals")
-        val photoUrl = getValue("photo", "player_photo")
+        val playerId = playerObj?.optString("id") ?: ""
+        val name = playerObj?.optString("name") ?: "Невідомий гравець"
+        val photoUrl = playerObj?.optString("photo") ?: ""
+
+        val teamName = teamObj?.optString("name") ?: "Без команди"
         
-        // WP API повертає team як об'єкт, дістаємо звідти name
-        var teamName = getValue("team_name")
-        if (teamName.isEmpty() && item.has("team")) {
-            val teamObj = item.optJSONObject("team")
-            teamName = teamObj?.optString("name") ?: ""
-        }
+        val rankStr = item.optString("rank")
+        val goals = item.optString("goals", "0")
+        val matches = item.optString("matches", "0")
 
+        // 2. ЗАПОВНЮЄМО UI
         holder.rank.text = if (rankStr.isNotEmpty()) rankStr else "${position + 1}."
         holder.name.text = name
         holder.team.text = teamName
         holder.matches.text = matches
         holder.goals.text = goals
 
-        // ВИДІЛЕННЯ ПЕРШИХ ТРЬОХ (як у ТЗ)
+        // 3. ПІДСВІТКА ТОП-3 КОЛЬОРАМИ МЕДАЛЕЙ
         when (position) {
             0 -> holder.rank.setTextColor(Color.parseColor("#FFD700")) // Золото
             1 -> holder.rank.setTextColor(Color.parseColor("#C0C0C0")) // Срібло
             2 -> holder.rank.setTextColor(Color.parseColor("#CD7F32")) // Бронза
-            else -> holder.rank.setTextColor(Color.parseColor("#00E676")) // Стандартний зелений
+            else -> holder.rank.setTextColor(Color.parseColor("#00E676")) // Зелений
         }
         
         if (position < 3) {
-            holder.container.setBackgroundColor(Color.parseColor("#2C313C")) // Легкий акцент для ТОП-3
+            holder.container.setBackgroundColor(Color.parseColor("#2C313C"))
         } else {
-            holder.container.setBackgroundColor(Color.parseColor("#252932")) // Стандартний фон
+            holder.container.setBackgroundColor(Color.parseColor("#252932"))
         }
 
-        // Завантаження фотографії
+        // 4. ЗАВАНТАЖУЄМО ФОТО ГРАВЦЯ
         if (photoUrl.isNotEmpty()) {
             Glide.with(holder.itemView.context)
                 .load(photoUrl)
-                .circleCrop()
+                .circleCrop() // Робимо фото круглим
                 .placeholder(R.drawable.ic_player_placeholder)
                 .into(holder.ivPlayerPhoto)
         } else {
             holder.ivPlayerPhoto.setImageResource(R.drawable.ic_player_placeholder)
         }
 
-        // Обробка кліку
+        // Обробка кліку по рядку
         holder.container.setOnClickListener { onPlayerClick(playerId) }
     }
 
