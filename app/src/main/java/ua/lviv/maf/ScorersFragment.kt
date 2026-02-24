@@ -31,8 +31,9 @@ class ScorersFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_scorers, container, false)
         
-        // Отримуємо тип ліги з аргументів
+        // 1. Отримуємо тип ліги та рік з аргументів
         leagueType = arguments?.getString("LEAGUE_TYPE") ?: ""
+        selectedYear = arguments?.getString("SELECTED_YEAR") ?: "2025"
 
         // Ініціалізація View
         recyclerView = view.findViewById(R.id.rvScorers)
@@ -58,7 +59,7 @@ class ScorersFragment : Fragment() {
         progressBar.visibility = View.VISIBLE
         recyclerView.visibility = View.GONE
 
-        // Мапа турнірів (Назва ліги -> ID турніру для API)
+        // 2. Мапа турнірів (Назва ліги -> ID турніру для API)
         // ВАЖЛИВО: Обов'язково підстав свої реальні ID для інших ліг замість 1404 та 1405!
         val tournamentId = when (leagueType) {
             "Вища ліга" -> "1404" 
@@ -69,7 +70,7 @@ class ScorersFragment : Fragment() {
 
         val client = OkHttpClient()
         
-        // Використовуємо твоє робоче v2 API
+        // 3. Використовуємо твоє робоче v2 API зі змінною року
         val apiUrl = "https://maf.lviv.ua/wp-json/maf/v2/top-scorers?tournament_id=$tournamentId&year=$selectedYear"
         
         Log.d("Scorers", "Requesting URL: $apiUrl")
@@ -153,7 +154,7 @@ class ScorersAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
 
-        // 1. ДІСТАЄМО ДАНІ З ВКЛАДЕНИХ ОБ'ЄКТІВ (player та team)
+        // ДІСТАЄМО ДАНІ З НОВОГО JSON v2 (вкладені об'єкти)
         val playerObj = item.optJSONObject("player")
         val teamObj = item.optJSONObject("team")
 
@@ -167,14 +168,14 @@ class ScorersAdapter(
         val goals = item.optString("goals", "0")
         val matches = item.optString("matches", "0")
 
-        // 2. ЗАПОВНЮЄМО UI
+        // ЗАПОВНЮЄМО UI
         holder.rank.text = if (rankStr.isNotEmpty()) rankStr else "${position + 1}."
         holder.name.text = name
         holder.team.text = teamName
         holder.matches.text = matches
         holder.goals.text = goals
 
-        // 3. ПІДСВІТКА ТОП-3 КОЛЬОРАМИ МЕДАЛЕЙ
+        // ПІДСВІТКА ТОП-3 КОЛЬОРАМИ МЕДАЛЕЙ
         when (position) {
             0 -> holder.rank.setTextColor(Color.parseColor("#FFD700")) // Золото
             1 -> holder.rank.setTextColor(Color.parseColor("#C0C0C0")) // Срібло
@@ -188,7 +189,7 @@ class ScorersAdapter(
             holder.container.setBackgroundColor(Color.parseColor("#252932"))
         }
 
-        // 4. ЗАВАНТАЖУЄМО ФОТО ГРАВЦЯ
+        // ЗАВАНТАЖУЄМО ФОТО ГРАВЦЯ
         if (photoUrl.isNotEmpty()) {
             Glide.with(holder.itemView.context)
                 .load(photoUrl)
