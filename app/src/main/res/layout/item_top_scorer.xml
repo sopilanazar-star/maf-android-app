@@ -26,14 +26,12 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
-        <de.hdodenhof.circleimageview.CircleImageView
+        <ImageView
             android:id="@+id/ivPlayerPhoto"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_marginStart="8dp"
-            android:src="@drawable/ic_player_placeholder"
-            app:civ_border_color="#404040"
-            app:civ_border_width="1dp" />
+            android:src="@drawable/ic_player_placeholder" />
 
         <LinearLayout
             android:layout_width="0dp"
