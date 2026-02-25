@@ -34,14 +34,16 @@ class ScorersFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_scorers, container, false)
 
         leagueType = arguments?.getString("LEAGUE_TYPE") ?: ""
-        selectedYear = arguments?.getString("SELECTED_YEAR") ?: AppConfig.selectedYear.toString()
+        selectedYear = arguments?.getString("SELECTED_YEAR") ?: "2025"
 
         recyclerView = view.findViewById(R.id.rvScorers)
         progressBar = view.findViewById(R.id.progressBar)
         tvEmptyState = view.findViewById(R.id.tvEmptyState)
         tvHeaderTitle = view.findViewById(R.id.tvHeaderTitle)
 
-        tvHeaderTitle.text = "$leagueType ($selectedYear)"
+        // 🔥 ПРАВКА 1: Чистий заголовок без дублювання слова "Бомбардири"
+        val cleanTitle = leagueType.replace("Бомбардири", "").replace("(", "").replace(")", "").trim()
+        tvHeaderTitle.text = "Бомбардири: $cleanTitle ($selectedYear)"
 
         view.findViewById<View>(R.id.btnBackText)?.setOnClickListener {
             parentFragmentManager.popBackStack()
@@ -82,10 +84,8 @@ class ScorersFragment : Fragment() {
         })
     }
 
-    // 🔥 СУВОРА ЛОГІКА (Виправлено дублювання та помилкові етапи 2024)
     private fun findCompetitionId(array: JSONArray): String {
         val search = leagueType.lowercase().trim()
-        
         val searchIsU19 = search.contains("u-19")
         val searchIsSecond = search.contains("іі ліга")
         val searchIsFirst = (search.contains("і ліга") || search.contains("1 ліга")) && !searchIsSecond
@@ -94,10 +94,8 @@ class ScorersFragment : Fragment() {
             val obj = array.getJSONObject(i)
             val name = obj.optString("name", "").lowercase()
 
-            // ПРАВИЛО: Ігноруємо фінальні етапи та кубки, якщо шукаємо регулярний чемпіонат
-            if (name.contains("фіналь") || name.contains("плей-офф") || name.contains("кубок")) {
-                continue 
-            }
+            // Ігноруємо кубки та фінальні стадії для регулярного списку
+            if (name.contains("фіналь") || name.contains("плей-офф") || name.contains("кубок")) continue 
 
             val compIsU19 = name.contains("u-19")
             val compIsSecond = name.contains("іі ліга")
@@ -107,16 +105,6 @@ class ScorersFragment : Fragment() {
                 return obj.optString("id")
             }
         }
-        
-        // Якщо за суворими правилами нічого не знайшли (наприклад, тільки фінал і є), беремо перший ліпший збіг
-        for (i in 0 until array.length()) {
-            val obj = array.getJSONObject(i)
-            val name = obj.optString("name", "").lowercase()
-            if (searchIsU19 == name.contains("u-19") && searchIsSecond == name.contains("іі ліга")) {
-                return obj.optString("id")
-            }
-        }
-        
         return ""
     }
 
@@ -139,7 +127,6 @@ class ScorersFragment : Fragment() {
                         val array = JSONArray(body)
                         val list = mutableListOf<JSONObject>()
                         for (i in 0 until array.length()) list.add(array.getJSONObject(i))
-                        
                         if (list.isEmpty()) showEmptyState() else setupList(list)
                     } catch (e: Exception) {
                         showEmptyState()
@@ -157,12 +144,17 @@ class ScorersFragment : Fragment() {
         }
     }
 
-    // ПЕРЕХІД НА КАРТКУ ГРАВЦЯ (PlayerProfileActivity)
+    // 🔥 ПРАВКА 3: Передаємо ID як Int, щоб не було "ноунейма"
     private fun openPlayerProfile(playerId: String) {
         if (playerId.isEmpty()) return
-        val intent = Intent(requireContext(), PlayerProfileActivity::class.java)
-        intent.putExtra("PLAYER_ID", playerId) // Переконайся, що в Activity такий самий ключ
-        startActivity(intent)
+        try {
+            val intent = Intent(requireContext(), PlayerProfileActivity::class.java)
+            // Конвертуємо в Int, бо твоя Activity профілю зазвичай чекає число
+            intent.putExtra("PLAYER_ID", playerId.toInt()) 
+            startActivity(intent)
+        } catch (e: Exception) {
+            Log.e("Scorers", "Error opening profile: ${e.message}")
+        }
     }
 
     private fun showEmptyState() {
@@ -199,7 +191,7 @@ class ScorersAdapter(
 
         holder.rank.text = "${position + 1}."
         holder.name.text = p?.optString("name") ?: "Гравець"
-        holder.team.text = t?.optString("name") ?: ""
+        holder.team.text = t?.optString("name") ?: "Без команди"
         holder.matches.text = item.optInt("matches", 0).toString()
         holder.goals.text = item.optInt("goals", 0).toString()
 
@@ -211,10 +203,11 @@ class ScorersAdapter(
         }
         holder.rank.setTextColor(Color.parseColor(color))
 
-        // 🔥 ФОТО: ТЕПЕР ІДЕАЛЬНО КРУГЛІ ЯК У СКЛАДІ КОМАНДИ 🔥
+        // 🔥 ПРАВКА 2: Фото тепер центрується і обрізається колом (обличчя посередині)
         Glide.with(holder.itemView.context)
             .load(p?.optString("photo"))
-            .circleCrop() 
+            .centerCrop() // Центруємо
+            .circleCrop() // Обрізаємо в коло
             .placeholder(R.drawable.ic_player_placeholder)
             .into(holder.ivPlayer)
 
