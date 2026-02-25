@@ -51,7 +51,6 @@ class MoreFragment : Fragment() {
         return view
     }
 
-    // 🔥 ПРАВКА: Оновлено метод для реакції на зміну року
     fun refreshData() {
         if (isAdded) {
             // Пошук поточного активного фрагмента в контейнері для оновлення даних за роком
@@ -75,7 +74,6 @@ class MoreFragment : Fragment() {
         }
     }
 
-    // 🔥 ПРАВКА: Реалізовано перехід до DisqualifiedFragment ТА ScorersFragment
     private fun handleMenuClick(item: MenuItem) {
         val containerId = (requireView().parent as View).id
         
@@ -88,7 +86,6 @@ class MoreFragment : Fragment() {
                     .commit()
             }
             2 -> { 
-                // Відкриваємо фрагмент дискваліфікованих гравців
                 val disqualifiedFragment = DisqualifiedFragment()
                 parentFragmentManager.beginTransaction()
                     .replace(containerId, disqualifiedFragment) 
@@ -99,17 +96,26 @@ class MoreFragment : Fragment() {
             4 -> openScorersFragment("ІІ ліга", containerId)
             5 -> openScorersFragment("U-19 (І ліга)", containerId)
             6 -> openScorersFragment("U-19 (ІІ ліга)", containerId)
-            7 -> { Toast.makeText(context, "Відкриваємо: ${item.title} (В розробці)", Toast.LENGTH_SHORT).show() }
+            7 -> { 
+                // 🔥 ПРАВКА: Відкриваємо фрагмент Арбітрів і передаємо рік
+                val refereesFragment = RefereesFragment()
+                val bundle = Bundle()
+                bundle.putString("SELECTED_YEAR", AppConfig.selectedYear.toString())
+                refereesFragment.arguments = bundle
+
+                parentFragmentManager.beginTransaction()
+                    .replace(containerId, refereesFragment)
+                    .addToBackStack(null)
+                    .commit()
+            }
         }
     }
 
-    // 🔥 ПРАВКА: Нова допоміжна функція для відкриття бомбардирів без дублювання коду
     private fun openScorersFragment(leagueType: String, containerId: Int) {
         val fragment = ScorersFragment()
         val bundle = Bundle()
         
         bundle.putString("LEAGUE_TYPE", leagueType)
-        // Беремо глобальний рік з AppConfig, щоб віддавати його в API
         bundle.putString("SELECTED_YEAR", AppConfig.selectedYear.toString()) 
         fragment.arguments = bundle
 
