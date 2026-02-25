@@ -1,5 +1,6 @@
 package ua.lviv.maf
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
@@ -13,7 +14,6 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-// 🔥 ДОДАНО НОВІ ІМПОРТИ ДЛЯ GLIDE 🔥
 import com.bumptech.glide.load.resource.bitmap.CenterCrop
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import okhttp3.*
@@ -84,10 +84,8 @@ class ScorersFragment : Fragment() {
         })
     }
 
-    // СУВОРА ЛОГІКА ФІЛЬТРАЦІЇ
     private fun findCompetitionId(array: JSONArray): String {
         val search = leagueType.lowercase().trim()
-        
         val searchIsU19 = search.contains("u-19")
         val searchIsSecond = search.contains("іі ліга")
         val searchIsFirst = (search.contains("і ліга") || search.contains("1 ліга")) && !searchIsSecond
@@ -126,7 +124,6 @@ class ScorersFragment : Fragment() {
                         val array = JSONArray(body)
                         val list = mutableListOf<JSONObject>()
                         for (i in 0 until array.length()) list.add(array.getJSONObject(i))
-                        
                         if (list.isEmpty()) showEmptyState() else setupList(list)
                     } catch (e: Exception) {
                         showEmptyState()
@@ -144,21 +141,13 @@ class ScorersFragment : Fragment() {
         }
     }
 
-    // МЕТОД ПЕРЕХОДУ НА КАРТКУ ГРАВЦЯ
+    // 🔥 ПРАВИЛЬНИЙ ПЕРЕХІД НА ACTIVITY (Більше ніяких помилок Unresolved reference)
     private fun openPlayerProfile(playerId: String) {
         if (playerId.isEmpty()) return
         
-        val playerFragment = PlayerFragment() // Переконайся, що ім'я фрагмента правильне
-        val bundle = Bundle()
-        bundle.putString("PLAYER_ID", playerId)
-        playerFragment.arguments = bundle
-
-        val containerId = (requireView().parent as View).id
-
-        parentFragmentManager.beginTransaction()
-            .replace(containerId, playerFragment)
-            .addToBackStack(null)
-            .commit()
+        val intent = Intent(requireContext(), PlayerProfileActivity::class.java)
+        intent.putExtra("PLAYER_ID", playerId)
+        startActivity(intent)
     }
 
     private fun showEmptyState() {
@@ -207,13 +196,10 @@ class ScorersAdapter(
         }
         holder.rank.setTextColor(Color.parseColor(color))
 
-        // 🔥 ВИПРАВЛЕНО ВІДОБРАЖЕННЯ ФОТО ГРАВЦЯ 🔥
+        // 🔥 ФОТО: ТЕПЕР ЯК У КАРТКАХ КОМАНД (Голови не зрізає)
         Glide.with(holder.itemView.context)
             .load(p?.optString("photo"))
-            // Замість circleCrop() використовуємо комбінацію:
-            // CenterCrop - центрує та заповнює квадрат
-            // RoundedCorners(12) - робить кути закругленими (радіус 12px)
-            .transform(CenterCrop(), RoundedCorners(12)) 
+            .transform(CenterCrop(), RoundedCorners(20)) // Закруглені кути як у картах
             .placeholder(R.drawable.ic_player_placeholder)
             .into(holder.ivPlayer)
 
