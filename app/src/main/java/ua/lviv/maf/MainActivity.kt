@@ -169,6 +169,9 @@ class MainActivity : AppCompatActivity() {
                     val currentFragment = supportFragmentManager.findFragmentById(fragmentContainer.id)
                     if (currentFragment is StandingFragment) currentFragment.refreshData()
                     if (currentFragment is MoreFragment) currentFragment.refreshData()
+                    // 🔥 ДОДАНІ РЯДКИ ДЛЯ АРБІТРІВ І БОМБАРДИРІВ 🔥
+                    if (currentFragment is RefereesFragment) currentFragment.updateYear(AppConfig.selectedYear)
+                    if (currentFragment is ScorersFragment) currentFragment.updateYear(AppConfig.selectedYear)
                 }
             }
             override fun onNothingSelected(p: AdapterView<*>?) {}
@@ -269,34 +272,34 @@ class MainActivity : AppCompatActivity() {
                         dateRecyclerView.adapter = DateAdapter(dateList) { filterMatches(it) }
                         if (dateList.isNotEmpty()) {
 
-    val todayStr = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date())
-    var selectedDate: DateModel? = null
+                            val todayStr = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date())
+                            var selectedDate: DateModel? = null
 
-    // 1️⃣ якщо є сьогоднішня дата
-    selectedDate = dateList.find { it.date == todayStr }
+                            // 1️⃣ якщо є сьогоднішня дата
+                            selectedDate = dateList.find { it.date == todayStr }
 
-    // 2️⃣ якщо нема — шукаємо найближчу в майбутньому
-    if (selectedDate == null) {
-        val sdf = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
-        val now = Date()
+                            // 2️⃣ якщо нема — шукаємо найближчу в майбутньому
+                            if (selectedDate == null) {
+                                val sdf = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+                                val now = Date()
 
-        selectedDate = dateList
-            .mapNotNull {
-                val d = try { sdf.parse(it.date) } catch (e: Exception) { null }
-                if (d != null && !d.before(now)) Pair(it, d) else null
-            }
-            .minByOrNull { it.second }
-            ?.first
-    }
+                                selectedDate = dateList
+                                    .mapNotNull {
+                                        val d = try { sdf.parse(it.date) } catch (e: Exception) { null }
+                                        if (d != null && !d.before(now)) Pair(it, d) else null
+                                    }
+                                    .minByOrNull { it.second }
+                                    ?.first
+                            }
 
-    // 3️⃣ якщо взагалі нема майбутніх — беремо останню
-    if (selectedDate == null) {
-        selectedDate = dateList.last()
-    }
+                            // 3️⃣ якщо взагалі нема майбутніх — беремо останню
+                            if (selectedDate == null) {
+                                selectedDate = dateList.last()
+                            }
 
-    selectedDate.isSelected = true
-    filterMatches(selectedDate.date)
-} else {
+                            selectedDate.isSelected = true
+                            filterMatches(selectedDate.date)
+                        } else {
                             if (::recyclerView.isInitialized) recyclerView.adapter = TournamentAdapter(emptyList())
                         }
                         checkAutoRefresh()
