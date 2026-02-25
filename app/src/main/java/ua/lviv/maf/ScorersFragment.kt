@@ -45,13 +45,14 @@ class ScorersFragment : Fragment() {
         return view
     }
 
-    // 1️⃣ Спочатку отримуємо список турнірів
+    // 1️⃣ Спочатку отримуємо список турнірів для автоматичного пошуку ID
     private fun loadCompetitionId() {
+        progressBar.visibility = View.VISIBLE
+        tvEmptyState.visibility = View.GONE
 
         val url = "https://maf.lviv.ua/wp-json/maf/v2/competitions?year=$selectedYear"
 
         OkHttpClient().newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
-
             override fun onFailure(call: Call, e: IOException) {
                 if (!isAdded) return
                 activity?.runOnUiThread { showEmptyState() }
@@ -59,8 +60,7 @@ class ScorersFragment : Fragment() {
 
             override fun onResponse(call: Call, response: Response) {
                 if (!isAdded) return
-
-                val body = response.body?.string() ?: return
+                val body = response.body?.string() ?: ""
 
                 try {
                     val array = JSONArray(body)
@@ -81,9 +81,8 @@ class ScorersFragment : Fragment() {
         })
     }
 
-    // 2️⃣ Знаходимо ID турніру по назві
+    // 2️⃣ Знаходимо ID турніру за назвою ліги
     private fun findCompetitionId(array: JSONArray): String {
-
         for (i in 0 until array.length()) {
             val obj = array.getJSONObject(i)
             val name = obj.getString("name")
@@ -92,17 +91,12 @@ class ScorersFragment : Fragment() {
             if (leagueType.contains("ІІ ліга") && name.contains("ІІ ліга")) return obj.getInt("id").toString()
             if (leagueType.contains("U-19") && name.contains("U-19")) return obj.getInt("id").toString()
         }
-
         return ""
     }
 
-    // 3️⃣ Завантажуємо бомбардирів
+    // 3️⃣ Завантажуємо бомбардирів за знайденим ID
     private fun fetchScorers(competitionId: String) {
-
         if (!isAdded) return
-
-        progressBar.visibility = View.VISIBLE
-        tvEmptyState.visibility = View.GONE
 
         val url = HttpUrl.Builder()
             .scheme("https")
@@ -113,7 +107,6 @@ class ScorersFragment : Fragment() {
             .build()
 
         OkHttpClient().newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
-
             override fun onFailure(call: Call, e: IOException) {
                 if (!isAdded) return
                 activity?.runOnUiThread { showEmptyState() }
@@ -121,28 +114,19 @@ class ScorersFragment : Fragment() {
 
             override fun onResponse(call: Call, response: Response) {
                 if (!isAdded) return
-
-                val body = response.body?.string()
+                val body = response.body?.string() ?: ""
 
                 activity?.runOnUiThread {
                     progressBar.visibility = View.GONE
-
-                    if (body.isNullOrEmpty()) {
-                        showEmptyState()
-                        return@runOnUiThread
-                    }
-
                     try {
                         val array = JSONArray(body)
                         if (array.length() == 0) {
                             showEmptyState()
-                            return@runOnUiThread
+                        } else {
+                            val list = mutableListOf<JSONObject>()
+                            for (i in 0 until array.length()) list.add(array.getJSONObject(i))
+                            setupList(list)
                         }
-
-                        val list = mutableListOf<JSONObject>()
-                        for (i in 0 until array.length()) list.add(array.getJSONObject(i))
-                        setupList(list)
-
                     } catch (e: Exception) {
                         e.printStackTrace()
                         showEmptyState()
@@ -155,7 +139,7 @@ class ScorersFragment : Fragment() {
     private fun setupList(data: List<JSONObject>) {
         recyclerView.visibility = View.VISIBLE
         recyclerView.layoutManager = LinearLayoutManager(context)
-        recyclerView.adapter = ScorersAdapter(data) {}
+        recyclerView.adapter = ScorersAdapter(data) { /* Клік по гравцю буде тут */ }
     }
 
     private fun showEmptyState() {
@@ -163,4 +147,61 @@ class ScorersFragment : Fragment() {
         recyclerView.visibility = View.GONE
         tvEmptyState.visibility = View.VISIBLE
     }
+}
+
+// 4️⃣ Адаптер (який було загублено)
+class ScorersAdapter(
+    private val items: List<JSONObject>,
+    private val onPlayerClick: (String) -> Unit
+) : RecyclerView.Adapter<ScorersAdapter.ViewHolder>() {
+
+    class ViewHolder(v: View) : RecyclerView.ViewHolder(v) {
+        val rank: TextView = v.findViewById(R.id.tvRank)
+        val name: TextView = v.findViewById(R.id.tvPlayerName)
+        val team: TextView = v.findViewById(R.id.tvPlayerTeam)
+        val matches: TextView = v.findViewById(R.id.tvMatches)
+        val goals: TextView = v.findViewById(R.id.tvGoals)
+        val ivPlayer: ImageView = v.findViewById(R.id.ivPlayerPhoto)
+        val ivTeam: ImageView = v.findViewById(R.id.ivTeamLogoSmall)
+        val container: View = v.findViewById(R.id.itemContainer)
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
+        ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_top_scorer, parent, false))
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val item = items[position]
+        val p = item.optJSONObject("player")
+        val t = item.optJSONObject("team")
+
+        holder.rank.text = "${position + 1}."
+        holder.name.text = p?.optString("name") ?: "Гравець"
+        holder.team.text = t?.optString("name") ?: "Без команди"
+        holder.matches.text = item.optString("matches", "0")
+        holder.goals.text = item.optString("goals", "0")
+
+        // Кольори для ТОП-3
+        val color = when (position) {
+            0 -> "#FFD700" // Золото
+            1 -> "#C0C0C0" // Срібло
+            2 -> "#CD7F32" // Бронза
+            else -> "#00E676" // Зелений
+        }
+        holder.rank.setTextColor(Color.parseColor(color))
+
+        Glide.with(holder.itemView.context)
+            .load(p?.optString("photo"))
+            .circleCrop()
+            .placeholder(R.drawable.ic_player_placeholder)
+            .into(holder.ivPlayer)
+
+        Glide.with(holder.itemView.context)
+            .load(t?.optString("logo"))
+            .placeholder(R.drawable.ic_player_placeholder)
+            .into(holder.ivTeam)
+
+        holder.container.setOnClickListener { onPlayerClick(p?.optString("id") ?: "") }
+    }
+
+    override fun getItemCount() = items.size
 }
