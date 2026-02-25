@@ -2,6 +2,7 @@ package ua.lviv.maf
 
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,19 +24,17 @@ class ScorersFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var tvEmptyState: TextView
     private lateinit var tvHeaderTitle: TextView
-    private val client = OkHttpClient() // Один клієнт на весь фрагмент
+    private val client = OkHttpClient()
 
     private var leagueType: String = ""
     private var selectedYear: String = "2025"
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        // Стандартна інфляція макета. Якщо тут вилетить - значить XML битий.
         val view = inflater.inflate(R.layout.fragment_scorers, container, false)
 
         leagueType = arguments?.getString("LEAGUE_TYPE") ?: ""
         selectedYear = arguments?.getString("SELECTED_YEAR") ?: "2025"
 
-        // Ініціалізація View. ID МАЮТЬ СПІВПАДАТИ З XML!
         recyclerView = view.findViewById(R.id.rvScorers)
         progressBar = view.findViewById(R.id.progressBar)
         tvEmptyState = view.findViewById(R.id.tvEmptyState)
@@ -43,17 +42,14 @@ class ScorersFragment : Fragment() {
 
         tvHeaderTitle.text = "$leagueType ($selectedYear)"
 
-        // Проста обробка натискання назад
         view.findViewById<View>(R.id.btnBackText)?.setOnClickListener {
             parentFragmentManager.popBackStack()
         }
 
         loadCompetitionId()
-
         return view
     }
 
-    // 1️⃣ КРОК: Отримуємо список турнірів
     private fun loadCompetitionId() {
         progressBar.visibility = View.VISIBLE
         tvEmptyState.visibility = View.GONE
@@ -69,43 +65,54 @@ class ScorersFragment : Fragment() {
             override fun onResponse(call: Call, response: Response) {
                 if (!isAdded) return
                 val body = response.body?.string() ?: ""
-
                 try {
                     val array = JSONArray(body)
                     val compId = findCompetitionId(array)
 
                     if (compId.isEmpty()) {
                         activity?.runOnUiThread { showEmptyState() }
-                        return
+                    } else {
+                        fetchScorers(compId)
                     }
-                    // ID знайдено, вантажимо гравців
-                    fetchScorers(compId)
-
                 } catch (e: Exception) {
-                    e.printStackTrace()
                     activity?.runOnUiThread { showEmptyState() }
                 }
             }
         })
     }
 
-    // Пошук ID турніру (ігноруємо регістр для надійності)
+    // 🔥 ВИПРАВЛЕНА ЛОГІКА ПОШУКУ (Суворе співпадіння)
     private fun findCompetitionId(array: JSONArray): String {
+        val type = leagueType.lowercase()
+        
         for (i in 0 until array.length()) {
             val obj = array.getJSONObject(i)
-            val name = obj.optString("name", "")
+            val name = obj.optString("name", "").lowercase()
 
-            if (leagueType.contains("І ліга", true) && name.contains("І ліга", true)) return obj.optString("id")
-            if (leagueType.contains("ІІ ліга", true) && name.contains("ІІ ліга", true)) return obj.optString("id")
-            if (leagueType.contains("U-19", true) && name.contains("U-19", true)) return obj.optString("id")
+            // 1. Спочатку перевіряємо U-19
+            if (type.contains("u-19") && name.contains("u-19")) {
+                if (type.contains("іі ліга") && name.contains("іі ліга")) return obj.optString("id")
+                if (type.contains("і ліга") && !type.contains("іі ліга") && name.contains("і ліга") && !name.contains("іі ліга")) return obj.optString("id")
+                // Якщо в базі просто "U-19" без вказання ліги
+                if (!type.contains("ліга") || !name.contains("ліга")) return obj.optString("id")
+            }
+
+            // 2. Перевіряємо ІІ лігу (тільки якщо це НЕ U-19)
+            if (type.contains("іі ліга") && name.contains("іі ліга") && !type.contains("u-19") && !name.contains("u-19")) {
+                return obj.optString("id")
+            }
+
+            // 3. Перевіряємо І лігу (ТІЛЬКИ якщо в назві немає "ІІ" і це не U-19)
+            if (type.contains("і ліга") && !type.contains("іі ліга") && 
+                name.contains("і ліга") && !name.contains("іі ліга") && !name.contains("u-19")) {
+                return obj.optString("id")
+            }
         }
         return ""
     }
 
-    // 2️⃣ КРОК: Завантажуємо бомбардирів
     private fun fetchScorers(competitionId: String) {
         if (!isAdded) return
-
         val url = "https://maf.lviv.ua/wp-json/maf/v2/top-scorers?competition_id=$competitionId&year=$selectedYear"
 
         client.newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
@@ -117,7 +124,6 @@ class ScorersFragment : Fragment() {
             override fun onResponse(call: Call, response: Response) {
                 if (!isAdded) return
                 val body = response.body?.string() ?: ""
-
                 activity?.runOnUiThread {
                     progressBar.visibility = View.GONE
                     try {
@@ -140,7 +146,9 @@ class ScorersFragment : Fragment() {
     private fun setupList(data: List<JSONObject>) {
         recyclerView.visibility = View.VISIBLE
         recyclerView.layoutManager = LinearLayoutManager(context)
-        recyclerView.adapter = ScorersAdapter(data) { /* Клік по гравцю */ }
+        recyclerView.adapter = ScorersAdapter(data) { playerId ->
+            Log.d("Scorers", "Click on player: $playerId")
+        }
     }
 
     private fun showEmptyState() {
@@ -156,7 +164,6 @@ class ScorersAdapter(
     private val onPlayerClick: (String) -> Unit
 ) : RecyclerView.Adapter<ScorersAdapter.ViewHolder>() {
 
-    // Ініціалізація елементів рядка. Вони МАЮТЬ бути в item_top_scorer.xml
     class ViewHolder(v: View) : RecyclerView.ViewHolder(v) {
         val rank: TextView = v.findViewById(R.id.tvRank)
         val name: TextView = v.findViewById(R.id.tvPlayerName)
