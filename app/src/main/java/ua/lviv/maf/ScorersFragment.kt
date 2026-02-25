@@ -22,6 +22,7 @@ class ScorersFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
     private lateinit var tvEmptyState: TextView
+    private lateinit var tvHeaderTitle: TextView
     
     private var leagueType: String = ""
     private var selectedYear: String = "2025"
@@ -35,8 +36,10 @@ class ScorersFragment : Fragment() {
         recyclerView = view.findViewById(R.id.rvScorers)
         progressBar = view.findViewById(R.id.progressBar)
         tvEmptyState = view.findViewById(R.id.tvEmptyState)
+        tvHeaderTitle = view.findViewById(R.id.tvHeaderTitle)
         
-        // Використовуємо твій ID кнопки
+        tvHeaderTitle.text = "$leagueType ($selectedYear)"
+
         view.findViewById<TextView>(R.id.btnBackText)?.setOnClickListener { 
             parentFragmentManager.popBackStack() 
         }
@@ -46,29 +49,31 @@ class ScorersFragment : Fragment() {
     }
 
     private fun fetchScorersData() {
+        if (!isAdded) return
         progressBar.visibility = View.VISIBLE
+        tvEmptyState.visibility = View.GONE
         
-        val tournamentId = when (leagueType) {
-            "І ліга" -> "1404"
-            "ІІ ліга" -> "1405"
-            "U-19 (І ліга)" -> "1406"
-            "U-19 (ІІ ліга)" -> "1407"
-            else -> "1406" 
-        }
+        // Відправляємо назву ліги та рік. PHP сам знайде потрібний турнір.
+        val url = HttpUrl.Builder()
+            .scheme("https")
+            .host("maf.lviv.ua")
+            .addPathSegments("wp-json/maf/v2/top-scorers")
+            .addQueryParameter("league_label", leagueType) // Наприклад: "Бомбардири (І ліга)"
+            .addQueryParameter("year", selectedYear)      // Наприклад: "2025"
+            .build()
 
-        val client = OkHttpClient()
-        val url = "https://maf.lviv.ua/wp-json/maf/v2/top-scorers?tournament_id=$tournamentId&year=$selectedYear"
-
-        client.newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
+        OkHttpClient().newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
+                if (!isAdded) return
                 activity?.runOnUiThread { showEmptyState() }
             }
 
             override fun onResponse(call: Call, response: Response) {
+                if (!isAdded) return
                 val body = response.body?.string()
                 activity?.runOnUiThread {
                     progressBar.visibility = View.GONE
-                    if (!body.isNullOrEmpty()) {
+                    if (!body.isNullOrEmpty() && body.startsWith("[")) {
                         val list = parseJson(body)
                         if (list.isEmpty()) showEmptyState() else setupList(list)
                     } else {
@@ -91,9 +96,7 @@ class ScorersFragment : Fragment() {
     private fun setupList(data: List<JSONObject>) {
         recyclerView.visibility = View.VISIBLE
         recyclerView.layoutManager = LinearLayoutManager(context)
-        recyclerView.adapter = ScorersAdapter(data) { playerId ->
-            // Місце для переходу на картку гравця
-        }
+        recyclerView.adapter = ScorersAdapter(data) { /* Клік по гравцю */ }
     }
 
     private fun showEmptyState() {
@@ -103,6 +106,7 @@ class ScorersFragment : Fragment() {
     }
 }
 
+// Адаптер залишаємо без змін, він працює добре
 class ScorersAdapter(
     private val items: List<JSONObject>,
     private val onPlayerClick: (String) -> Unit
@@ -129,7 +133,7 @@ class ScorersAdapter(
 
         holder.rank.text = "${position + 1}."
         holder.name.text = p?.optString("name") ?: "Гравець"
-        holder.team.text = t?.optString("name") ?: ""
+        holder.team.text = t?.optString("name") ?: "Без команди"
         holder.matches.text = item.optString("matches", "0")
         holder.goals.text = item.optString("goals", "0")
 
@@ -141,8 +145,10 @@ class ScorersAdapter(
         }
         holder.rank.setTextColor(Color.parseColor(color))
 
-        Glide.with(holder.itemView).load(p?.optString("photo")).circleCrop().placeholder(R.drawable.ic_player_placeholder).into(holder.ivPlayer)
-        Glide.with(holder.itemView).load(t?.optString("logo")).placeholder(R.drawable.ic_player_placeholder).into(holder.ivTeam)
+        Glide.with(holder.itemView.context).load(p?.optString("photo")).circleCrop()
+            .placeholder(R.drawable.ic_player_placeholder).into(holder.ivPlayer)
+        Glide.with(holder.itemView.context).load(t?.optString("logo"))
+            .placeholder(R.drawable.ic_player_placeholder).into(holder.ivTeam)
 
         holder.container.setOnClickListener { onPlayerClick(p?.optString("id") ?: "") }
     }
