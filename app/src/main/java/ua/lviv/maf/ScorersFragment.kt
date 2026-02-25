@@ -14,8 +14,6 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.resource.bitmap.CenterCrop
-import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import okhttp3.*
 import org.json.JSONArray
 import org.json.JSONObject
@@ -43,7 +41,9 @@ class ScorersFragment : Fragment() {
         tvEmptyState = view.findViewById(R.id.tvEmptyState)
         tvHeaderTitle = view.findViewById(R.id.tvHeaderTitle)
 
-        tvHeaderTitle.text = "$leagueType ($selectedYear)"
+        // 🔥 ОНОВЛЕНО ЗАГОЛОВОК: Додано чіткий напис "Бомбардири"
+        val displayTitle = if (leagueType.contains("Бомбардири", true)) leagueType else "Бомбардири: $leagueType"
+        tvHeaderTitle.text = "$displayTitle ($selectedYear)"
 
         view.findViewById<View>(R.id.btnBackText)?.setOnClickListener {
             parentFragmentManager.popBackStack()
@@ -84,6 +84,7 @@ class ScorersFragment : Fragment() {
         })
     }
 
+    // 🔥 СУВОРА ФІЛЬТРАЦІЯ: Ігноруємо фінали/кубки для коректного 2024 року
     private fun findCompetitionId(array: JSONArray): String {
         val search = leagueType.lowercase().trim()
         val searchIsU19 = search.contains("u-19")
@@ -93,6 +94,9 @@ class ScorersFragment : Fragment() {
         for (i in 0 until array.length()) {
             val obj = array.getJSONObject(i)
             val name = obj.optString("name", "").lowercase()
+
+            // Пропускаємо допоміжні етапи, щоб брати основну лігу
+            if (name.contains("фіналь") || name.contains("плей-офф") || name.contains("кубок")) continue 
 
             val compIsU19 = name.contains("u-19")
             val compIsSecond = name.contains("іі ліга")
@@ -141,10 +145,9 @@ class ScorersFragment : Fragment() {
         }
     }
 
-    // 🔥 ПРАВИЛЬНИЙ ПЕРЕХІД НА ACTIVITY (Більше ніяких помилок Unresolved reference)
+    // 🔥 ПЕРЕХІД НА ПРОФІЛЬ: Передаємо ID гравця
     private fun openPlayerProfile(playerId: String) {
         if (playerId.isEmpty()) return
-        
         val intent = Intent(requireContext(), PlayerProfileActivity::class.java)
         intent.putExtra("PLAYER_ID", playerId)
         startActivity(intent)
@@ -184,7 +187,8 @@ class ScorersAdapter(
 
         holder.rank.text = "${position + 1}."
         holder.name.text = p?.optString("name") ?: "Гравець"
-        holder.team.text = t?.optString("name") ?: "Без команди"
+        holder.team.text = t?.optString("name") ?: ""
+        
         holder.matches.text = item.optInt("matches", 0).toString()
         holder.goals.text = item.optInt("goals", 0).toString()
 
@@ -196,10 +200,10 @@ class ScorersAdapter(
         }
         holder.rank.setTextColor(Color.parseColor(color))
 
-        // 🔥 ФОТО: ТЕПЕР ЯК У КАРТКАХ КОМАНД (Голови не зрізає)
+        // 🔥 ФОТО: КРУГЛІ, як у списку команд
         Glide.with(holder.itemView.context)
             .load(p?.optString("photo"))
-            .transform(CenterCrop(), RoundedCorners(20)) // Закруглені кути як у картах
+            .circleCrop()
             .placeholder(R.drawable.ic_player_placeholder)
             .into(holder.ivPlayer)
 
