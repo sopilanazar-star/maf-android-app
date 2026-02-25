@@ -1,5 +1,6 @@
 package ua.lviv.maf
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -48,7 +49,7 @@ class RefereesFragment : Fragment() {
         return view
     }
 
-    // 🔥 Ось ця функція, яку шукає MainActivity 🔥
+    // 🔥 Функція для оновлення року з глобального спінера
     fun updateYear(year: String) {
         if (selectedYear != year) {
             selectedYear = year
@@ -62,7 +63,7 @@ class RefereesFragment : Fragment() {
         tvEmptyState.visibility = View.GONE
         recyclerView.visibility = View.GONE
 
-        // Запит іде напряму з year (бекенд WordPress сам все розрулює)
+        // Запит іде напряму з year
         val url = "https://maf.lviv.ua/wp-json/maf/v2/referees/full?year=$selectedYear"
 
         client.newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
@@ -94,9 +95,20 @@ class RefereesFragment : Fragment() {
     private fun setupList(data: List<JSONObject>) {
         recyclerView.visibility = View.VISIBLE
         recyclerView.layoutManager = LinearLayoutManager(context)
-        // 🔥 Ось тут ми підключаємо Адаптер 🔥
-        recyclerView.adapter = RefereesAdapter(data) { refereeId ->
-            Log.d("Referees", "Клік по арбітру: $refereeId")
+        
+        // 🔥 Тут ми підключаємо Адаптер і передаємо ВСІ дані арбітра у RefereeProfileActivity 🔥
+        recyclerView.adapter = RefereesAdapter(data) { refereeId, name, photo, city, matches, yellow, red ->
+            val intent = Intent(requireContext(), RefereeProfileActivity::class.java).apply {
+                putExtra("REF_ID", refereeId)
+                putExtra("REF_NAME", name)
+                putExtra("REF_PHOTO", photo)
+                putExtra("REF_CITY", city)
+                putExtra("REF_MATCHES", matches)
+                putExtra("REF_YELLOW", yellow)
+                putExtra("REF_RED", red)
+                putExtra("YEAR", selectedYear)
+            }
+            startActivity(intent)
         }
     }
 
@@ -108,11 +120,10 @@ class RefereesFragment : Fragment() {
     }
 }
 
-// 🔥 А ось і сам клас Адаптера, який не скопіювався минулого разу 🔥
-// ВІН МАЄ БУТИ ТУТ, У ЦЬОМУ Ж ФАЙЛІ!
+// 🔥 Оновлений клас Адаптера, який передає всі параметри при кліку 🔥
 class RefereesAdapter(
     private val items: List<JSONObject>,
-    private val onRefereeClick: (String) -> Unit
+    private val onRefereeClick: (String, String, String, String, Int, Int, Int) -> Unit
 ) : RecyclerView.Adapter<RefereesAdapter.ViewHolder>() {
 
     class ViewHolder(v: View) : RecyclerView.ViewHolder(v) {
@@ -147,7 +158,18 @@ class RefereesAdapter(
             .placeholder(R.drawable.ic_player_placeholder)
             .into(holder.ivPhoto)
 
-        holder.container.setOnClickListener { onRefereeClick(item.optString("id")) }
+        // Передаємо всі дані по арбітру у функцію кліку
+        holder.container.setOnClickListener { 
+            onRefereeClick(
+                item.optString("id"),
+                item.optString("name", "Арбітр"),
+                item.optString("photo"),
+                item.optString("city", ""),
+                stats?.optInt("total", 0) ?: 0,
+                stats?.optInt("yellow", 0) ?: 0,
+                stats?.optInt("red", 0) ?: 0
+            )
+        }
     }
 
     override fun getItemCount() = items.size
