@@ -53,6 +53,19 @@ class ScorersFragment : Fragment() {
         return view
     }
 
+    // 🔥 ДОДАНО: Функція для оновлення року з глобального спінера 🔥
+    fun updateYear(year: String) {
+        if (selectedYear != year) {
+            selectedYear = year
+            val cleanTitle = leagueType.replace("Бомбардири", "").replace("(", "").replace(")", "").trim()
+            tvHeaderTitle.text = "Бомбардири: $cleanTitle ($selectedYear)"
+            
+            // Важливо: спочатку ховаємо список, щоб не висіли старі дані під час завантаження
+            recyclerView.visibility = View.GONE 
+            loadCompetitionId() // Перезапускаємо пошук турніру для нового року
+        }
+    }
+
     private fun loadCompetitionId() {
         progressBar.visibility = View.VISIBLE
         tvEmptyState.visibility = View.GONE
@@ -84,11 +97,14 @@ class ScorersFragment : Fragment() {
         })
     }
 
+    // 🔥 ПРАВКА: Розумніший пошук ліг, який розуміє різні назви (2 ліга, II ліга, Друга і т.д.) 🔥
     private fun findCompetitionId(array: JSONArray): String {
         val search = leagueType.lowercase().trim()
         val searchIsU19 = search.contains("u-19")
-        val searchIsSecond = search.contains("іі ліга")
-        val searchIsFirst = (search.contains("і ліга") || search.contains("1 ліга")) && !searchIsSecond
+        // Шукаємо всі можливі варіанти написання 2 ліги
+        val searchIsSecond = search.contains("іі ліга") || search.contains("2 ліга") || search.contains("ii ліга") || search.contains("друга")
+        // Шукаємо всі варіанти 1 ліги
+        val searchIsFirst = (search.contains("і ліга") || search.contains("1 ліга") || search.contains("i ліга") || search.contains("перша")) && !searchIsSecond
 
         for (i in 0 until array.length()) {
             val obj = array.getJSONObject(i)
@@ -98,8 +114,8 @@ class ScorersFragment : Fragment() {
             if (name.contains("фіналь") || name.contains("плей-офф") || name.contains("кубок")) continue 
 
             val compIsU19 = name.contains("u-19")
-            val compIsSecond = name.contains("іі ліга")
-            val compIsFirst = (name.contains("і ліга") || name.contains("1 ліга")) && !compIsSecond
+            val compIsSecond = name.contains("іі ліга") || name.contains("2 ліга") || name.contains("ii ліга") || name.contains("друга")
+            val compIsFirst = (name.contains("і ліга") || name.contains("1 ліга") || name.contains("i ліга") || name.contains("перша")) && !compIsSecond
 
             if (searchIsU19 == compIsU19 && searchIsSecond == compIsSecond && searchIsFirst == compIsFirst) {
                 return obj.optString("id")
