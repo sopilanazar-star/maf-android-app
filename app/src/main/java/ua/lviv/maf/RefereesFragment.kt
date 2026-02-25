@@ -1,6 +1,5 @@
 package ua.lviv.maf
 
-import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -29,11 +28,13 @@ class RefereesFragment : Fragment() {
     private var selectedYear: String = "2025"
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        val view = inflater.inflate(R.layout.fragment_referees, container, false)
+        // УВАГА: Якщо файл розмітки екрана арбітрів називається інакше (напр. fragment_referees), зміни тут назву!
+        // Я використовую R.layout.fragment_scorers, бо його структура (шапка + список) ідеально підходить.
+        val view = inflater.inflate(R.layout.fragment_scorers, container, false) 
 
         selectedYear = arguments?.getString("SELECTED_YEAR") ?: "2025"
 
-        recyclerView = view.findViewById(R.id.rvReferees)
+        recyclerView = view.findViewById(R.id.rvScorers)
         progressBar = view.findViewById(R.id.progressBar)
         tvEmptyState = view.findViewById(R.id.tvEmptyState)
         tvHeaderTitle = view.findViewById(R.id.tvHeaderTitle)
@@ -48,12 +49,21 @@ class RefereesFragment : Fragment() {
         return view
     }
 
+    // Перетворюємо рік у season_id для API
+    private fun getSeasonId(year: String): String {
+        return when (year) {
+            "2025" -> "22"
+            "2024" -> "21" // Впиши реальний ID сезону 2024, якщо він інший
+            else -> "22"
+        }
+    }
+
     private fun fetchReferees() {
         progressBar.visibility = View.VISIBLE
         tvEmptyState.visibility = View.GONE
 
-        // URL для отримання арбітрів
-        val url = "https://maf.lviv.ua/wp-json/maf/v2/referees?year=$selectedYear"
+        val seasonId = getSeasonId(selectedYear)
+        val url = "https://maf.lviv.ua/wp-json/maf/v2/referees/full?season_id=$seasonId"
 
         client.newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
@@ -73,7 +83,7 @@ class RefereesFragment : Fragment() {
                         
                         if (list.isEmpty()) showEmptyState() else setupList(list)
                     } catch (e: Exception) {
-                        Log.e("Referees", "JSON Parse Error: ${e.message}")
+                        e.printStackTrace()
                         showEmptyState()
                     }
                 }
@@ -85,14 +95,9 @@ class RefereesFragment : Fragment() {
         recyclerView.visibility = View.VISIBLE
         recyclerView.layoutManager = LinearLayoutManager(context)
         recyclerView.adapter = RefereesAdapter(data) { refereeId ->
-            openRefereeProfile(refereeId)
+            // Клік по арбітру. Поки що просто логуємо, перехід зробимо наступним кроком!
+            Log.d("Referees", "Клік по арбітру: $refereeId")
         }
-    }
-
-    private fun openRefereeProfile(refereeId: String) {
-        if (refereeId.isEmpty()) return
-        Log.d("Referees", "Клік по арбітру з ID: $refereeId")
-        // Місце для переходу на картку арбітра (наступний крок)
     }
 
     private fun showEmptyState() {
@@ -111,46 +116,42 @@ class RefereesAdapter(
     class ViewHolder(v: View) : RecyclerView.ViewHolder(v) {
         val ivPhoto: ImageView = v.findViewById(R.id.ivRefereePhoto)
         val tvName: TextView = v.findViewById(R.id.tvRefereeName)
-        val tvCity: TextView = v.findViewById(R.id.tvRefereeCity)
-        val tvMainMatches: TextView = v.findViewById(R.id.tvMainMatches)
-        val tvAssistMatches: TextView = v.findViewById(R.id.tvAssistMatches)
+        val tvRole: TextView = v.findViewById(R.id.tvRefereeRole)
+        val tvMatches: TextView = v.findViewById(R.id.tvMatches)
+        val tvYellowCards: TextView = v.findViewById(R.id.tvYellowCards)
+        val tvRedCards: TextView = v.findViewById(R.id.tvRedCards)
         val container: View = v.findViewById(R.id.itemContainer)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
+        // Тут ми підключаємо той самий макет item_referee.xml, який ти створив
         ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_referee, parent, false))
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
-        val ref = item.optJSONObject("referee")
+        val stats = item.optJSONObject("stats")
 
-        val refId = ref?.optString("id") ?: ""
-        holder.tvName.text = ref?.optString("name") ?: "Арбітр"
+        holder.tvName.text = item.optString("name", "Арбітр")
         
-        // Поки немає міста в JSON, ставимо цю заглушку (можна прибрати, якщо не треба)
-        holder.tvCity.text = "Федерація футболу" 
+        // Якщо місто вказано - пишемо його, якщо пусто - просто "Арбітр МАФ"
+        val city = item.optString("city", "")
+        holder.tvRole.text = if (city.isNotEmpty()) "м. $city" else "Арбітр МАФ"
 
-        // 🔥 ПРОСТИЙ І ШВИДКИЙ ПІДРАХУНОК МАТЧІВ 🔥
-        val mainMatchesArray = item.optJSONArray("main_matches")
-        val assistMatchesArray = item.optJSONArray("assistant_matches")
+        // Витягуємо статистику з блоку "stats"
+        holder.tvMatches.text = stats?.optInt("total", 0).toString()
+        holder.tvYellowCards.text = stats?.optInt("yellow", 0).toString()
+        holder.tvRedCards.text = stats?.optInt("red", 0).toString()
 
-        // Якщо масив є - беремо його довжину, якщо ні - ставимо 0
-        val mainCount = mainMatchesArray?.length() ?: 0
-        val assistCount = assistMatchesArray?.length() ?: 0
-
-        holder.tvMainMatches.text = mainCount.toString()
-        holder.tvAssistMatches.text = assistCount.toString()
-
-        // Фото арбітра (ідеально кругле)
+        // Ідеально круглі фото, як у бомбардирів
         Glide.with(holder.itemView.context)
-            .load(ref?.optString("photo"))
+            .load(item.optString("photo"))
             .centerCrop()
             .circleCrop()
             .placeholder(R.drawable.ic_player_placeholder)
             .into(holder.ivPhoto)
 
         holder.container.setOnClickListener { 
-            onRefereeClick(refId) 
+            onRefereeClick(item.optString("id")) 
         }
     }
 
