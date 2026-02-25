@@ -5,8 +5,11 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.ProgressBar
+import android.widget.Spinner
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -22,48 +25,64 @@ class RefereesFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
     private lateinit var tvEmptyState: TextView
-    private lateinit var tvHeaderTitle: TextView
+    private lateinit var spinnerYear: Spinner
     private val client = OkHttpClient()
 
     private var selectedYear: String = "2025"
 
+    // Доступні роки для спінера
+    private val yearsList = listOf("2026", "2025", "2024")
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        // УВАГА: Якщо файл розмітки екрана арбітрів називається інакше (напр. fragment_referees), зміни тут назву!
-        // Я використовую R.layout.fragment_scorers, бо його структура (шапка + список) ідеально підходить.
-        val view = inflater.inflate(R.layout.fragment_scorers, container, false) 
+        // Переконайся, що ти створив fragment_referees.xml з мого попереднього повідомлення
+        val view = inflater.inflate(R.layout.fragment_referees, container, false) 
 
         selectedYear = arguments?.getString("SELECTED_YEAR") ?: "2025"
 
-        recyclerView = view.findViewById(R.id.rvScorers)
+        recyclerView = view.findViewById(R.id.rvReferees)
         progressBar = view.findViewById(R.id.progressBar)
         tvEmptyState = view.findViewById(R.id.tvEmptyState)
-        tvHeaderTitle = view.findViewById(R.id.tvHeaderTitle)
-
-        tvHeaderTitle.text = "Арбітри ($selectedYear)"
+        spinnerYear = view.findViewById(R.id.spinnerYear)
 
         view.findViewById<View>(R.id.btnBackText)?.setOnClickListener {
             parentFragmentManager.popBackStack()
         }
 
-        fetchReferees()
+        setupSpinner()
+        
         return view
     }
 
-    // Перетворюємо рік у season_id для API
-    private fun getSeasonId(year: String): String {
-        return when (year) {
-            "2025" -> "22"
-            "2024" -> "21" // Впиши реальний ID сезону 2024, якщо він інший
-            else -> "22"
+    private fun setupSpinner() {
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, yearsList)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerYear.adapter = adapter
+
+        val startIndex = yearsList.indexOf(selectedYear)
+        if (startIndex >= 0) {
+            spinnerYear.setSelection(startIndex)
+        }
+
+        spinnerYear.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val newYear = yearsList[position]
+                if (newYear != selectedYear || recyclerView.adapter == null) {
+                    selectedYear = newYear
+                    fetchReferees() 
+                }
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
     }
 
+    // 🔥 АВТОМАТИЧНИЙ ЗАПИТ: Просто передаємо year, а WordPress сам знайде season_id 🔥
     private fun fetchReferees() {
         progressBar.visibility = View.VISIBLE
         tvEmptyState.visibility = View.GONE
+        recyclerView.visibility = View.GONE
 
-        val seasonId = getSeasonId(selectedYear)
-        val url = "https://maf.lviv.ua/wp-json/maf/v2/referees/full?season_id=$seasonId"
+        // Тепер запит виглядає так, як у всіх твоїх інших картках
+        val url = "https://maf.lviv.ua/wp-json/maf/v2/referees/full?year=$selectedYear"
 
         client.newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
@@ -95,7 +114,6 @@ class RefereesFragment : Fragment() {
         recyclerView.visibility = View.VISIBLE
         recyclerView.layoutManager = LinearLayoutManager(context)
         recyclerView.adapter = RefereesAdapter(data) { refereeId ->
-            // Клік по арбітру. Поки що просто логуємо, перехід зробимо наступним кроком!
             Log.d("Referees", "Клік по арбітру: $refereeId")
         }
     }
@@ -124,7 +142,6 @@ class RefereesAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
-        // Тут ми підключаємо той самий макет item_referee.xml, який ти створив
         ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_referee, parent, false))
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -132,17 +149,13 @@ class RefereesAdapter(
         val stats = item.optJSONObject("stats")
 
         holder.tvName.text = item.optString("name", "Арбітр")
-        
-        // Якщо місто вказано - пишемо його, якщо пусто - просто "Арбітр МАФ"
         val city = item.optString("city", "")
         holder.tvRole.text = if (city.isNotEmpty()) "м. $city" else "Арбітр МАФ"
 
-        // Витягуємо статистику з блоку "stats"
         holder.tvMatches.text = stats?.optInt("total", 0).toString()
         holder.tvYellowCards.text = stats?.optInt("yellow", 0).toString()
         holder.tvRedCards.text = stats?.optInt("red", 0).toString()
 
-        // Ідеально круглі фото, як у бомбардирів
         Glide.with(holder.itemView.context)
             .load(item.optString("photo"))
             .centerCrop()
