@@ -2,8 +2,12 @@ package ua.lviv.maf
 
 import android.graphics.Color
 import android.os.Bundle
-import android.view.*
-import android.widget.*
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.ProgressBar
+import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -19,16 +23,19 @@ class ScorersFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var tvEmptyState: TextView
     private lateinit var tvHeaderTitle: TextView
+    private val client = OkHttpClient() // Один клієнт на весь фрагмент
 
     private var leagueType: String = ""
     private var selectedYear: String = "2025"
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        // Стандартна інфляція макета. Якщо тут вилетить - значить XML битий.
         val view = inflater.inflate(R.layout.fragment_scorers, container, false)
 
         leagueType = arguments?.getString("LEAGUE_TYPE") ?: ""
         selectedYear = arguments?.getString("SELECTED_YEAR") ?: "2025"
 
+        // Ініціалізація View. ID МАЮТЬ СПІВПАДАТИ З XML!
         recyclerView = view.findViewById(R.id.rvScorers)
         progressBar = view.findViewById(R.id.progressBar)
         tvEmptyState = view.findViewById(R.id.tvEmptyState)
@@ -36,7 +43,8 @@ class ScorersFragment : Fragment() {
 
         tvHeaderTitle.text = "$leagueType ($selectedYear)"
 
-        view.findViewById<TextView>(R.id.btnBackText)?.setOnClickListener {
+        // Проста обробка натискання назад
+        view.findViewById<View>(R.id.btnBackText)?.setOnClickListener {
             parentFragmentManager.popBackStack()
         }
 
@@ -45,14 +53,14 @@ class ScorersFragment : Fragment() {
         return view
     }
 
-    // 1️⃣ Спочатку отримуємо список турнірів для автоматичного пошуку ID
+    // 1️⃣ КРОК: Отримуємо список турнірів
     private fun loadCompetitionId() {
         progressBar.visibility = View.VISIBLE
         tvEmptyState.visibility = View.GONE
 
         val url = "https://maf.lviv.ua/wp-json/maf/v2/competitions?year=$selectedYear"
 
-        OkHttpClient().newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
+        client.newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 if (!isAdded) return
                 activity?.runOnUiThread { showEmptyState() }
@@ -70,7 +78,7 @@ class ScorersFragment : Fragment() {
                         activity?.runOnUiThread { showEmptyState() }
                         return
                     }
-
+                    // ID знайдено, вантажимо гравців
                     fetchScorers(compId)
 
                 } catch (e: Exception) {
@@ -81,32 +89,26 @@ class ScorersFragment : Fragment() {
         })
     }
 
-    // 2️⃣ Знаходимо ID турніру за назвою ліги
+    // Пошук ID турніру (ігноруємо регістр для надійності)
     private fun findCompetitionId(array: JSONArray): String {
         for (i in 0 until array.length()) {
             val obj = array.getJSONObject(i)
-            val name = obj.getString("name")
+            val name = obj.optString("name", "")
 
-            if (leagueType.contains("І ліга") && name.contains("І ліга")) return obj.getInt("id").toString()
-            if (leagueType.contains("ІІ ліга") && name.contains("ІІ ліга")) return obj.getInt("id").toString()
-            if (leagueType.contains("U-19") && name.contains("U-19")) return obj.getInt("id").toString()
+            if (leagueType.contains("І ліга", true) && name.contains("І ліга", true)) return obj.optString("id")
+            if (leagueType.contains("ІІ ліга", true) && name.contains("ІІ ліга", true)) return obj.optString("id")
+            if (leagueType.contains("U-19", true) && name.contains("U-19", true)) return obj.optString("id")
         }
         return ""
     }
 
-    // 3️⃣ Завантажуємо бомбардирів за знайденим ID
+    // 2️⃣ КРОК: Завантажуємо бомбардирів
     private fun fetchScorers(competitionId: String) {
         if (!isAdded) return
 
-        val url = HttpUrl.Builder()
-            .scheme("https")
-            .host("maf.lviv.ua")
-            .addPathSegments("wp-json/maf/v2/top-scorers")
-            .addQueryParameter("competition_id", competitionId)
-            .addQueryParameter("year", selectedYear)
-            .build()
+        val url = "https://maf.lviv.ua/wp-json/maf/v2/top-scorers?competition_id=$competitionId&year=$selectedYear"
 
-        OkHttpClient().newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
+        client.newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 if (!isAdded) return
                 activity?.runOnUiThread { showEmptyState() }
@@ -128,7 +130,6 @@ class ScorersFragment : Fragment() {
                             setupList(list)
                         }
                     } catch (e: Exception) {
-                        e.printStackTrace()
                         showEmptyState()
                     }
                 }
@@ -139,22 +140,23 @@ class ScorersFragment : Fragment() {
     private fun setupList(data: List<JSONObject>) {
         recyclerView.visibility = View.VISIBLE
         recyclerView.layoutManager = LinearLayoutManager(context)
-        recyclerView.adapter = ScorersAdapter(data) { /* Клік по гравцю буде тут */ }
+        recyclerView.adapter = ScorersAdapter(data) { /* Клік по гравцю */ }
     }
 
     private fun showEmptyState() {
+        if (!isAdded) return
         progressBar.visibility = View.GONE
         recyclerView.visibility = View.GONE
         tvEmptyState.visibility = View.VISIBLE
     }
 }
 
-// 4️⃣ Адаптер (який було загублено)
 class ScorersAdapter(
     private val items: List<JSONObject>,
     private val onPlayerClick: (String) -> Unit
 ) : RecyclerView.Adapter<ScorersAdapter.ViewHolder>() {
 
+    // Ініціалізація елементів рядка. Вони МАЮТЬ бути в item_top_scorer.xml
     class ViewHolder(v: View) : RecyclerView.ViewHolder(v) {
         val rank: TextView = v.findViewById(R.id.tvRank)
         val name: TextView = v.findViewById(R.id.tvPlayerName)
@@ -180,25 +182,18 @@ class ScorersAdapter(
         holder.matches.text = item.optString("matches", "0")
         holder.goals.text = item.optString("goals", "0")
 
-        // Кольори для ТОП-3
         val color = when (position) {
-            0 -> "#FFD700" // Золото
-            1 -> "#C0C0C0" // Срібло
-            2 -> "#CD7F32" // Бронза
-            else -> "#00E676" // Зелений
+            0 -> "#FFD700"
+            1 -> "#C0C0C0"
+            2 -> "#CD7F32"
+            else -> "#00E676"
         }
         holder.rank.setTextColor(Color.parseColor(color))
 
-        Glide.with(holder.itemView.context)
-            .load(p?.optString("photo"))
-            .circleCrop()
-            .placeholder(R.drawable.ic_player_placeholder)
-            .into(holder.ivPlayer)
-
-        Glide.with(holder.itemView.context)
-            .load(t?.optString("logo"))
-            .placeholder(R.drawable.ic_player_placeholder)
-            .into(holder.ivTeam)
+        Glide.with(holder.itemView.context).load(p?.optString("photo")).circleCrop()
+            .placeholder(R.drawable.ic_player_placeholder).into(holder.ivPlayer)
+        Glide.with(holder.itemView.context).load(t?.optString("logo"))
+            .placeholder(R.drawable.ic_player_placeholder).into(holder.ivTeam)
 
         holder.container.setOnClickListener { onPlayerClick(p?.optString("id") ?: "") }
     }
