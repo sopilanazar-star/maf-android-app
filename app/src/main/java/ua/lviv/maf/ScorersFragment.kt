@@ -36,7 +36,8 @@ class ScorersFragment : Fragment() {
         progressBar = view.findViewById(R.id.progressBar)
         tvEmptyState = view.findViewById(R.id.tvEmptyState)
         
-        view.findViewById<View>(R.id.btnBack)?.setOnClickListener { 
+        // Використовуємо твій ID кнопки
+        view.findViewById<TextView>(R.id.btnBackText)?.setOnClickListener { 
             parentFragmentManager.popBackStack() 
         }
 
@@ -91,12 +92,13 @@ class ScorersFragment : Fragment() {
         recyclerView.visibility = View.VISIBLE
         recyclerView.layoutManager = LinearLayoutManager(context)
         recyclerView.adapter = ScorersAdapter(data) { playerId ->
-            // Тут буде виклик картки гравця
+            // Місце для переходу на картку гравця
         }
     }
 
     private fun showEmptyState() {
         progressBar.visibility = View.GONE
+        recyclerView.visibility = View.GONE
         tvEmptyState.visibility = View.VISIBLE
     }
 }
