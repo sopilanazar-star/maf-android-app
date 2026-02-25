@@ -81,30 +81,29 @@ class ScorersFragment : Fragment() {
         })
     }
 
-    // 🔥 ВИПРАВЛЕНА ЛОГІКА ПОШУКУ (Суворе співпадіння)
+    // 🔥 ЛОГІКА ПОШУКУ З ЖОРСТКОЮ ПРИВ'ЯЗКОЮ ДЛЯ 2024
     private fun findCompetitionId(array: JSONArray): String {
-        val type = leagueType.lowercase()
+        val search = leagueType.lowercase().trim()
         
+        // 1. ЖОРСТКА ПРИВ'ЯЗКА: 2024 рік, Перша ліга (Груповий етап)
+        if (selectedYear == "2024" && (search.contains("і ліга") || search.contains("1 ліга")) && !search.contains("іі ліга")) {
+            return "18"
+        }
+
+        // 2. ДИНАМІЧНА ЛОГІКА для всіх інших випадків
+        val searchIsU19 = search.contains("u-19")
+        val searchIsSecond = search.contains("іі ліга")
+        val searchIsFirst = (search.contains("і ліга") || search.contains("1 ліга")) && !searchIsSecond
+
         for (i in 0 until array.length()) {
             val obj = array.getJSONObject(i)
             val name = obj.optString("name", "").lowercase()
 
-            // 1. Спочатку перевіряємо U-19
-            if (type.contains("u-19") && name.contains("u-19")) {
-                if (type.contains("іі ліга") && name.contains("іі ліга")) return obj.optString("id")
-                if (type.contains("і ліга") && !type.contains("іі ліга") && name.contains("і ліга") && !name.contains("іі ліга")) return obj.optString("id")
-                // Якщо в базі просто "U-19" без вказання ліги
-                if (!type.contains("ліга") || !name.contains("ліга")) return obj.optString("id")
-            }
+            val compIsU19 = name.contains("u-19")
+            val compIsSecond = name.contains("іі ліга")
+            val compIsFirst = (name.contains("і ліга") || name.contains("1 ліга")) && !compIsSecond
 
-            // 2. Перевіряємо ІІ лігу (тільки якщо це НЕ U-19)
-            if (type.contains("іі ліга") && name.contains("іі ліга") && !type.contains("u-19") && !name.contains("u-19")) {
-                return obj.optString("id")
-            }
-
-            // 3. Перевіряємо І лігу (ТІЛЬКИ якщо в назві немає "ІІ" і це не U-19)
-            if (type.contains("і ліга") && !type.contains("іі ліга") && 
-                name.contains("і ліга") && !name.contains("іі ліга") && !name.contains("u-19")) {
+            if (searchIsU19 == compIsU19 && searchIsSecond == compIsSecond && searchIsFirst == compIsFirst) {
                 return obj.optString("id")
             }
         }
@@ -128,13 +127,10 @@ class ScorersFragment : Fragment() {
                     progressBar.visibility = View.GONE
                     try {
                         val array = JSONArray(body)
-                        if (array.length() == 0) {
-                            showEmptyState()
-                        } else {
-                            val list = mutableListOf<JSONObject>()
-                            for (i in 0 until array.length()) list.add(array.getJSONObject(i))
-                            setupList(list)
-                        }
+                        val list = mutableListOf<JSONObject>()
+                        for (i in 0 until array.length()) list.add(array.getJSONObject(i))
+                        
+                        if (list.isEmpty()) showEmptyState() else setupList(list)
                     } catch (e: Exception) {
                         showEmptyState()
                     }
@@ -147,8 +143,24 @@ class ScorersFragment : Fragment() {
         recyclerView.visibility = View.VISIBLE
         recyclerView.layoutManager = LinearLayoutManager(context)
         recyclerView.adapter = ScorersAdapter(data) { playerId ->
-            Log.d("Scorers", "Click on player: $playerId")
+            openPlayerProfile(playerId)
         }
+    }
+
+    private fun openPlayerProfile(playerId: String) {
+        if (playerId.isEmpty()) return
+        
+        val playerFragment = PlayerFragment() 
+        val bundle = Bundle()
+        bundle.putString("PLAYER_ID", playerId)
+        playerFragment.arguments = bundle
+
+        val containerId = (requireView().parent as View).id
+
+        parentFragmentManager.beginTransaction()
+            .replace(containerId, playerFragment)
+            .addToBackStack(null)
+            .commit()
     }
 
     private fun showEmptyState() {
@@ -186,8 +198,8 @@ class ScorersAdapter(
         holder.rank.text = "${position + 1}."
         holder.name.text = p?.optString("name") ?: "Гравець"
         holder.team.text = t?.optString("name") ?: "Без команди"
-        holder.matches.text = item.optString("matches", "0")
-        holder.goals.text = item.optString("goals", "0")
+        holder.matches.text = item.optInt("matches", 0).toString()
+        holder.goals.text = item.optInt("goals", 0).toString()
 
         val color = when (position) {
             0 -> "#FFD700"
@@ -202,7 +214,9 @@ class ScorersAdapter(
         Glide.with(holder.itemView.context).load(t?.optString("logo"))
             .placeholder(R.drawable.ic_player_placeholder).into(holder.ivTeam)
 
-        holder.container.setOnClickListener { onPlayerClick(p?.optString("id") ?: "") }
+        holder.container.setOnClickListener { 
+            onPlayerClick(p?.optString("id") ?: "") 
+        }
     }
 
     override fun getItemCount() = items.size
