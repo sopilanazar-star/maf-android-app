@@ -23,21 +23,22 @@ class RefereesFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var tvEmptyState: TextView
     private lateinit var tvHeaderTitle: TextView
+
     private val client = OkHttpClient()
 
-    private var selectedYear: String = "2025"
+    // 🔴 беремо рік з глобального AppConfig
+    private var selectedYear: String = AppConfig.selectedYear
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        val view = inflater.inflate(R.layout.fragment_referees, container, false) 
-
-        // Отримуємо рік, який вибрано в загальному спінері додатка
-        selectedYear = arguments?.getString("SELECTED_YEAR") ?: "2025"
+        val view = inflater.inflate(R.layout.fragment_referees, container, false)
 
         recyclerView = view.findViewById(R.id.rvReferees)
         progressBar = view.findViewById(R.id.progressBar)
         tvEmptyState = view.findViewById(R.id.tvEmptyState)
         tvHeaderTitle = view.findViewById(R.id.tvHeaderTitle)
 
+        // 🔴 стартовий рік
+        selectedYear = AppConfig.selectedYear
         tvHeaderTitle.text = "Арбітри ($selectedYear)"
 
         view.findViewById<View>(R.id.btnBackText)?.setOnClickListener {
@@ -45,10 +46,11 @@ class RefereesFragment : Fragment() {
         }
 
         fetchReferees()
+
         return view
     }
 
-    // Метод для оновлення року (викликається з MainActivity при зміні загального спінера)
+    // 🔥 викликається з MainActivity при зміні року
     fun updateYear(year: String) {
         if (selectedYear != year) {
             selectedYear = year
@@ -57,15 +59,32 @@ class RefereesFragment : Fragment() {
         }
     }
 
+    // 🔁 конвертація year → season_id
+    private fun getSeasonId(year: String): String {
+        return when (year) {
+            "2026" -> "23"
+            "2025" -> "22"
+            "2024" -> "21"
+            else -> "22"
+        }
+    }
+
     private fun fetchReferees() {
+
         progressBar.visibility = View.VISIBLE
-        tvEmptyState.visibility = View.GONE
         recyclerView.visibility = View.GONE
+        tvEmptyState.visibility = View.GONE
 
-        // Запит з автоматичним роком
-        val url = "https://maf.lviv.ua/wp-json/maf/v2/referees/full?year=$selectedYear"
+        val seasonId = getSeasonId(selectedYear)
 
-        client.newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
+        val url = "https://maf.lviv.ua/wp-json/maf/v2/referees/full?season_id=$seasonId"
+
+        Log.d("REFEREES", "LOAD season=$seasonId")
+
+        val request = Request.Builder().url(url).build()
+
+        client.newCall(request).enqueue(object : Callback {
+
             override fun onFailure(call: Call, e: IOException) {
                 if (!isAdded) return
                 activity?.runOnUiThread { showEmptyState() }
@@ -73,15 +92,23 @@ class RefereesFragment : Fragment() {
 
             override fun onResponse(call: Call, response: Response) {
                 if (!isAdded) return
+
                 val body = response.body?.string() ?: ""
+
                 activity?.runOnUiThread {
                     progressBar.visibility = View.GONE
+
                     try {
                         val array = JSONArray(body)
                         val list = mutableListOf<JSONObject>()
-                        for (i in 0 until array.length()) list.add(array.getJSONObject(i))
-                        
-                        if (list.isEmpty()) showEmptyState() else setupList(list)
+
+                        for (i in 0 until array.length()) {
+                            list.add(array.getJSONObject(i))
+                        }
+
+                        if (list.isEmpty()) showEmptyState()
+                        else setupList(list)
+
                     } catch (e: Exception) {
                         e.printStackTrace()
                         showEmptyState()
@@ -95,7 +122,7 @@ class RefereesFragment : Fragment() {
         recyclerView.visibility = View.VISIBLE
         recyclerView.layoutManager = LinearLayoutManager(context)
         recyclerView.adapter = RefereesAdapter(data) { refereeId ->
-            Log.d("Referees", "Клік по арбітру: $refereeId")
+            Log.d("REFEREE_CLICK", refereeId)
         }
     }
 
@@ -107,7 +134,6 @@ class RefereesFragment : Fragment() {
     }
 }
 
-// Адаптер залишається без змін, він працює чітко
 class RefereesAdapter(
     private val items: List<JSONObject>,
     private val onRefereeClick: (String) -> Unit
@@ -123,14 +149,19 @@ class RefereesAdapter(
         val container: View = v.findViewById(R.id.itemContainer)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
-        ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_referee, parent, false))
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val v = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_referee, parent, false)
+        return ViewHolder(v)
+    }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+
         val item = items[position]
         val stats = item.optJSONObject("stats")
 
         holder.tvName.text = item.optString("name", "Арбітр")
+
         val city = item.optString("city", "")
         holder.tvRole.text = if (city.isNotEmpty()) "м. $city" else "Арбітр МАФ"
 
@@ -140,13 +171,14 @@ class RefereesAdapter(
 
         Glide.with(holder.itemView.context)
             .load(item.optString("photo"))
-            .centerCrop()
             .circleCrop()
             .placeholder(R.drawable.ic_player_placeholder)
             .into(holder.ivPhoto)
 
-        holder.container.setOnClickListener { onRefereeClick(item.optString("id")) }
+        holder.container.setOnClickListener {
+            onRefereeClick(item.optString("id"))
+        }
     }
 
-    override fun getItemCount() = items.size
+    override fun getItemCount(): Int = items.size
 }
