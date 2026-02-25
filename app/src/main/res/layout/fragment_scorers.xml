@@ -12,17 +12,22 @@
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:background="#252932">
+            android:background="#252932"
+            android:paddingHorizontal="16dp">
 
-            <ImageView
-                android:id="@+id/btnBack"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+            <TextView
+                android:id="@+id/btnBackText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
-                android:layout_marginStart="8dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:padding="12dp"
-                android:src="@drawable/ic_back" />
+                android:text="← Назад" 
+                android:textColor="#FF3B30"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:paddingEnd="12dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground" />
         </RelativeLayout>
 
         <androidx.recyclerview.widget.RecyclerView
@@ -31,7 +36,9 @@
             android:layout_height="match_parent"
             android:clipToPadding="false"
             android:paddingTop="8dp"
-            android:paddingBottom="100dp" /> </LinearLayout>
+            android:paddingBottom="100dp" />
+
+    </LinearLayout>
 
     <ProgressBar
         android:id="@+id/progressBar"
