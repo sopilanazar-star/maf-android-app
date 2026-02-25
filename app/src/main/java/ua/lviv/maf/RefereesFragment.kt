@@ -5,11 +5,8 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.ProgressBar
-import android.widget.Spinner // Цей імпорт критично важливий!
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -25,58 +22,38 @@ class RefereesFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
     private lateinit var tvEmptyState: TextView
-    private lateinit var spinnerYear: Spinner // Оголошення змінної
+    private lateinit var tvHeaderTitle: TextView
     private val client = OkHttpClient()
 
     private var selectedYear: String = "2025"
 
-    // Доступні роки (без 2023, як ти і просив)
-    private val yearsList = listOf("2026", "2025", "2024")
-
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        // Використовуємо спеціальний макет для арбітрів зі спінером
         val view = inflater.inflate(R.layout.fragment_referees, container, false) 
 
+        // Отримуємо рік, який вибрано в загальному спінері додатка
         selectedYear = arguments?.getString("SELECTED_YEAR") ?: "2025"
 
-        // Ініціалізація всіх View
         recyclerView = view.findViewById(R.id.rvReferees)
         progressBar = view.findViewById(R.id.progressBar)
         tvEmptyState = view.findViewById(R.id.tvEmptyState)
-        spinnerYear = view.findViewById(R.id.spinnerYear) // Тут ми знаходимо Spinner в макеті
+        tvHeaderTitle = view.findViewById(R.id.tvHeaderTitle)
+
+        tvHeaderTitle.text = "Арбітри ($selectedYear)"
 
         view.findViewById<View>(R.id.btnBackText)?.setOnClickListener {
             parentFragmentManager.popBackStack()
         }
 
-        setupSpinner()
-        
+        fetchReferees()
         return view
     }
 
-    private fun setupSpinner() {
-        // Налаштовуємо адаптер для вибору року
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, yearsList)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinnerYear.adapter = adapter
-
-        // Встановлюємо початкове значення
-        val startIndex = yearsList.indexOf(selectedYear)
-        if (startIndex >= 0) {
-            spinnerYear.setSelection(startIndex)
-        }
-
-        // Обробка вибору року
-        spinnerYear.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val newYear = yearsList[position]
-                // Завантажуємо дані лише якщо рік змінився
-                if (newYear != selectedYear || recyclerView.adapter == null) {
-                    selectedYear = newYear
-                    fetchReferees() 
-                }
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
+    // Метод для оновлення року (викликається з MainActivity при зміні загального спінера)
+    fun updateYear(year: String) {
+        if (selectedYear != year) {
+            selectedYear = year
+            tvHeaderTitle.text = "Арбітри ($selectedYear)"
+            fetchReferees()
         }
     }
 
@@ -85,7 +62,7 @@ class RefereesFragment : Fragment() {
         tvEmptyState.visibility = View.GONE
         recyclerView.visibility = View.GONE
 
-        // Автоматичний підбір року через параметр ?year=
+        // Запит з автоматичним роком
         val url = "https://maf.lviv.ua/wp-json/maf/v2/referees/full?year=$selectedYear"
 
         client.newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
@@ -118,7 +95,7 @@ class RefereesFragment : Fragment() {
         recyclerView.visibility = View.VISIBLE
         recyclerView.layoutManager = LinearLayoutManager(context)
         recyclerView.adapter = RefereesAdapter(data) { refereeId ->
-            Log.d("Referees", "Клік по арбітру ID: $refereeId")
+            Log.d("Referees", "Клік по арбітру: $refereeId")
         }
     }
 
@@ -130,6 +107,7 @@ class RefereesFragment : Fragment() {
     }
 }
 
+// Адаптер залишається без змін, він працює чітко
 class RefereesAdapter(
     private val items: List<JSONObject>,
     private val onRefereeClick: (String) -> Unit
@@ -167,9 +145,7 @@ class RefereesAdapter(
             .placeholder(R.drawable.ic_player_placeholder)
             .into(holder.ivPhoto)
 
-        holder.container.setOnClickListener { 
-            onRefereeClick(item.optString("id")) 
-        }
+        holder.container.setOnClickListener { onRefereeClick(item.optString("id")) }
     }
 
     override fun getItemCount() = items.size
