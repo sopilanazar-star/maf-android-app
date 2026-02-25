@@ -41,7 +41,9 @@ class ScorersFragment : Fragment() {
         tvEmptyState = view.findViewById(R.id.tvEmptyState)
         tvHeaderTitle = view.findViewById(R.id.tvHeaderTitle)
 
-        updateTitle()
+        // 🔥 ПРАВКА 1: Чистий заголовок без дублювання слова "Бомбардири"
+        val cleanTitle = leagueType.replace("Бомбардири", "").replace("(", "").replace(")", "").trim()
+        tvHeaderTitle.text = "Бомбардири: $cleanTitle ($selectedYear)"
 
         view.findViewById<View>(R.id.btnBackText)?.setOnClickListener {
             parentFragmentManager.popBackStack()
@@ -51,25 +53,9 @@ class ScorersFragment : Fragment() {
         return view
     }
 
-    // Допоміжний метод для шапки
-    private fun updateTitle() {
-        val cleanTitle = leagueType.replace("Бомбардири", "").replace("(", "").replace(")", "").trim()
-        tvHeaderTitle.text = "Бомбардири: $cleanTitle ($selectedYear)"
-    }
-
-    // 🔥 НОВА ФУНКЦІЯ: Оновлення року "на льоту" (як у арбітрів)
-    fun updateYear(year: String) {
-        if (selectedYear != year) {
-            selectedYear = year
-            updateTitle()
-            loadCompetitionId() // Перезапускаємо пошук турніру для нового року
-        }
-    }
-
     private fun loadCompetitionId() {
         progressBar.visibility = View.VISIBLE
         tvEmptyState.visibility = View.GONE
-        recyclerView.visibility = View.GONE
 
         val url = "https://maf.lviv.ua/wp-json/maf/v2/competitions?year=$selectedYear"
 
@@ -108,6 +94,7 @@ class ScorersFragment : Fragment() {
             val obj = array.getJSONObject(i)
             val name = obj.optString("name", "").lowercase()
 
+            // Ігноруємо кубки та фінальні стадії для регулярного списку
             if (name.contains("фіналь") || name.contains("плей-офф") || name.contains("кубок")) continue 
 
             val compIsU19 = name.contains("u-19")
@@ -157,10 +144,12 @@ class ScorersFragment : Fragment() {
         }
     }
 
+    // 🔥 ПРАВКА 3: Передаємо ID як Int, щоб не було "ноунейма"
     private fun openPlayerProfile(playerId: String) {
         if (playerId.isEmpty()) return
         try {
             val intent = Intent(requireContext(), PlayerProfileActivity::class.java)
+            // Конвертуємо в Int, бо твоя Activity профілю зазвичай чекає число
             intent.putExtra("PLAYER_ID", playerId.toInt()) 
             startActivity(intent)
         } catch (e: Exception) {
@@ -214,10 +203,11 @@ class ScorersAdapter(
         }
         holder.rank.setTextColor(Color.parseColor(color))
 
+        // 🔥 ПРАВКА 2: Фото тепер центрується і обрізається колом (обличчя посередині)
         Glide.with(holder.itemView.context)
             .load(p?.optString("photo"))
-            .centerCrop()
-            .circleCrop()
+            .centerCrop() // Центруємо
+            .circleCrop() // Обрізаємо в коло
             .placeholder(R.drawable.ic_player_placeholder)
             .into(holder.ivPlayer)
 
