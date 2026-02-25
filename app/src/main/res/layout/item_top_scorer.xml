@@ -48,12 +48,27 @@
                 android:textSize="15sp"
                 android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/tvPlayerTeam"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#BCBCBC"
-                android:textSize="12sp" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:layout_marginTop="2dp">
+
+                <ImageView
+                    android:id="@+id/ivTeamLogoSmall"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_player_placeholder" />
+
+                <TextView
+                    android:id="@+id/tvPlayerTeam"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:textColor="#BCBCBC"
+                    android:textSize="12sp" />
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
@@ -107,7 +122,6 @@
                     android:textSize="8sp"
                     android:textStyle="bold" />
             </LinearLayout>
-            
         </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView>
