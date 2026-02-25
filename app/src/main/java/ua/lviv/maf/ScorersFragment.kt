@@ -13,6 +13,9 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+// 🔥 ДОДАНО НОВІ ІМПОРТИ ДЛЯ GLIDE 🔥
+import com.bumptech.glide.load.resource.bitmap.CenterCrop
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import okhttp3.*
 import org.json.JSONArray
 import org.json.JSONObject
@@ -81,16 +84,10 @@ class ScorersFragment : Fragment() {
         })
     }
 
-    // 🔥 ЛОГІКА ПОШУКУ З ЖОРСТКОЮ ПРИВ'ЯЗКОЮ ДЛЯ 2024
+    // СУВОРА ЛОГІКА ФІЛЬТРАЦІЇ
     private fun findCompetitionId(array: JSONArray): String {
         val search = leagueType.lowercase().trim()
         
-        // 1. ЖОРСТКА ПРИВ'ЯЗКА: 2024 рік, Перша ліга (Груповий етап)
-        if (selectedYear == "2024" && (search.contains("і ліга") || search.contains("1 ліга")) && !search.contains("іі ліга")) {
-            return "18"
-        }
-
-        // 2. ДИНАМІЧНА ЛОГІКА для всіх інших випадків
         val searchIsU19 = search.contains("u-19")
         val searchIsSecond = search.contains("іі ліга")
         val searchIsFirst = (search.contains("і ліга") || search.contains("1 ліга")) && !searchIsSecond
@@ -147,10 +144,11 @@ class ScorersFragment : Fragment() {
         }
     }
 
+    // МЕТОД ПЕРЕХОДУ НА КАРТКУ ГРАВЦЯ
     private fun openPlayerProfile(playerId: String) {
         if (playerId.isEmpty()) return
         
-        val playerFragment = PlayerFragment() 
+        val playerFragment = PlayerFragment() // Переконайся, що ім'я фрагмента правильне
         val bundle = Bundle()
         bundle.putString("PLAYER_ID", playerId)
         playerFragment.arguments = bundle
@@ -209,10 +207,20 @@ class ScorersAdapter(
         }
         holder.rank.setTextColor(Color.parseColor(color))
 
-        Glide.with(holder.itemView.context).load(p?.optString("photo")).circleCrop()
-            .placeholder(R.drawable.ic_player_placeholder).into(holder.ivPlayer)
-        Glide.with(holder.itemView.context).load(t?.optString("logo"))
-            .placeholder(R.drawable.ic_player_placeholder).into(holder.ivTeam)
+        // 🔥 ВИПРАВЛЕНО ВІДОБРАЖЕННЯ ФОТО ГРАВЦЯ 🔥
+        Glide.with(holder.itemView.context)
+            .load(p?.optString("photo"))
+            // Замість circleCrop() використовуємо комбінацію:
+            // CenterCrop - центрує та заповнює квадрат
+            // RoundedCorners(12) - робить кути закругленими (радіус 12px)
+            .transform(CenterCrop(), RoundedCorners(12)) 
+            .placeholder(R.drawable.ic_player_placeholder)
+            .into(holder.ivPlayer)
+
+        Glide.with(holder.itemView.context)
+            .load(t?.optString("logo"))
+            .placeholder(R.drawable.ic_player_placeholder)
+            .into(holder.ivTeam)
 
         holder.container.setOnClickListener { 
             onPlayerClick(p?.optString("id") ?: "") 
