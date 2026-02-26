@@ -267,7 +267,9 @@ class MainActivity : AppCompatActivity() {
                             away_team_id = m.optString("away_team_id"),
                             stadium = m.optString("stadium"), 
                             referee = m.optString("referee"),
-                            status = m.optString("status")
+                            status = m.optString("status"),
+                            // === ДОДАНО ТІЛЬКИ ЦЕЙ РЯДОК ===
+                            youtubeId = m.optString("youtube_id", "")
                         ))
                     }
                     allMatches = temp
