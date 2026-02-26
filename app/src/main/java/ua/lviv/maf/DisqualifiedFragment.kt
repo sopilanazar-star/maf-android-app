@@ -3,6 +3,7 @@ package ua.lviv.maf
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -24,6 +25,7 @@ class DisqualifiedFragment : Fragment() {
     private var adapter: DisqualifiedAdapter? = null
     private var tvHeaderYear: TextView? = null
     private var rvPlayers: RecyclerView? = null
+    private var progressBar: View? = null // Додав, якщо у тебе є ProgressBar у розмітці
     private var allPlayers = listOf<DisqualifiedPlayer>()
 
     override fun onCreateView(
@@ -36,11 +38,13 @@ class DisqualifiedFragment : Fragment() {
             val btnBack: View? = view.findViewById(R.id.btnBackText)
             rvPlayers = view.findViewById(R.id.rvDisqualifiedPlayers)
             tvHeaderYear = view.findViewById(R.id.tvHeaderYear)
+            progressBar = view.findViewById(R.id.progressBar) // Перевір ID у своєму XML
 
             btnBack?.setOnClickListener {
                 parentFragmentManager.popBackStack()
             }
 
+            // Встановлюємо початковий рік
             tvHeaderYear?.text = AppConfig.selectedYear.toString()
 
             context?.let {
@@ -55,8 +59,24 @@ class DisqualifiedFragment : Fragment() {
         return view
     }
 
+    // 🔥 ПРАВКА: Ця функція тепер публічна і викликається зовні при зміні року 🔥
+    fun updateYear() {
+        if (!isAdded) return // Перевірка, чи фрагмент ще "живий"
+        
+        activity?.runOnUiThread {
+            tvHeaderYear?.text = AppConfig.selectedYear.toString()
+            // Очищаємо список перед новим завантаженням, щоб юзер бачив, що дані міняються
+            adapter = DisqualifiedAdapter(emptyList())
+            rvPlayers?.adapter = adapter
+            
+            loadPlayers() // Запускаємо завантаження для нового року
+        }
+    }
+
     private fun loadPlayers() {
-        // Отримуємо рік як String для запиту до API
+        progressBar?.visibility = View.VISIBLE
+        
+        // Беремо актуальний рік з AppConfig
         val year = AppConfig.selectedYear.toString()
         
         RetrofitClient.instance.getDisqualifiedPlayers(year).enqueue(object : Callback<List<DisqualifiedPlayer>> {
@@ -65,6 +85,8 @@ class DisqualifiedFragment : Fragment() {
                 response: Response<List<DisqualifiedPlayer>>
             ) {
                 if (!isAdded || context == null) return
+                
+                progressBar?.visibility = View.GONE
                 
                 try {
                     if (response.isSuccessful) {
@@ -80,16 +102,10 @@ class DisqualifiedFragment : Fragment() {
 
             override fun onFailure(call: Call<List<DisqualifiedPlayer>>, t: Throwable) {
                 if (!isAdded || context == null) return
+                progressBar?.visibility = View.GONE
                 Toast.makeText(context, "Немає зв'язку з сервером", Toast.LENGTH_SHORT).show()
             }
         })
-    }
-
-    fun updateYear() {
-        if (tvHeaderYear != null) {
-            tvHeaderYear?.text = AppConfig.selectedYear.toString()
-            loadPlayers()
-        }
     }
 
     private fun updateList() {
@@ -108,16 +124,12 @@ class DisqualifiedFragment : Fragment() {
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             try {
                 val player = items[position]
-                
-                // 1. Безпечне визначення статусу
                 val statusValue = player.status ?: ""
                 val isActive = statusValue.lowercase() == "активна"
 
-                // 2. Встановлення основних текстових полів
                 holder.name?.text = player.name ?: "Невідомо"
                 holder.team?.text = player.teamName ?: "Без команди"
 
-                // 3. Форматування дати завершення (з yyyy-MM-dd у dd.MM.yyyy)
                 val rawDate = player.expiryDate ?: ""
                 var formattedDate = rawDate
                 if (rawDate.isNotEmpty()) {
@@ -126,11 +138,10 @@ class DisqualifiedFragment : Fragment() {
                         val formatter = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
                         val date = parser.parse(rawDate)
                         if (date != null) formattedDate = formatter.format(date)
-                    } catch (e: Exception) { /* залишити як є */ }
+                    } catch (e: Exception) { }
                 }
 
                 if (isActive) {
-                    // Формуємо детальний статус: Причина + Кількість матчів + Дата
                     val reason = if (!player.reason.isNullOrEmpty()) "${player.reason}. " else ""
                     val matchesCount = player.matches ?: 0
                     val dateInfo = if (formattedDate.isNotEmpty()) " до $formattedDate" else ""
@@ -144,17 +155,21 @@ class DisqualifiedFragment : Fragment() {
                     holder.indicator?.setBackgroundColor(Color.GREEN)
                 }
 
-                // 🔥 КРОК 1: Клік з передачею повних даних, щоб уникнути "ноунейма"
+                // Клік з повним пакетом даних
                 holder.itemView.setOnClickListener {
                     val playerId = player.playerId
                     if (!playerId.isNullOrEmpty()) {
                         val intent = Intent(holder.itemView.context, PlayerProfileActivity::class.java)
                         intent.putExtra("PLAYER_ID", playerId)
-                        intent.putExtra("PLAYER_NAME", player.name ?: "Гравець") // Передаємо ім'я
-                        intent.putExtra("TEAM_NAME", player.teamName ?: "Команда") // Передаємо команду
+                        intent.putExtra("PLAYER_NAME", player.name ?: "Гравець")
+                        intent.putExtra("TEAM_NAME", player.teamName ?: "Команда")
+                        
+                        val photoUrl = player.photo ?: ""
+                        val logoUrl = player.teamLogo ?: ""
+                        intent.putExtra("PLAYER_PHOTO", photoUrl.replace("http://", "https://"))
+                        intent.putExtra("TEAM_LOGO", logoUrl.replace("http://", "https://"))
+                        
                         holder.itemView.context.startActivity(intent)
-                    } else {
-                        Toast.makeText(holder.itemView.context, "ID гравця відсутній", Toast.LENGTH_SHORT).show()
                     }
                 }
 
