@@ -28,21 +28,19 @@ class MatchDetailActivity : AppCompatActivity() {
         // --- 1. ОТРИМАННЯ ДАНИХ З INTENT ---
         val matchId = intent.getStringExtra("id") ?: ""
         
-        // 🔥 УНІВЕРСАЛЬНЕ ОТРИМАННЯ ID (спробуємо як текст, потім як число)
+        // Отримуємо як текст (універсально)
         var homeIdTemp = intent.getStringExtra("home_team_id") ?: "0"
-        if (homeIdTemp == "0") {
+        if (homeIdTemp == "0" || homeIdTemp.isEmpty()) {
             homeIdTemp = intent.getIntExtra("home_team_id", 0).toString()
         }
         
         var awayIdTemp = intent.getStringExtra("away_team_id") ?: "0"
-        if (awayIdTemp == "0") {
+        if (awayIdTemp == "0" || awayIdTemp.isEmpty()) {
             awayIdTemp = intent.getIntExtra("away_team_id", 0).toString()
         }
 
         val homeTeamIdStr = homeIdTemp
         val awayTeamIdStr = awayIdTemp
-        val homeTeamId = homeTeamIdStr.toIntOrNull() ?: 0
-        val awayTeamId = awayTeamIdStr.toIntOrNull() ?: 0
 
         val team1Name = intent.getStringExtra("team1") ?: "Команда 1"
         val team2Name = intent.getStringExtra("team2") ?: "Команда 2"
@@ -53,13 +51,13 @@ class MatchDetailActivity : AppCompatActivity() {
         val stage = intent.getStringExtra("stage") ?: ""
         val stadium = intent.getStringExtra("stadium") ?: ""
         val referee = intent.getStringExtra("referee") ?: ""
-        val fullDate = intent.getStringExtra("date") ?: "" // "20.02 14:00"
+        val fullDate = intent.getStringExtra("date") ?: ""
 
-        // --- 2. ПРИВ'ЯЗКА VIEW (За новим макетом) ---
+        // --- 2. ПРИВ'ЯЗКА VIEW ---
         val tvLeague: TextView = findViewById(R.id.tvDetailLeague)
         val tvStage: TextView = findViewById(R.id.tvStageName)
         val tvStadium: TextView = findViewById(R.id.tvDetailStadium)
-        val tvDateTime: TextView = findViewById(R.id.tvDetailDateTime) // Біля годинника
+        val tvDateTime: TextView = findViewById(R.id.tvDetailDateTime)
         val tvReferee: TextView = findViewById(R.id.tvDetailReferee)
         
         val tvTeam1: TextView = findViewById(R.id.tvDetailTeam1)
@@ -68,14 +66,13 @@ class MatchDetailActivity : AppCompatActivity() {
         val ivLogo2: ImageView = findViewById(R.id.ivDetailLogo2)
         
         val tvScore: TextView = findViewById(R.id.tvDetailScore)
-        val tvScorers: TextView = findViewById(R.id.tvScorers) // Для авторів голів (поки сховаємо)
+        val tvScorers: TextView = findViewById(R.id.tvScorers)
 
         // --- 3. ЗАПОВНЕННЯ ДАНИМИ ---
         tvTeam1.text = team1Name
         tvTeam2.text = team2Name
         tvLeague.text = league.uppercase()
         
-        // Етап
         if (stage.isNotEmpty()) {
             tvStage.text = stage
             tvStage.visibility = View.VISIBLE
@@ -83,7 +80,6 @@ class MatchDetailActivity : AppCompatActivity() {
             tvStage.visibility = View.GONE
         }
 
-        // Стадіон
         if (stadium.isNotEmpty()) {
             tvStadium.text = stadium
             tvStadium.visibility = View.VISIBLE
@@ -91,23 +87,18 @@ class MatchDetailActivity : AppCompatActivity() {
             tvStadium.visibility = View.GONE
         }
 
-        // Дата та Час (біля іконки)
         tvDateTime.text = fullDate
 
-        // Рахунок vs Час
         if (score.contains(" : ") || score.contains("-")) {
-            // Матч відбувся
             tvScore.text = score
             tvScore.textSize = 38f
             tvScore.setTextColor(Color.WHITE)
         } else {
-            // Матч не відбувся
             tvScore.text = "VS"
             tvScore.textSize = 32f
             tvScore.setTextColor(Color.parseColor("#BCBCBC"))
         }
 
-        // Арбітр
         if (referee.isNotEmpty()) {
             tvReferee.text = "Арбітр: $referee"
             tvReferee.visibility = View.VISIBLE
@@ -115,38 +106,39 @@ class MatchDetailActivity : AppCompatActivity() {
             tvReferee.visibility = View.GONE
         }
         
-        // Автори голів (поки ховаємо, бо в Intent їх немає, вони будуть в Timeline)
         tvScorers.visibility = View.GONE 
 
-        // Завантаження логотипів
         Glide.with(this).load(logo1?.replace("http://", "https://")).into(ivLogo1)
         Glide.with(this).load(logo2?.replace("http://", "https://")).into(ivLogo2)
 
-        // --- 4. НАВІГАЦІЯ (Клік по команді) ---
-        fun openTeamDetails(id: Int, name: String) {
-            if (id != 0) {
+        // --- 4. НАВІГАЦІЯ (Виправлено: передаємо String-ID) ---
+        fun openTeamDetails(id: String, name: String) {
+            // Перевіряємо рядок на порожнечу або "0"
+            if (id != "0" && id.isNotEmpty()) {
                 try {
                     val intent = Intent(this, TeamPlayersActivity::class.java)
-                    intent.putExtra("team_id", id)
+                    // ПЕРЕДАЄМО ЯК ТЕКСТ (String), як це робить турнірна таблиця
+                    intent.putExtra("team_id", id) 
                     intent.putExtra("team_name", name)
                     startActivity(intent)
                 } catch (e: Exception) {
-                    android.widget.Toast.makeText(this, "Помилка відкриття: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                    android.widget.Toast.makeText(this, "Помилка: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
                 }
             } else {
                 android.widget.Toast.makeText(this, "Дані команди відсутні", android.widget.Toast.LENGTH_SHORT).show()
             }
         }
 
-        val homeClickListener = View.OnClickListener { openTeamDetails(homeTeamId, team1Name) }
+        // Викликаємо функцію, передаючи String-змінні
+        val homeClickListener = View.OnClickListener { openTeamDetails(homeTeamIdStr, team1Name) }
         tvTeam1.setOnClickListener(homeClickListener)
         ivLogo1.setOnClickListener(homeClickListener)
 
-        val awayClickListener = View.OnClickListener { openTeamDetails(awayTeamId, team2Name) }
+        val awayClickListener = View.OnClickListener { openTeamDetails(awayTeamIdStr, team2Name) }
         tvTeam2.setOnClickListener(awayClickListener)
         ivLogo2.setOnClickListener(awayClickListener)
 
-        // --- 5. ТАБИ (TIMELINE / СКЛАД) ---
+        // --- 5. ТАБИ ---
         val tabs: TabLayout = findViewById(R.id.detailTabs)
         val viewPager: ViewPager2 = findViewById(R.id.detailViewPager)
 
