@@ -9,5 +9,9 @@ data class DisqualifiedPlayer(
     @SerializedName("matches") val matches: Int? = 0,
     @SerializedName("status") val status: String? = "",
     @SerializedName("reason") val reason: String? = "",       // Нове поле: причина
-    @SerializedName("expiry_date") val expiryDate: String? = "" // Нове поле: дата завершення
+    @SerializedName("expiry_date") val expiryDate: String? = "", // Нове поле: дата завершення
+    
+    // 🔥 ДОДАЄМО ЦІ ПОЛЯ, ЩОБ ЗБІРКА НЕ ПАДАЛА:
+    @SerializedName("photo") val photo: String? = null,
+    @SerializedName("team_logo") val teamLogo: String? = null
 )
