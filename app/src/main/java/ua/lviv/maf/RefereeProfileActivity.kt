@@ -1,6 +1,7 @@
 package ua.lviv.maf
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -20,20 +21,21 @@ import okhttp3.*
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
-import java.io.Serializable
 
 class RefereeProfileActivity : AppCompatActivity() {
 
     private lateinit var viewPager: ViewPager2
     private lateinit var tabLayout: TabLayout
     private lateinit var progressBar: ProgressBar
+    private lateinit var tvEmptyState: TextView
     private val client = OkHttpClient()
 
     private var refereeName: String = ""
     private var selectedYear: String = "2025"
     
-    private var mainMatchesList = ArrayList<TournamentRow>()
-    private var assistantMatchesList = ArrayList<TournamentRow>()
+    // Робимо масиви доступними для фрагментів
+    var mainMatchesList = ArrayList<TournamentRow>()
+    var assistantMatchesList = ArrayList<TournamentRow>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,6 +48,7 @@ class RefereeProfileActivity : AppCompatActivity() {
         progressBar = findViewById(R.id.progressBar)
         viewPager = findViewById(R.id.viewPagerReferee)
         tabLayout = findViewById(R.id.tabLayoutReferee)
+        tvEmptyState = findViewById(R.id.tvEmptyState)
 
         setupHeader()
         loadRefereeData(refId)
@@ -55,7 +58,6 @@ class RefereeProfileActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.tvHeaderTitle).text = "Сезон $selectedYear"
         findViewById<TextView>(R.id.tvProfileName).text = refereeName
         
-        // Початкові дані
         findViewById<TextView>(R.id.tvProfileMatches).text = intent.getIntExtra("REF_MATCHES", 0).toString()
         findViewById<TextView>(R.id.tvProfileYellow).text = intent.getIntExtra("REF_YELLOW", 0).toString()
         findViewById<TextView>(R.id.tvProfileRed).text = intent.getIntExtra("REF_RED", 0).toString()
@@ -71,59 +73,79 @@ class RefereeProfileActivity : AppCompatActivity() {
 
     private fun loadRefereeData(refId: String) {
         progressBar.visibility = View.VISIBLE
-        val url = "https://maf.lviv.ua/wp-json/maf/v2/referee/$refId/matches?year=$selectedYear"
+        tvEmptyState.visibility = View.GONE
+        
+        // 🔥 ПОВЕРНУЛИ КОНВЕРТЕР: API арбітрів на сайті досі чекає season_id!
+        val seasonId = when(selectedYear) {
+            "2026" -> "23"
+            "2025" -> "22"
+            "2024" -> "21"
+            else -> "22"
+        }
+        
+        val url = "https://maf.lviv.ua/wp-json/maf/v2/referee/$refId/matches?year=$selectedYear&season_id=$seasonId"
 
         client.newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                runOnUiThread { progressBar.visibility = View.GONE }
+                runOnUiThread { finishLoadingWithError() }
             }
 
             override fun onResponse(call: Call, response: Response) {
                 val body = response.body?.string() ?: ""
                 try {
                     val json = JSONObject(body)
-                    
-                    // Статистика (232 жовті!)
                     val stats = json.optJSONObject("stats")
                     
-                    // Парсимо матчі
                     mainMatchesList = parseMatches(json.optJSONArray("matches"))
                     assistantMatchesList = parseMatches(json.optJSONArray("assistant_matches"))
 
                     runOnUiThread {
                         progressBar.visibility = View.GONE
+                        
                         if (stats != null) {
-                            findViewById<TextView>(R.id.tvProfileMatches).text = stats.optString("total")
-                            findViewById<TextView>(R.id.tvProfileYellow).text = stats.optString("yellow")
-                            findViewById<TextView>(R.id.tvProfileRed).text = stats.optString("red")
+                            findViewById<TextView>(R.id.tvProfileMatches).text = stats.optString("total", "0")
+                            findViewById<TextView>(R.id.tvProfileYellow).text = stats.optString("yellow", "0")
+                            findViewById<TextView>(R.id.tvProfileRed).text = stats.optString("red", "0")
                         }
+
+                        // 🔥 ГАРАНТОВАНО МАЛЮЄМО ВКЛАДКИ 🔥
                         setupViewPager()
+
+                        if (mainMatchesList.isEmpty() && assistantMatchesList.isEmpty()) {
+                            tvEmptyState.visibility = View.VISIBLE
+                        }
                     }
                 } catch (e: Exception) {
-                    runOnUiThread { progressBar.visibility = View.GONE }
+                    Log.e("RefereeProfile", "JSON Parse Error: ${e.message}")
+                    runOnUiThread { finishLoadingWithError() }
                 }
             }
         })
     }
 
+    // 🔥 БРОНЕБІЙНИЙ ПАРСЕР: Розуміє і об'єкти (Сокіл), і просто ID (19) 🔥
     private fun parseMatches(array: JSONArray?): ArrayList<TournamentRow> {
         val list = ArrayList<TournamentRow>()
         if (array == null) return list
         
         for (i in 0 until array.length()) {
             val m = array.getJSONObject(i)
-            val home = m.optJSONObject("home")
-            val away = m.optJSONObject("away")
+            
+            val homeObj = m.optJSONObject("home")
+            val awayObj = m.optJSONObject("away")
+            
+            val team1Name = homeObj?.optString("name") ?: m.optString("home", "Команда 1")
+            val team2Name = awayObj?.optString("name") ?: m.optString("away", "Команда 2")
             
             list.add(TournamentRow(
                 id = m.optString("match_id"),
-                team1 = home?.optString("name") ?: "ТВА",
-                logo1 = "", // В цьому JSON поки немає посилань на лого
-                team2 = away?.optString("name") ?: "ТВА",
-                logo2 = "",
+                team1 = team1Name,
+                logo1 = homeObj?.optString("logo") ?: "",
+                team2 = team2Name,
+                logo2 = awayObj?.optString("logo") ?: "",
                 score = m.optString("score", "v"),
                 date = m.optString("kickoff"),
-                league = m.optString("competition"),
+                league = m.optString("competition", "Матч"),
                 stage = m.optString("stage", ""),
                 referee = refereeName,
                 isHeader = false
@@ -132,11 +154,17 @@ class RefereeProfileActivity : AppCompatActivity() {
         return list
     }
 
+    private fun finishLoadingWithError() {
+        progressBar.visibility = View.GONE
+        setupViewPager() // Вкладки малюємо все одно!
+        tvEmptyState.text = "Матчів не знайдено"
+        tvEmptyState.visibility = View.VISIBLE
+    }
+
     private fun setupViewPager() {
         viewPager.adapter = object : FragmentStateAdapter(this) {
             override fun getItemCount() = 2
-            override fun createFragment(position: Int) = 
-                RefereeMatchesListFragment.newInstance(if (position == 0) mainMatchesList else assistantMatchesList)
+            override fun createFragment(position: Int) = RefereeMatchesListFragment.newInstance(position)
         }
 
         TabLayoutMediator(tabLayout, viewPager) { tab, position ->
@@ -145,26 +173,27 @@ class RefereeProfileActivity : AppCompatActivity() {
     }
 }
 
-// 🔥 ФРАГМЕНТ СПИСКУ (Тепер з правильним передаванням даних) 🔥
+// 🔥 ФРАГМЕНТ СПИСКУ: Тепер безпечно бере дані з Activity 🔥
 class RefereeMatchesListFragment : Fragment() {
-    
-    private var matches: ArrayList<TournamentRow>? = null
+    private var tabPosition: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        @Suppress("UNCHECKED_CAST")
-        matches = arguments?.getSerializable("MATCHES_KEY") as? ArrayList<TournamentRow>
+        tabPosition = arguments?.getInt("TAB_POS") ?: 0
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val rv = RecyclerView(requireContext()).apply {
             layoutParams = ViewGroup.LayoutParams(-1, -1)
-            setPadding(0, 0, 0, 100)
+            setPadding(0, 20, 0, 100)
             clipToPadding = false
             layoutManager = LinearLayoutManager(context)
         }
         
-        val currentMatches = matches
+        // Беремо списки напряму, щоб уникнути крашів при передачі
+        val activity = requireActivity() as? RefereeProfileActivity
+        val currentMatches = if (tabPosition == 0) activity?.mainMatchesList else activity?.assistantMatchesList
+
         if (currentMatches != null && currentMatches.isNotEmpty()) {
             val grouped = mutableListOf<TournamentRow>()
             currentMatches.groupBy { "${it.league}|${it.stage}" }.forEach { (key, list) ->
@@ -178,10 +207,8 @@ class RefereeMatchesListFragment : Fragment() {
     }
 
     companion object {
-        fun newInstance(list: ArrayList<TournamentRow>) = RefereeMatchesListFragment().apply {
-            arguments = Bundle().apply {
-                putSerializable("MATCHES_KEY", list)
-            }
+        fun newInstance(position: Int) = RefereeMatchesListFragment().apply {
+            arguments = Bundle().apply { putInt("TAB_POS", position) }
         }
     }
 }
