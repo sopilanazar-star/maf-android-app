@@ -20,6 +20,7 @@ import okhttp3.*
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
+import java.io.Serializable
 
 class RefereeProfileActivity : AppCompatActivity() {
 
@@ -31,8 +32,8 @@ class RefereeProfileActivity : AppCompatActivity() {
     private var refereeName: String = ""
     private var selectedYear: String = "2025"
     
-    private var mainMatches = mutableListOf<TournamentRow>()
-    private var assistantMatches = mutableListOf<TournamentRow>()
+    private var mainMatchesList = ArrayList<TournamentRow>()
+    private var assistantMatchesList = ArrayList<TournamentRow>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,7 +55,7 @@ class RefereeProfileActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.tvHeaderTitle).text = "Сезон $selectedYear"
         findViewById<TextView>(R.id.tvProfileName).text = refereeName
         
-        // Беремо стартову статистику з Intent (потім вона оновиться з JSON)
+        // Початкові дані
         findViewById<TextView>(R.id.tvProfileMatches).text = intent.getIntExtra("REF_MATCHES", 0).toString()
         findViewById<TextView>(R.id.tvProfileYellow).text = intent.getIntExtra("REF_YELLOW", 0).toString()
         findViewById<TextView>(R.id.tvProfileRed).text = intent.getIntExtra("REF_RED", 0).toString()
@@ -70,8 +71,6 @@ class RefereeProfileActivity : AppCompatActivity() {
 
     private fun loadRefereeData(refId: String) {
         progressBar.visibility = View.VISIBLE
-        
-        // Використовуємо пряме API арбітра
         val url = "https://maf.lviv.ua/wp-json/maf/v2/referee/$refId/matches?year=$selectedYear"
 
         client.newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
@@ -84,24 +83,20 @@ class RefereeProfileActivity : AppCompatActivity() {
                 try {
                     val json = JSONObject(body)
                     
-                    // Оновлюємо точну статистику з JSON
+                    // Статистика (232 жовті!)
                     val stats = json.optJSONObject("stats")
-                    val totals = json.optJSONObject("totals") // якщо ключ такий
                     
                     // Парсимо матчі
-                    mainMatches = parseMatches(json.optJSONArray("matches"))
-                    assistantMatches = parseMatches(json.optJSONArray("assistant_matches"))
+                    mainMatchesList = parseMatches(json.optJSONArray("matches"))
+                    assistantMatchesList = parseMatches(json.optJSONArray("assistant_matches"))
 
                     runOnUiThread {
                         progressBar.visibility = View.GONE
-                        
-                        // Оновлюємо цифри в шапці на фінальні з сервера
                         if (stats != null) {
                             findViewById<TextView>(R.id.tvProfileMatches).text = stats.optString("total")
                             findViewById<TextView>(R.id.tvProfileYellow).text = stats.optString("yellow")
                             findViewById<TextView>(R.id.tvProfileRed).text = stats.optString("red")
                         }
-
                         setupViewPager()
                     }
                 } catch (e: Exception) {
@@ -111,8 +106,8 @@ class RefereeProfileActivity : AppCompatActivity() {
         })
     }
 
-    private fun parseMatches(array: JSONArray?): MutableList<TournamentRow> {
-        val list = mutableListOf<TournamentRow>()
+    private fun parseMatches(array: JSONArray?): ArrayList<TournamentRow> {
+        val list = ArrayList<TournamentRow>()
         if (array == null) return list
         
         for (i in 0 until array.length()) {
@@ -123,9 +118,9 @@ class RefereeProfileActivity : AppCompatActivity() {
             list.add(TournamentRow(
                 id = m.optString("match_id"),
                 team1 = home?.optString("name") ?: "ТВА",
-                logo1 = home?.optString("logo") ?: "",
+                logo1 = "", // В цьому JSON поки немає посилань на лого
                 team2 = away?.optString("name") ?: "ТВА",
-                logo2 = away?.optString("logo") ?: "",
+                logo2 = "",
                 score = m.optString("score", "v"),
                 date = m.optString("kickoff"),
                 league = m.optString("competition"),
@@ -141,7 +136,7 @@ class RefereeProfileActivity : AppCompatActivity() {
         viewPager.adapter = object : FragmentStateAdapter(this) {
             override fun getItemCount() = 2
             override fun createFragment(position: Int) = 
-                RefereeMatchesListFragment.newInstance(if (position == 0) mainMatches else assistantMatches)
+                RefereeMatchesListFragment.newInstance(if (position == 0) mainMatchesList else assistantMatchesList)
         }
 
         TabLayoutMediator(tabLayout, viewPager) { tab, position ->
@@ -150,20 +145,29 @@ class RefereeProfileActivity : AppCompatActivity() {
     }
 }
 
+// 🔥 ФРАГМЕНТ СПИСКУ (Тепер з правильним передаванням даних) 🔥
 class RefereeMatchesListFragment : Fragment() {
-    private var matchesList: List<TournamentRow> = emptyList()
+    
+    private var matches: ArrayList<TournamentRow>? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        @Suppress("UNCHECKED_CAST")
+        matches = arguments?.getSerializable("MATCHES_KEY") as? ArrayList<TournamentRow>
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val rv = RecyclerView(requireContext()).apply {
             layoutParams = ViewGroup.LayoutParams(-1, -1)
             setPadding(0, 0, 0, 100)
             clipToPadding = false
+            layoutManager = LinearLayoutManager(context)
         }
         
-        if (matchesList.isNotEmpty()) {
-            rv.layoutManager = LinearLayoutManager(context)
+        val currentMatches = matches
+        if (currentMatches != null && currentMatches.isNotEmpty()) {
             val grouped = mutableListOf<TournamentRow>()
-            matchesList.groupBy { "${it.league}|${it.stage}" }.forEach { (key, list) ->
+            currentMatches.groupBy { "${it.league}|${it.stage}" }.forEach { (key, list) ->
                 val parts = key.split("|")
                 grouped.add(TournamentRow(league = parts[0], stage = parts.getOrElse(1){""}, isHeader = true))
                 grouped.addAll(list)
@@ -174,8 +178,10 @@ class RefereeMatchesListFragment : Fragment() {
     }
 
     companion object {
-        fun newInstance(list: List<TournamentRow>) = RefereeMatchesListFragment().apply {
-            matchesList = list
+        fun newInstance(list: ArrayList<TournamentRow>) = RefereeMatchesListFragment().apply {
+            arguments = Bundle().apply {
+                putSerializable("MATCHES_KEY", list)
+            }
         }
     }
 }
