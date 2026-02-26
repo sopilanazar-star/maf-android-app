@@ -14,19 +14,14 @@ import com.bumptech.glide.Glide
 class TournamentAdapter(private val items: List<TournamentRow>) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    override fun getItemViewType(position: Int): Int =
-        if (items[position].isHeader) 0 else 1
+    override fun getItemViewType(position: Int): Int = if (items[position].isHeader) 0 else 1
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
         return if (viewType == 0) {
-            LeagueHeaderViewHolder(
-                inflater.inflate(R.layout.item_league_header, parent, false)
-            )
+            LeagueHeaderViewHolder(inflater.inflate(R.layout.item_league_header, parent, false))
         } else {
-            TournamentMatchViewHolder(
-                inflater.inflate(R.layout.item_match, parent, false)
-            )
+            MatchViewHolder(inflater.inflate(R.layout.item_match, parent, false))
         }
     }
 
@@ -34,9 +29,8 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val item = items[position]
 
         if (holder is LeagueHeaderViewHolder) {
-
             holder.tvLeagueName.text = item.league.uppercase()
-
+            
             if (item.stage.isNotEmpty()) {
                 holder.tvStageName.visibility = View.VISIBLE
                 holder.tvStageName.text = item.stage
@@ -46,11 +40,10 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                 holder.tvStageName.visibility = View.GONE
             }
 
-        } else if (holder is TournamentMatchViewHolder) {
-
+        } else if (holder is MatchViewHolder) {
             holder.tvTeam1.text = item.team1
             holder.tvTeam2.text = item.team2
-
+            
             if (item.stadium.isNotEmpty()) {
                 holder.tvStadium?.visibility = View.VISIBLE
                 holder.tvStadium?.text = item.stadium
@@ -65,61 +58,28 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                 holder.tvReferee?.visibility = View.GONE
             }
 
-            // 🔥 НОВА ПРАВИЛЬНА ЛОГІКА ВИВОДУ
             val scoreValue = item.score ?: ""
 
-            holder.tvScore?.text = scoreValue
-
-            when {
-
-                // 🟢 Рахунок
-                scoreValue.contains(" : ") -> {
-                    holder.ivTimeIcon.visibility = View.GONE
-                    holder.tvScore?.apply {
-                        setTextColor(Color.WHITE)
-                        textSize = 18f
-                        setTypeface(null, Typeface.BOLD)
-                    }
+            if (scoreValue.contains(" : ")) {
+                holder.ivTimeIcon?.visibility = View.GONE
+                holder.tvScore?.text = scoreValue
+                holder.tvScore?.apply {
+                    setTextColor(Color.WHITE)
+                    textSize = 18f
+                    setTypeface(null, Typeface.BOLD)
                 }
-
-                // 🔴 LIVE хвилини
-                scoreValue.contains("'") -> {
-                    holder.ivTimeIcon.visibility = View.VISIBLE
-                    holder.tvScore?.apply {
-                        setTextColor(Color.RED)
-                        textSize = 16f
-                        setTypeface(null, Typeface.BOLD)
-                    }
-                }
-
-                // 🟡 Перерва
-                scoreValue == "HT" -> {
-                    holder.ivTimeIcon.visibility = View.VISIBLE
-                    holder.tvScore?.apply {
-                        setTextColor(Color.YELLOW)
-                        textSize = 16f
-                        setTypeface(null, Typeface.BOLD)
-                    }
-                }
-
-                // ⚫ Час початку
-                else -> {
-                    holder.ivTimeIcon.visibility = View.VISIBLE
-                    holder.tvScore?.apply {
-                        setTextColor(Color.parseColor("#BCBCBC"))
-                        textSize = 14f
-                        setTypeface(null, Typeface.NORMAL)
-                    }
+            } else {
+                holder.ivTimeIcon?.visibility = View.VISIBLE
+                holder.tvScore?.text = "VS"
+                holder.tvScore?.apply {
+                    setTextColor(Color.parseColor("#BCBCBC"))
+                    textSize = 16f
+                    setTypeface(null, Typeface.BOLD)
                 }
             }
 
-            Glide.with(holder.itemView.context)
-                .load(item.logo1)
-                .into(holder.ivLogo1)
-
-            Glide.with(holder.itemView.context)
-                .load(item.logo2)
-                .into(holder.ivLogo2)
+            Glide.with(holder.itemView.context).load(item.logo1).into(holder.ivLogo1)
+            Glide.with(holder.itemView.context).load(item.logo2).into(holder.ivLogo2)
 
             holder.itemView.setOnClickListener {
                 val context = holder.itemView.context
@@ -135,8 +95,9 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                     putExtra("date", item.date)
                     putExtra("stadium", item.stadium)
                     putExtra("referee", item.referee)
-                    putExtra("home_team_id", item.home_team_id)
-                    putExtra("away_team_id", item.away_team_id)
+                    
+                    // --- НОВЕ: ПЕРЕДАЄМО YOUTUBE ID ---
+                    putExtra("youtube_id", item.youtubeId) 
                 }
                 context.startActivity(intent)
             }
@@ -150,7 +111,7 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val tvStageName: TextView = view.findViewById(R.id.tvStageName)
     }
 
-    class TournamentMatchViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+    class MatchViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val ivLogo1: ImageView = view.findViewById(R.id.ivLogo1)
         val ivLogo2: ImageView = view.findViewById(R.id.ivLogo2)
         val tvTeam1: TextView = view.findViewById(R.id.tvTeam1)
@@ -158,6 +119,6 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val tvScore: TextView? = view.findViewById(R.id.tvScore)
         val tvStadium: TextView? = view.findViewById(R.id.tvStadium)
         val tvReferee: TextView? = view.findViewById(R.id.tvReferee)
-        val ivTimeIcon: ImageView = view.findViewById(R.id.ivTimeIcon)
+        val ivTimeIcon: ImageView? = view.findViewById(R.id.ivTimeIcon)
     }
 }
