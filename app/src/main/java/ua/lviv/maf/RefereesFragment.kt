@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import okhttp3.*
 import org.json.JSONArray
 import org.json.JSONObject
@@ -96,7 +97,6 @@ class RefereesFragment : Fragment() {
         recyclerView.visibility = View.VISIBLE
         recyclerView.layoutManager = LinearLayoutManager(context)
         
-        // 🔥 Тут ми підключаємо Адаптер і передаємо ВСІ дані арбітра у RefereeProfileActivity 🔥
         recyclerView.adapter = RefereesAdapter(data) { refereeId, name, photo, city, matches, yellow, red ->
             val intent = Intent(requireContext(), RefereeProfileActivity::class.java).apply {
                 putExtra("REF_ID", refereeId)
@@ -120,7 +120,7 @@ class RefereesFragment : Fragment() {
     }
 }
 
-// 🔥 Оновлений клас Адаптера, який передає всі параметри при кліку 🔥
+// 🔥 Оновлений клас Адаптера 🔥
 class RefereesAdapter(
     private val items: List<JSONObject>,
     private val onRefereeClick: (String, String, String, String, Int, Int, Int) -> Unit
@@ -151,19 +151,19 @@ class RefereesAdapter(
         holder.tvYellowCards.text = stats?.optInt("yellow", 0).toString()
         holder.tvRedCards.text = stats?.optInt("red", 0).toString()
 
+        // 🔥 МАГІЯ ТУТ: Замінено .centerCrop() на .transform(PlayerTopCropTransformation(), CircleCrop())
+        val photoUrl = item.optString("photo", "")
         Glide.with(holder.itemView.context)
-            .load(item.optString("photo"))
-            .centerCrop()
-            .circleCrop()
+            .load(photoUrl.replace("http://", "https://"))
+            .transform(PlayerTopCropTransformation(), CircleCrop()) // Фокус на голові + кругла форма
             .placeholder(R.drawable.ic_player_placeholder)
             .into(holder.ivPhoto)
 
-        // Передаємо всі дані по арбітру у функцію кліку
         holder.container.setOnClickListener { 
             onRefereeClick(
                 item.optString("id"),
                 item.optString("name", "Арбітр"),
-                item.optString("photo"),
+                photoUrl,
                 item.optString("city", ""),
                 stats?.optInt("total", 0) ?: 0,
                 stats?.optInt("yellow", 0) ?: 0,
