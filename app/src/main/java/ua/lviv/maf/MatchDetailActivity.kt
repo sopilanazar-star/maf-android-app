@@ -28,9 +28,19 @@ class MatchDetailActivity : AppCompatActivity() {
         // --- 1. ОТРИМАННЯ ДАНИХ З INTENT ---
         val matchId = intent.getStringExtra("id") ?: ""
         
-        val homeTeamIdStr = intent.getStringExtra("home_team_id") ?: "0"
-        val awayTeamIdStr = intent.getStringExtra("away_team_id") ?: "0"
+        // 🔥 УНІВЕРСАЛЬНЕ ОТРИМАННЯ ID (спробуємо як текст, потім як число)
+        var homeIdTemp = intent.getStringExtra("home_team_id") ?: "0"
+        if (homeIdTemp == "0") {
+            homeIdTemp = intent.getIntExtra("home_team_id", 0).toString()
+        }
         
+        var awayIdTemp = intent.getStringExtra("away_team_id") ?: "0"
+        if (awayIdTemp == "0") {
+            awayIdTemp = intent.getIntExtra("away_team_id", 0).toString()
+        }
+
+        val homeTeamIdStr = homeIdTemp
+        val awayTeamIdStr = awayIdTemp
         val homeTeamId = homeTeamIdStr.toIntOrNull() ?: 0
         val awayTeamId = awayTeamIdStr.toIntOrNull() ?: 0
 
