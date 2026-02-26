@@ -62,8 +62,11 @@ class PredictionsFragment : Fragment() {
         return view
     }
 
+    // 🔥 ПРАВКА: Ця функція викликається з MainActivity при зміні року
     fun refreshData() {
         if (isAdded) {
+            // Очищаємо старий список перед завантаженням нового року
+            rvPredictions.adapter = null 
             checkAuthState()
         }
     }
@@ -155,15 +158,11 @@ class PredictionsFragment : Fragment() {
         })
     }
 
-    // 🔥 ТУТ ВИПРАВЛЕНО: передаємо tg_id та читаємо pred1 і pred2
     private fun fetchPredictionsFromApi() {
         val year = AppConfig.selectedYear
-        
-        // Дістаємо ID користувача
         val sharedPrefs = requireActivity().getSharedPreferences("MafPrefs", Context.MODE_PRIVATE)
         val tgId = sharedPrefs.getString("tg_id", "") ?: ""
 
-        // Формуємо правильний URL
         val url = "$BASE_URL/matches-for-prediction?year=$year&tg_id=$tgId"
 
         val request = Request.Builder().url(url).build()
@@ -183,7 +182,6 @@ class PredictionsFragment : Fragment() {
                         for (i in 0 until matchesArray.length()) {
                             val obj = matchesArray.getJSONObject(i)
                             
-                            // Читаємо голи, якщо вони є
                             val p1 = obj.optString("pred1", "")
                             val p2 = obj.optString("pred2", "")
 
@@ -198,8 +196,8 @@ class PredictionsFragment : Fragment() {
                                 tournament = obj.optString("tournament", "Турнір"),
                                 stage = obj.optString("stage", "Тур"),
                                 deadlineTimestamp = obj.getLong("deadline_timestamp") * 1000L,
-                                predictedScore1 = if (p1.isNotEmpty()) p1 else null, // 🔥 Записуємо в модель
-                                predictedScore2 = if (p2.isNotEmpty()) p2 else null  // 🔥 Записуємо в модель
+                                predictedScore1 = if (p1.isNotEmpty()) p1 else null,
+                                predictedScore2 = if (p2.isNotEmpty()) p2 else null
                             ))
                         }
 
