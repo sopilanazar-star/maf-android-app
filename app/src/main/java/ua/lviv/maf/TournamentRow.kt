@@ -14,6 +14,7 @@ data class TournamentRow(
     val stage: String = "",
     val stadium: String = "",
     val referee: String = "",
+    val youtubeId: String = "", // <--- НОВЕ ПОЛЕ ДЛЯ ВІДЕО
     val isHeader: Boolean = false,
     val status: String = ""
 )
