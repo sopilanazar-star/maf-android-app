@@ -25,7 +25,7 @@ class MediaFragment : Fragment() {
         rvMedia = view.findViewById(R.id.rvMedia)
         rvMedia.layoutManager = LinearLayoutManager(context)
 
-        // Кнопка "Назад" (тепер це універсальний View, бо складається з іконки та тексту)
+        // Кнопка "Назад"
         val btnBack = view.findViewById<View>(R.id.btnBackMedia)
         btnBack.setOnClickListener {
             parentFragmentManager.popBackStack()
@@ -36,8 +36,15 @@ class MediaFragment : Fragment() {
         return view
     }
 
+    // --- ДОДАЛИ ЦЮ ФУНКЦІЮ ДЛЯ ОНОВЛЕННЯ РОКУ ---
+    fun refreshData() {
+        if (isAdded) {
+            loadVideosFromApi()
+        }
+    }
+
     private fun loadVideosFromApi() {
-        // Беремо рік з твого спінера
+        // Беремо актуальний рік
         val year = AppConfig.selectedYear 
         val client = OkHttpClient()
         val request = Request.Builder().url("$MAF_API_URL?year=$year").build()
@@ -55,7 +62,6 @@ class MediaFragment : Fragment() {
                         val m = array.getJSONObject(i)
                         val youtubeId = m.optString("youtube_id", "")
                         
-                        // ФІЛЬТР: Беремо ТІЛЬКИ ті матчі, де є відео!
                         if (youtubeId.isNotEmpty()) {
                             videosList.add(TournamentRow(
                                 team1 = m.optString("team1"),
@@ -68,7 +74,6 @@ class MediaFragment : Fragment() {
                         }
                     }
 
-                    // Передаємо в адаптер, щоб намалювати на екрані
                     activity?.runOnUiThread {
                         rvMedia.adapter = MediaAdapter(videosList)
                     }
