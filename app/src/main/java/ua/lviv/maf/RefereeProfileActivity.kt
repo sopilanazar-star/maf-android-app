@@ -33,7 +33,7 @@ class RefereeProfileActivity : AppCompatActivity() {
     private var refereeName: String = ""
     private var selectedYear: String = "2025"
     
-    // Робимо масиви доступними для фрагментів
+    // Списки для фрагментів
     var mainMatchesList = ArrayList<TournamentRow>()
     var assistantMatchesList = ArrayList<TournamentRow>()
 
@@ -51,7 +51,7 @@ class RefereeProfileActivity : AppCompatActivity() {
         tvEmptyState = findViewById(R.id.tvEmptyState)
 
         setupHeader()
-        loadRefereeData(refId)
+        loadData(refId)
     }
 
     private fun setupHeader() {
@@ -71,11 +71,54 @@ class RefereeProfileActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnBack).setOnClickListener { finish() }
     }
 
-    private fun loadRefereeData(refId: String) {
+    // 🔥 КРОК 1: Завантажуємо глобальні матчі (щоб мати ЛОГО і ПОВНІ НАЗВИ) 🔥
+    private fun loadData(refId: String) {
         progressBar.visibility = View.VISIBLE
         tvEmptyState.visibility = View.GONE
         
-        // 🔥 ПОВЕРНУЛИ КОНВЕРТЕР: API арбітрів на сайті досі чекає season_id!
+        val globalUrl = "https://maf.lviv.ua/wp-json/maf/v2/matches?year=$selectedYear"
+
+        client.newCall(Request.Builder().url(globalUrl).build()).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                runOnUiThread { finishLoadingWithError() }
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val body = response.body?.string() ?: ""
+                try {
+                    val globalArray = JSONArray(body)
+                    val allGlobalMatches = mutableListOf<TournamentRow>()
+
+                    for (i in 0 until globalArray.length()) {
+                        val m = globalArray.getJSONObject(i)
+                        allGlobalMatches.add(TournamentRow(
+                            id = m.optString("id"),
+                            team1 = m.optString("team1"),
+                            logo1 = m.optString("logo1"),
+                            team2 = m.optString("team2"),
+                            logo2 = m.optString("logo2"),
+                            score = m.optString("score", "v"),
+                            date = m.optString("date"),
+                            league = m.optString("league"),
+                            stage = m.optString("stage", ""),
+                            referee = refereeName, // Ставимо поточного арбітра
+                            isHeader = false
+                        ))
+                    }
+
+                    // Переходимо до кроку 2 (дізнатися ID матчів арбітра)
+                    fetchRefereeIdsAndFilter(refId, allGlobalMatches)
+
+                } catch (e: Exception) {
+                    Log.e("RefereeProfile", "Global JSON Error: ${e.message}")
+                    runOnUiThread { finishLoadingWithError() }
+                }
+            }
+        })
+    }
+
+    // 🔥 КРОК 2: Завантажуємо профілі і фільтруємо красиві матчі 🔥
+    private fun fetchRefereeIdsAndFilter(refId: String, allGlobalMatches: List<TournamentRow>) {
         val seasonId = when(selectedYear) {
             "2026" -> "23"
             "2025" -> "22"
@@ -95,68 +138,56 @@ class RefereeProfileActivity : AppCompatActivity() {
                 try {
                     val json = JSONObject(body)
                     val stats = json.optJSONObject("stats")
-                    
-                    mainMatchesList = parseMatches(json.optJSONArray("matches"))
-                    assistantMatchesList = parseMatches(json.optJSONArray("assistant_matches"))
+
+                    // ВИПРАВЛЕНО: Ключ називається main_matches, а не matches
+                    val mainArray = json.optJSONArray("main_matches") ?: json.optJSONArray("matches")
+                    val assArray = json.optJSONArray("assistant_matches")
+
+                    val mainIds = extractMatchIds(mainArray)
+                    val assIds = extractMatchIds(assArray)
+
+                    // Фільтруємо ГЛОБАЛЬНІ матчі за ID (тепер лого і назви збережуться!)
+                    mainMatchesList.clear()
+                    assistantMatchesList.clear()
+
+                    mainMatchesList.addAll(allGlobalMatches.filter { mainIds.contains(it.id) })
+                    assistantMatchesList.addAll(allGlobalMatches.filter { assIds.contains(it.id) })
 
                     runOnUiThread {
                         progressBar.visibility = View.GONE
-                        
                         if (stats != null) {
                             findViewById<TextView>(R.id.tvProfileMatches).text = stats.optString("total", "0")
                             findViewById<TextView>(R.id.tvProfileYellow).text = stats.optString("yellow", "0")
                             findViewById<TextView>(R.id.tvProfileRed).text = stats.optString("red", "0")
                         }
-
-                        // 🔥 ГАРАНТОВАНО МАЛЮЄМО ВКЛАДКИ 🔥
+                        
                         setupViewPager()
-
+                        
                         if (mainMatchesList.isEmpty() && assistantMatchesList.isEmpty()) {
                             tvEmptyState.visibility = View.VISIBLE
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e("RefereeProfile", "JSON Parse Error: ${e.message}")
+                    Log.e("RefereeProfile", "Ref JSON Error: ${e.message}")
                     runOnUiThread { finishLoadingWithError() }
                 }
             }
         })
     }
 
-    // 🔥 БРОНЕБІЙНИЙ ПАРСЕР: Розуміє і об'єкти (Сокіл), і просто ID (19) 🔥
-    private fun parseMatches(array: JSONArray?): ArrayList<TournamentRow> {
-        val list = ArrayList<TournamentRow>()
-        if (array == null) return list
-        
+    private fun extractMatchIds(array: JSONArray?): List<String> {
+        val ids = mutableListOf<String>()
+        if (array == null) return ids
         for (i in 0 until array.length()) {
-            val m = array.getJSONObject(i)
-            
-            val homeObj = m.optJSONObject("home")
-            val awayObj = m.optJSONObject("away")
-            
-            val team1Name = homeObj?.optString("name") ?: m.optString("home", "Команда 1")
-            val team2Name = awayObj?.optString("name") ?: m.optString("away", "Команда 2")
-            
-            list.add(TournamentRow(
-                id = m.optString("match_id"),
-                team1 = team1Name,
-                logo1 = homeObj?.optString("logo") ?: "",
-                team2 = team2Name,
-                logo2 = awayObj?.optString("logo") ?: "",
-                score = m.optString("score", "v"),
-                date = m.optString("kickoff"),
-                league = m.optString("competition", "Матч"),
-                stage = m.optString("stage", ""),
-                referee = refereeName,
-                isHeader = false
-            ))
+            val obj = array.getJSONObject(i)
+            ids.add(obj.optString("match_id"))
         }
-        return list
+        return ids
     }
 
     private fun finishLoadingWithError() {
         progressBar.visibility = View.GONE
-        setupViewPager() // Вкладки малюємо все одно!
+        setupViewPager()
         tvEmptyState.text = "Матчів не знайдено"
         tvEmptyState.visibility = View.VISIBLE
     }
@@ -173,7 +204,7 @@ class RefereeProfileActivity : AppCompatActivity() {
     }
 }
 
-// 🔥 ФРАГМЕНТ СПИСКУ: Тепер безпечно бере дані з Activity 🔥
+// 🔥 ФРАГМЕНТ СПИСКУ 🔥
 class RefereeMatchesListFragment : Fragment() {
     private var tabPosition: Int = 0
 
@@ -190,7 +221,6 @@ class RefereeMatchesListFragment : Fragment() {
             layoutManager = LinearLayoutManager(context)
         }
         
-        // Беремо списки напряму, щоб уникнути крашів при передачі
         val activity = requireActivity() as? RefereeProfileActivity
         val currentMatches = if (tabPosition == 0) activity?.mainMatchesList else activity?.assistantMatchesList
 
