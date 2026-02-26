@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -23,7 +24,6 @@ class TeamSquadFragment : Fragment() {
     private var teamLogo: String = ""
 
     companion object {
-        // 🔥 Оновлено: тепер приймаємо назву та логотип команди
         fun newInstance(teamId: String, teamName: String, teamLogo: String): TeamSquadFragment {
             val fragment = TeamSquadFragment()
             val args = Bundle()
@@ -44,7 +44,6 @@ class TeamSquadFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        // Беремо дані з аргументів
         teamId = arguments?.getString("team_id") ?: ""
         teamName = arguments?.getString("team_name") ?: "Команда"
         teamLogo = arguments?.getString("team_logo") ?: ""
@@ -54,15 +53,17 @@ class TeamSquadFragment : Fragment() {
     }
 
     private fun loadPlayers() {
-        // 🔥 ПРАВКА: Передаємо обраний рік у запит, щоб сервер віддав заявку саме за цей сезон
         val year = AppConfig.selectedYear
         val url = "https://maf.lviv.ua/wp-json/maf/team-players?id=$teamId&year=$year"
-        
+
         val request = Request.Builder().url(url).build()
 
         OkHttpClient().newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                activity?.runOnUiThread { progressBar.visibility = View.GONE }
+                activity?.runOnUiThread { 
+                    progressBar.visibility = View.GONE 
+                    Toast.makeText(context, "Помилка мережі: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -70,7 +71,16 @@ class TeamSquadFragment : Fragment() {
 
                 activity?.runOnUiThread {
                     progressBar.visibility = View.GONE
-                    if (!response.isSuccessful || rawJson.isEmpty()) return@runOnUiThread
+                    
+                    if (!response.isSuccessful) {
+                        Toast.makeText(context, "Помилка сервера: ${response.code}", Toast.LENGTH_LONG).show()
+                        return@runOnUiThread
+                    }
+                    
+                    if (rawJson.isEmpty() || rawJson == "[]") {
+                        Toast.makeText(context, "Сервер повернув порожній список для року: $year", Toast.LENGTH_LONG).show()
+                        return@runOnUiThread
+                    }
 
                     try {
                         val jsonElement = JsonParser.parseString(rawJson)
@@ -78,27 +88,42 @@ class TeamSquadFragment : Fragment() {
 
                         if (jsonElement.isJsonArray) {
                             val jsonArray = jsonElement.asJsonArray
-                            for (element in jsonArray) rawList.add(parsePlayerSafe(element.asJsonObject))
+                            for (element in jsonArray) {
+                                if (element.isJsonObject) rawList.add(parsePlayerSafe(element.asJsonObject))
+                            }
                         } else if (jsonElement.isJsonObject) {
                             val jsonObject = jsonElement.asJsonObject
+                            var foundArray = false
                             for (key in jsonObject.keySet()) {
-                                try {
-                                    if (jsonObject.get(key).isJsonObject) 
-                                        rawList.add(parsePlayerSafe(jsonObject.get(key).asJsonObject))
-                                } catch (e: Exception) {}
+                                if (jsonObject.get(key).isJsonArray) {
+                                    val innerArray = jsonObject.get(key).asJsonArray
+                                    for (element in innerArray) {
+                                        if (element.isJsonObject) rawList.add(parsePlayerSafe(element.asJsonObject))
+                                    }
+                                    foundArray = true
+                                    break
+                                }
+                            }
+                            if (!foundArray) {
+                                for (key in jsonObject.keySet()) {
+                                    try {
+                                        if (jsonObject.get(key).isJsonObject) 
+                                            rawList.add(parsePlayerSafe(jsonObject.get(key).asJsonObject))
+                                    } catch (e: Exception) {}
+                                }
                             }
                         }
 
                         if (rawList.isNotEmpty()) {
                             val groupedItems = prepareGroupedList(rawList)
-                            
-                            // 🔥 Використовуємо teamName та teamLogo, які отримали при створенні фрагмента
-                            recyclerView.adapter = PlayersAdapter(groupedItems, teamName, teamLogo) { player ->
-                                // Клік обробляється в адаптері
-                            }
+                            recyclerView.adapter = PlayersAdapter(groupedItems, teamName, teamLogo) { player -> }
+                        } else {
+                            Toast.makeText(context, "Дані отримано, але парсер не знайшов гравців", Toast.LENGTH_LONG).show()
                         }
 
-                    } catch (e: Exception) { Log.e("Squad", "Error: ${e.message}") }
+                    } catch (e: Exception) { 
+                        Toast.makeText(context, "Помилка читання JSON: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
                 }
             }
         })
@@ -124,7 +149,7 @@ class TeamSquadFragment : Fragment() {
                 "d", "def", "defender", "захисник" -> "ЗАХИСНИКИ"
                 "m", "mid", "midfielder", "півзахисник" -> "ПІВЗАХИСНИКИ"
                 "f", "fwd", "forward", "нападник" -> "НАПАДНИКИ"
-                else -> key.uppercase()
+                else -> if (key.isNotBlank()) key.uppercase() else "ІНШІ"
             }
             resultList.add(headerTitle)
             resultList.addAll(playersInGroup)
