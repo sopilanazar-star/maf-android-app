@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import okhttp3.*
 import org.json.JSONArray
 import org.json.JSONObject
@@ -41,7 +42,6 @@ class ScorersFragment : Fragment() {
         tvEmptyState = view.findViewById(R.id.tvEmptyState)
         tvHeaderTitle = view.findViewById(R.id.tvHeaderTitle)
 
-        // 🔥 ПРАВКА 1: Чистий заголовок без дублювання слова "Бомбардири"
         val cleanTitle = leagueType.replace("Бомбардири", "").replace("(", "").replace(")", "").trim()
         tvHeaderTitle.text = "Бомбардири: $cleanTitle ($selectedYear)"
 
@@ -53,16 +53,14 @@ class ScorersFragment : Fragment() {
         return view
     }
 
-    // 🔥 ДОДАНО: Функція для оновлення року з глобального спінера 🔥
     fun updateYear(year: String) {
         if (selectedYear != year) {
             selectedYear = year
             val cleanTitle = leagueType.replace("Бомбардири", "").replace("(", "").replace(")", "").trim()
             tvHeaderTitle.text = "Бомбардири: $cleanTitle ($selectedYear)"
             
-            // Важливо: спочатку ховаємо список, щоб не висіли старі дані під час завантаження
             recyclerView.visibility = View.GONE 
-            loadCompetitionId() // Перезапускаємо пошук турніру для нового року
+            loadCompetitionId() 
         }
     }
 
@@ -97,20 +95,16 @@ class ScorersFragment : Fragment() {
         })
     }
 
-    // 🔥 ПРАВКА: Розумніший пошук ліг, який розуміє різні назви (2 ліга, II ліга, Друга і т.д.) 🔥
     private fun findCompetitionId(array: JSONArray): String {
         val search = leagueType.lowercase().trim()
         val searchIsU19 = search.contains("u-19")
-        // Шукаємо всі можливі варіанти написання 2 ліги
         val searchIsSecond = search.contains("іі ліга") || search.contains("2 ліга") || search.contains("ii ліга") || search.contains("друга")
-        // Шукаємо всі варіанти 1 ліги
         val searchIsFirst = (search.contains("і ліга") || search.contains("1 ліга") || search.contains("i ліга") || search.contains("перша")) && !searchIsSecond
 
         for (i in 0 until array.length()) {
             val obj = array.getJSONObject(i)
             val name = obj.optString("name", "").lowercase()
 
-            // Ігноруємо кубки та фінальні стадії для регулярного списку
             if (name.contains("фіналь") || name.contains("плей-офф") || name.contains("кубок")) continue 
 
             val compIsU19 = name.contains("u-19")
@@ -160,12 +154,10 @@ class ScorersFragment : Fragment() {
         }
     }
 
-    // 🔥 ПРАВКА 3: Передаємо ID як Int, щоб не було "ноунейма"
     private fun openPlayerProfile(playerId: String) {
         if (playerId.isEmpty()) return
         try {
             val intent = Intent(requireContext(), PlayerProfileActivity::class.java)
-            // Конвертуємо в Int, бо твоя Activity профілю зазвичай чекає число
             intent.putExtra("PLAYER_ID", playerId.toInt()) 
             startActivity(intent)
         } catch (e: Exception) {
@@ -219,16 +211,18 @@ class ScorersAdapter(
         }
         holder.rank.setTextColor(Color.parseColor(color))
 
-        // 🔥 ПРАВКА 2: Фото тепер центрується і обрізається колом (обличчя посередині)
+        // 🔥 МАГІЯ ТУТ: Замінено .centerCrop().circleCrop() на нашу трансформацію
+        val photoUrl = p?.optString("photo") ?: ""
         Glide.with(holder.itemView.context)
-            .load(p?.optString("photo"))
-            .centerCrop() // Центруємо
-            .circleCrop() // Обрізаємо в коло
+            .load(photoUrl.replace("http://", "https://"))
+            .transform(PlayerTopCropTransformation(), CircleCrop()) // Обличчя вгорі + коло
             .placeholder(R.drawable.ic_player_placeholder)
             .into(holder.ivPlayer)
 
+        // Також робимо безпечним логотип команди
+        val logoUrl = t?.optString("logo") ?: ""
         Glide.with(holder.itemView.context)
-            .load(t?.optString("logo"))
+            .load(logoUrl.replace("http://", "https://"))
             .placeholder(R.drawable.ic_player_placeholder)
             .into(holder.ivTeam)
 
