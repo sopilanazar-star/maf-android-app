@@ -167,11 +167,18 @@ class MainActivity : AppCompatActivity() {
                     loadFromApi(AppConfig.selectedYear)
                     
                     val currentFragment = supportFragmentManager.findFragmentById(fragmentContainer.id)
+                    
+                    // Оновлення Таблиць та More
                     if (currentFragment is StandingFragment) currentFragment.refreshData()
                     if (currentFragment is MoreFragment) currentFragment.refreshData()
-                    // 🔥 ДОДАНІ РЯДКИ ДЛЯ АРБІТРІВ І БОМБАРДИРІВ 🔥
+                    
+                    // Оновлення Арбітрів та Бомбардирів
                     if (currentFragment is RefereesFragment) currentFragment.updateYear(AppConfig.selectedYear)
                     if (currentFragment is ScorersFragment) currentFragment.updateYear(AppConfig.selectedYear)
+                    
+                    // Оновлення Дискваліфікацій та Прогнозів
+                    if (currentFragment is DisqualifiedFragment) currentFragment.updateYear()
+                    if (currentFragment is PredictionsFragment) currentFragment.refreshData()
                 }
             }
             override fun onNothingSelected(p: AdapterView<*>?) {}
@@ -182,9 +189,8 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        // 🔴 СТАРТОВА ВКЛАДКА: НОВИНИ (як ти і просив)
         bottomNav.selectedItemId = R.id.nav_news
-        loadFromApi(AppConfig.selectedYear) // Матчі завантажуються у фоні, щоб бути готовими
+        loadFromApi(AppConfig.selectedYear) 
     }
 
     private fun setupNavigation() {
@@ -246,7 +252,6 @@ class MainActivity : AppCompatActivity() {
                     val temp = mutableListOf<TournamentRow>()
                     for (i in 0 until array.length()) {
                         val m = array.getJSONObject(i)
-                        // 🔴 СУВОРИЙ ПОРЯДОК: Захист від зсуву даних (виправляє помилку з "2026")
                         temp.add(TournamentRow(
                             id = m.optString("id"), 
                             team1 = m.optString("team1"), 
@@ -271,32 +276,20 @@ class MainActivity : AppCompatActivity() {
                         val dateList = createDateList(allMatches)
                         dateRecyclerView.adapter = DateAdapter(dateList) { filterMatches(it) }
                         if (dateList.isNotEmpty()) {
-
                             val todayStr = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date())
                             var selectedDate: DateModel? = null
-
-                            // 1️⃣ якщо є сьогоднішня дата
                             selectedDate = dateList.find { it.date == todayStr }
 
-                            // 2️⃣ якщо нема — шукаємо найближчу в майбутньому
                             if (selectedDate == null) {
                                 val sdf = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
                                 val now = Date()
-
-                                selectedDate = dateList
-                                    .mapNotNull {
-                                        val d = try { sdf.parse(it.date) } catch (e: Exception) { null }
-                                        if (d != null && !d.before(now)) Pair(it, d) else null
-                                    }
-                                    .minByOrNull { it.second }
-                                    ?.first
+                                selectedDate = dateList.mapNotNull {
+                                    val d = try { sdf.parse(it.date) } catch (e: Exception) { null }
+                                    if (d != null && !d.before(now)) Pair(it, d) else null
+                                }.minByOrNull { it.second }?.first
                             }
 
-                            // 3️⃣ якщо взагалі нема майбутніх — беремо останню
-                            if (selectedDate == null) {
-                                selectedDate = dateList.last()
-                            }
-
+                            if (selectedDate == null) selectedDate = dateList.last()
                             selectedDate.isSelected = true
                             filterMatches(selectedDate.date)
                         } else {
