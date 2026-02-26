@@ -17,7 +17,7 @@ data class MenuItem(val id: Int, val title: String)
 
 class MoreFragment : Fragment() {
 
-    // Твій лінк на бота для зворотного зв'язку (залишаємо як було)
+    // Твій лінк на бота для зворотного зв'язку
     private val TELEGRAM_BOT_URL = "https://t.me/MafFeedback_bot"
 
     override fun onCreateView(
@@ -33,6 +33,7 @@ class MoreFragment : Fragment() {
             openTelegramBot()
         }
 
+        // --- ДОДАЛИ НОВИЙ ПУНКТ (8) ---
         val menuItems = listOf(
             MenuItem(1, "Прогноз на матчі"),
             MenuItem(2, "Дискваліфіковані гравці"),
@@ -40,7 +41,8 @@ class MoreFragment : Fragment() {
             MenuItem(4, "Бомбардири (ІІ ліга)"),
             MenuItem(5, "Бомбардири U-19 (І ліга)"),
             MenuItem(6, "Бомбардири U-19 (ІІ ліга)"),
-            MenuItem(7, "Арбітри")
+            MenuItem(7, "Арбітри"),
+            MenuItem(8, "📺 Відеоогляди матчів") // <--- ОСЬ ВІН!
         )
 
         rvMoreMenu.layoutManager = LinearLayoutManager(context)
@@ -53,12 +55,11 @@ class MoreFragment : Fragment() {
 
     fun refreshData() {
         if (isAdded) {
-            // Пошук поточного активного фрагмента в контейнері для оновлення даних за роком
             val containerId = (requireView().parent as View).id
             val currentFragment = parentFragmentManager.findFragmentById(containerId)
             
             if (currentFragment is DisqualifiedFragment) {
-                currentFragment.updateYear() // Викликаємо оновлення у фрагменті дискваліфікацій
+                currentFragment.updateYear() 
             }
             
             Toast.makeText(context, "Рік змінено на ${AppConfig.selectedYear}", Toast.LENGTH_SHORT).show()
@@ -97,7 +98,6 @@ class MoreFragment : Fragment() {
             5 -> openScorersFragment("U-19 (І ліга)", containerId)
             6 -> openScorersFragment("U-19 (ІІ ліга)", containerId)
             7 -> { 
-                // 🔥 ПРАВКА: Відкриваємо фрагмент Арбітрів і передаємо рік
                 val refereesFragment = RefereesFragment()
                 val bundle = Bundle()
                 bundle.putString("SELECTED_YEAR", AppConfig.selectedYear.toString())
@@ -105,6 +105,15 @@ class MoreFragment : Fragment() {
 
                 parentFragmentManager.beginTransaction()
                     .replace(containerId, refereesFragment)
+                    .addToBackStack(null)
+                    .commit()
+            }
+            // --- НОВА ДІЯ ДЛЯ ВІДЕООГЛЯДІВ ---
+            8 -> {
+                // Тимчасова заглушка. Пізніше замінимо на відкриття MediaFragment
+                val mediaFragment = MediaFragment() // Ми його зараз створимо
+                parentFragmentManager.beginTransaction()
+                    .replace(containerId, mediaFragment)
                     .addToBackStack(null)
                     .commit()
             }
