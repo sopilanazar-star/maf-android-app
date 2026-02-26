@@ -6,13 +6,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.gson.JsonParser
 import okhttp3.*
-import org.json.JSONArray
-import org.json.JSONObject
 import java.io.IOException
 import ua.lviv.maf.models.Player
 
@@ -25,6 +23,7 @@ class TeamSquadFragment : Fragment() {
     private var teamLogo: String = ""
 
     companion object {
+        // 🔥 Оновлено: тепер приймаємо назву та логотип команди
         fun newInstance(teamId: String, teamName: String, teamLogo: String): TeamSquadFragment {
             val fragment = TeamSquadFragment()
             val args = Bundle()
@@ -45,34 +44,25 @@ class TeamSquadFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
-        // 🔥 Бронебійне отримання ID: читає як String, навіть якщо передали як Int
-        teamId = arguments?.get("team_id")?.toString() ?: ""
+        // Беремо дані з аргументів
+        teamId = arguments?.getString("team_id") ?: ""
         teamName = arguments?.getString("team_name") ?: "Команда"
         teamLogo = arguments?.getString("team_logo") ?: ""
-
-        recyclerView.layoutManager = LinearLayoutManager(context)
         
-        if (teamId.isNotEmpty()) {
-            loadPlayers()
-        } else {
-            progressBar.visibility = View.GONE
-            Toast.makeText(context, "Помилка: відсутній ID команди", Toast.LENGTH_SHORT).show()
-        }
+        recyclerView.layoutManager = LinearLayoutManager(context)
+        loadPlayers()
     }
 
     private fun loadPlayers() {
+        // 🔥 ПРАВКА: Передаємо обраний рік у запит, щоб сервер віддав заявку саме за цей сезон
         val year = AppConfig.selectedYear
-        val url = "https://maf.lviv.ua/wp-json/maf/v2/team-players?id=$teamId&year=$year"
+        val url = "https://maf.lviv.ua/wp-json/maf/team-players?id=$teamId&year=$year"
         
         val request = Request.Builder().url(url).build()
 
         OkHttpClient().newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                activity?.runOnUiThread { 
-                    progressBar.visibility = View.GONE
-                    Toast.makeText(context, "Помилка мережі", Toast.LENGTH_SHORT).show()
-                }
+                activity?.runOnUiThread { progressBar.visibility = View.GONE }
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -80,62 +70,35 @@ class TeamSquadFragment : Fragment() {
 
                 activity?.runOnUiThread {
                     progressBar.visibility = View.GONE
-                    if (!response.isSuccessful || rawJson.isEmpty()) {
-                        Toast.makeText(context, "Не вдалося завантажити склад", Toast.LENGTH_SHORT).show()
-                        return@runOnUiThread
-                    }
+                    if (!response.isSuccessful || rawJson.isEmpty()) return@runOnUiThread
 
                     try {
+                        val jsonElement = JsonParser.parseString(rawJson)
                         val rawList = ArrayList<Player>()
 
-                        // 🔥 Надійний вбудований парсер org.json (як у тебе в матчах)
-                        if (rawJson.startsWith("[")) {
-                            val jsonArray = JSONArray(rawJson)
-                            for (i in 0 until jsonArray.length()) {
-                                val obj = jsonArray.getJSONObject(i)
-                                rawList.add(Player(
-                                    id = obj.optString("id"),
-                                    name = obj.optString("name"),
-                                    number = obj.optString("number"),
-                                    position = obj.optString("position"),
-                                    photo = obj.optString("photo"),
-                                    birthDate = obj.optString("birth_date"),
-                                    age = obj.optInt("age")
-                                ))
-                            }
-                        } else if (rawJson.startsWith("{")) {
-                            // Резервний варіант, якщо сервер поверне об'єкт замість масиву
-                            val jsonObj = JSONObject(rawJson)
-                            val keys = jsonObj.keys()
-                            while (keys.hasNext()) {
-                                val obj = jsonObj.optJSONObject(keys.next())
-                                if (obj != null) {
-                                    rawList.add(Player(
-                                        id = obj.optString("id"),
-                                        name = obj.optString("name"),
-                                        number = obj.optString("number"),
-                                        position = obj.optString("position"),
-                                        photo = obj.optString("photo"),
-                                        birthDate = obj.optString("birth_date"),
-                                        age = obj.optInt("age")
-                                    ))
-                                }
+                        if (jsonElement.isJsonArray) {
+                            val jsonArray = jsonElement.asJsonArray
+                            for (element in jsonArray) rawList.add(parsePlayerSafe(element.asJsonObject))
+                        } else if (jsonElement.isJsonObject) {
+                            val jsonObject = jsonElement.asJsonObject
+                            for (key in jsonObject.keySet()) {
+                                try {
+                                    if (jsonObject.get(key).isJsonObject) 
+                                        rawList.add(parsePlayerSafe(jsonObject.get(key).asJsonObject))
+                                } catch (e: Exception) {}
                             }
                         }
 
                         if (rawList.isNotEmpty()) {
                             val groupedItems = prepareGroupedList(rawList)
+                            
+                            // 🔥 Використовуємо teamName та teamLogo, які отримали при створенні фрагмента
                             recyclerView.adapter = PlayersAdapter(groupedItems, teamName, teamLogo) { player ->
-                                // Можна додати клік по гравцю
+                                // Клік обробляється в адаптері
                             }
-                        } else {
-                            Toast.makeText(context, "Склад команди порожній", Toast.LENGTH_SHORT).show()
                         }
 
-                    } catch (e: Exception) { 
-                        Log.e("Squad", "Помилка парсингу: ${e.message}")
-                        Toast.makeText(context, "Помилка структури даних", Toast.LENGTH_SHORT).show()
-                    }
+                    } catch (e: Exception) { Log.e("Squad", "Error: ${e.message}") }
                 }
             }
         })
@@ -168,4 +131,36 @@ class TeamSquadFragment : Fragment() {
         }
         return resultList
     }
+
+    private fun parsePlayerSafe(obj: com.google.gson.JsonObject): Player {
+        fun getString(key: String): String {
+            if (!obj.has(key) || obj.get(key).isJsonNull) return ""
+            val p = obj.get(key)
+            if (p.isJsonPrimitive) {
+                if (p.asJsonPrimitive.isBoolean) return ""
+                return p.asString
+            }
+            return ""
+        }
+        
+        fun getInt(key: String): Int {
+            if (!obj.has(key) || obj.get(key).isJsonNull) return 0
+            val p = obj.get(key)
+            if (p.isJsonPrimitive && p.asJsonPrimitive.isNumber) return p.asInt
+            return 0
+        }
+
+        return Player(
+            id = getString("id"), 
+            name = getString("name"), 
+            number = getString("number"), 
+            position = getString("position"), 
+            photo = getString("photo"),
+            birthDate = getString("birth_date"),
+            age = getInt("age")
+        )
+    }
 }
+
+
+TeamSquadFragment
