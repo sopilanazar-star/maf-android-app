@@ -23,7 +23,6 @@ class TeamSquadFragment : Fragment() {
     private var teamLogo: String = ""
 
     companion object {
-        // 🔥 Оновлено: тепер приймаємо назву та логотип команди
         fun newInstance(teamId: String, teamName: String, teamLogo: String): TeamSquadFragment {
             val fragment = TeamSquadFragment()
             val args = Bundle()
@@ -35,126 +34,132 @@ class TeamSquadFragment : Fragment() {
         }
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val view = inflater.inflate(R.layout.fragment_team_squad, container, false)
         recyclerView = view.findViewById(R.id.recyclerViewSquad)
         progressBar = view.findViewById(R.id.progressBarSquad)
+        recyclerView.layoutManager = LinearLayoutManager(context)
         return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        // Беремо дані з аргументів
+
         teamId = arguments?.getString("team_id") ?: ""
         teamName = arguments?.getString("team_name") ?: "Команда"
         teamLogo = arguments?.getString("team_logo") ?: ""
-        
-        recyclerView.layoutManager = LinearLayoutManager(context)
+
+        if (teamId.isEmpty()) {
+            progressBar.visibility = View.GONE
+            Log.e("TEAM", "teamId is empty")
+            return
+        }
+
         loadPlayers()
     }
 
     private fun loadPlayers() {
-        // 🔥 ПРАВКА: Передаємо обраний рік у запит, щоб сервер віддав заявку саме за цей сезон
-        val year = AppConfig.selectedYear
+
+        // 🔥 Якщо рік не вибраний — ставимо 2025
+        var year = AppConfig.selectedYear
+        if (year <= 0) year = 2025
+
         val url = "https://maf.lviv.ua/wp-json/maf/v2/team-players?id=$teamId&year=$year"
-        
+
+        Log.e("API_URL", url)
+
         val request = Request.Builder().url(url).build()
 
         OkHttpClient().newCall(request).enqueue(object : Callback {
+
             override fun onFailure(call: Call, e: IOException) {
-                activity?.runOnUiThread { progressBar.visibility = View.GONE }
+                activity?.runOnUiThread {
+                    progressBar.visibility = View.GONE
+                    Log.e("API_ERROR", e.message ?: "Unknown error")
+                }
             }
 
             override fun onResponse(call: Call, response: Response) {
+
                 val rawJson = response.body?.string()?.trim() ?: ""
 
                 activity?.runOnUiThread {
+
                     progressBar.visibility = View.GONE
-                    if (!response.isSuccessful || rawJson.isEmpty()) return@runOnUiThread
+
+                    if (!response.isSuccessful || rawJson.isEmpty()) {
+                        Log.e("API_ERROR", "Response code: ${response.code}")
+                        return@runOnUiThread
+                    }
 
                     try {
                         val jsonElement = JsonParser.parseString(rawJson)
-                        val rawList = ArrayList<Player>()
+                        val players = ArrayList<Player>()
 
                         if (jsonElement.isJsonArray) {
-                            val jsonArray = jsonElement.asJsonArray
-                            for (element in jsonArray) rawList.add(parsePlayerSafe(element.asJsonObject))
-                        } else if (jsonElement.isJsonObject) {
-                            val jsonObject = jsonElement.asJsonObject
-                            for (key in jsonObject.keySet()) {
-                                try {
-                                    if (jsonObject.get(key).isJsonObject) 
-                                        rawList.add(parsePlayerSafe(jsonObject.get(key).asJsonObject))
-                                } catch (e: Exception) {}
+                            val array = jsonElement.asJsonArray
+                            for (element in array) {
+                                players.add(parsePlayerSafe(element.asJsonObject))
                             }
                         }
 
-                        if (rawList.isNotEmpty()) {
-                            val groupedItems = prepareGroupedList(rawList)
-                            
-                            // 🔥 Використовуємо teamName та teamLogo, які отримали при створенні фрагмента
-                            recyclerView.adapter = PlayersAdapter(groupedItems, teamName, teamLogo) { player ->
-                                // Клік обробляється в адаптері
-                            }
+                        if (players.isNotEmpty()) {
+                            val grouped = prepareGroupedList(players)
+                            recyclerView.adapter =
+                                PlayersAdapter(grouped, teamName, teamLogo) { }
+                        } else {
+                            Log.e("API", "Players list empty")
                         }
 
-                    } catch (e: Exception) { Log.e("Squad", "Error: ${e.message}") }
+                    } catch (e: Exception) {
+                        Log.e("JSON_ERROR", e.message ?: "Parse error")
+                    }
                 }
             }
         })
     }
 
     private fun prepareGroupedList(players: List<Player>): List<Any> {
-        val resultList = ArrayList<Any>()
-        val groupedMap = players.groupBy { it.position.trim().lowercase() }
-        val sortedKeys = groupedMap.keys.sortedBy { pos ->
-            when (pos) {
-                "g", "gk", "goalkeeper", "воротар" -> 1
-                "d", "def", "defender", "захисник" -> 2
-                "m", "mid", "midfielder", "півзахисник" -> 3
-                "f", "fwd", "forward", "нападник" -> 4
-                else -> 99
-            }
-        }
+        val result = ArrayList<Any>()
+        val grouped = players.groupBy { it.position.trim().lowercase() }
 
-        for (key in sortedKeys) {
-            val playersInGroup = groupedMap[key] ?: continue
-            val headerTitle = when (key) {
-                "g", "gk", "goalkeeper", "воротар" -> "ВОРОТАРІ"
-                "d", "def", "defender", "захисник" -> "ЗАХИСНИКИ"
-                "m", "mid", "midfielder", "півзахисник" -> "ПІВЗАХИСНИКИ"
-                "f", "fwd", "forward", "нападник" -> "НАПАДНИКИ"
+        val order = listOf("g", "d", "m", "f")
+
+        for (key in order) {
+            val group = grouped[key] ?: continue
+
+            val title = when (key) {
+                "g" -> "ВОРОТАРІ"
+                "d" -> "ЗАХИСНИКИ"
+                "m" -> "ПІВЗАХИСНИКИ"
+                "f" -> "НАПАДНИКИ"
                 else -> key.uppercase()
             }
-            resultList.add(headerTitle)
-            resultList.addAll(playersInGroup)
+
+            result.add(title)
+            result.addAll(group)
         }
-        return resultList
+
+        return result
     }
 
     private fun parsePlayerSafe(obj: com.google.gson.JsonObject): Player {
+
         fun getString(key: String): String {
             if (!obj.has(key) || obj.get(key).isJsonNull) return ""
-            val p = obj.get(key)
-            if (p.isJsonPrimitive) {
-                if (p.asJsonPrimitive.isBoolean) return ""
-                return p.asString
-            }
-            return ""
+            return obj.get(key).asString
         }
-        
+
         fun getInt(key: String): Int {
             if (!obj.has(key) || obj.get(key).isJsonNull) return 0
-            val p = obj.get(key)
-            if (p.isJsonPrimitive && p.asJsonPrimitive.isNumber) return p.asInt
-            return 0
+            return try { obj.get(key).asInt } catch (e: Exception) { 0 }
         }
 
         return Player(
-            id = getString("id"), 
-            name = getString("name"), 
-            number = getString("number"), 
-            position = getString("position"), 
+            id = getString("id"),
+            name = getString("name"),
+            number = getString("number"),
+            position = getString("position"),
             photo = getString("photo"),
             birthDate = getString("birth_date"),
             age = getInt("age")
