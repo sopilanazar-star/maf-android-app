@@ -62,16 +62,17 @@ class RefereeProfileActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.tvProfileYellow).text = intent.getIntExtra("REF_YELLOW", 0).toString()
         findViewById<TextView>(R.id.tvProfileRed).text = intent.getIntExtra("REF_RED", 0).toString()
 
+        // 🔥 МАГІЯ ТУТ: Замінено .circleCrop() на PlayerTopCropTransformation()
+        val photoUrl = intent.getStringExtra("REF_PHOTO") ?: ""
         Glide.with(this)
-            .load(intent.getStringExtra("REF_PHOTO"))
-            .circleCrop()
+            .load(photoUrl.replace("http://", "https://"))
+            .transform(PlayerTopCropTransformation()) // Фокус на голові
             .placeholder(R.drawable.ic_player_placeholder)
             .into(findViewById<ImageView>(R.id.ivProfilePhoto))
 
         findViewById<View>(R.id.btnBack).setOnClickListener { finish() }
     }
 
-    // 🔥 КРОК 1: Завантажуємо глобальні матчі (щоб мати ЛОГО і ПОВНІ НАЗВИ) 🔥
     private fun loadData(refId: String) {
         progressBar.visibility = View.VISIBLE
         tvEmptyState.visibility = View.GONE
@@ -101,12 +102,11 @@ class RefereeProfileActivity : AppCompatActivity() {
                             date = m.optString("date"),
                             league = m.optString("league"),
                             stage = m.optString("stage", ""),
-                            referee = refereeName, // Ставимо поточного арбітра
+                            referee = refereeName,
                             isHeader = false
                         ))
                     }
 
-                    // Переходимо до кроку 2 (дізнатися ID матчів арбітра)
                     fetchRefereeIdsAndFilter(refId, allGlobalMatches)
 
                 } catch (e: Exception) {
@@ -117,7 +117,6 @@ class RefereeProfileActivity : AppCompatActivity() {
         })
     }
 
-    // 🔥 КРОК 2: Завантажуємо профілі і фільтруємо красиві матчі 🔥
     private fun fetchRefereeIdsAndFilter(refId: String, allGlobalMatches: List<TournamentRow>) {
         val seasonId = when(selectedYear) {
             "2026" -> "23"
@@ -139,14 +138,12 @@ class RefereeProfileActivity : AppCompatActivity() {
                     val json = JSONObject(body)
                     val stats = json.optJSONObject("stats")
 
-                    // ВИПРАВЛЕНО: Ключ називається main_matches, а не matches
                     val mainArray = json.optJSONArray("main_matches") ?: json.optJSONArray("matches")
                     val assArray = json.optJSONArray("assistant_matches")
 
                     val mainIds = extractMatchIds(mainArray)
                     val assIds = extractMatchIds(assArray)
 
-                    // Фільтруємо ГЛОБАЛЬНІ матчі за ID (тепер лого і назви збережуться!)
                     mainMatchesList.clear()
                     assistantMatchesList.clear()
 
@@ -204,7 +201,6 @@ class RefereeProfileActivity : AppCompatActivity() {
     }
 }
 
-// 🔥 ФРАГМЕНТ СПИСКУ 🔥
 class RefereeMatchesListFragment : Fragment() {
     private var tabPosition: Int = 0
 
