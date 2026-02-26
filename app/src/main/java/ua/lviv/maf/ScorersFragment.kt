@@ -149,16 +149,25 @@ class ScorersFragment : Fragment() {
     private fun setupList(data: List<JSONObject>) {
         recyclerView.visibility = View.VISIBLE
         recyclerView.layoutManager = LinearLayoutManager(context)
-        recyclerView.adapter = ScorersAdapter(data) { playerId ->
-            openPlayerProfile(playerId)
+        // 🔥 Оновлено: тепер адаптер повертає всі дані для профілю
+        recyclerView.adapter = ScorersAdapter(data) { id, name, photo, teamName, teamLogo ->
+            openPlayerProfile(id, name, photo, teamName, teamLogo)
         }
     }
 
-    private fun openPlayerProfile(playerId: String) {
-        if (playerId.isEmpty()) return
+    // 🔥 ПАКЕТНА ПЕРЕДАЧА ДАНИХ 🔥
+    private fun openPlayerProfile(id: String, name: String, photo: String, teamName: String, teamLogo: String) {
+        if (id.isEmpty()) return
         try {
             val intent = Intent(requireContext(), PlayerProfileActivity::class.java)
-            intent.putExtra("PLAYER_ID", playerId.toInt()) 
+            
+            // Передаємо "повний пакет" як у Squad
+            intent.putExtra("PLAYER_ID", id) // Передаємо як String для універсальності
+            intent.putExtra("PLAYER_NAME", name)
+            intent.putExtra("PLAYER_PHOTO", photo.replace("http://", "https://"))
+            intent.putExtra("TEAM_NAME", teamName)
+            intent.putExtra("TEAM_LOGO", teamLogo.replace("http://", "https://"))
+            
             startActivity(intent)
         } catch (e: Exception) {
             Log.e("Scorers", "Error opening profile: ${e.message}")
@@ -175,7 +184,8 @@ class ScorersFragment : Fragment() {
 
 class ScorersAdapter(
     private val items: List<JSONObject>,
-    private val onPlayerClick: (String) -> Unit
+    // 🔥 Оновлений колбек: повертаємо ID, Name, Photo, TeamName, TeamLogo
+    private val onPlayerClick: (String, String, String, String, String) -> Unit
 ) : RecyclerView.Adapter<ScorersAdapter.ViewHolder>() {
 
     class ViewHolder(v: View) : RecyclerView.ViewHolder(v) {
@@ -197,9 +207,15 @@ class ScorersAdapter(
         val p = item.optJSONObject("player")
         val t = item.optJSONObject("team")
 
+        val pId = p?.optString("id") ?: ""
+        val pName = p?.optString("name") ?: "Гравець"
+        val pPhoto = p?.optString("photo") ?: ""
+        val tName = t?.optString("name") ?: "Без команди"
+        val tLogo = t?.optString("logo") ?: ""
+
         holder.rank.text = "${position + 1}."
-        holder.name.text = p?.optString("name") ?: "Гравець"
-        holder.team.text = t?.optString("name") ?: "Без команди"
+        holder.name.text = pName
+        holder.team.text = tName
         holder.matches.text = item.optInt("matches", 0).toString()
         holder.goals.text = item.optInt("goals", 0).toString()
 
@@ -211,23 +227,20 @@ class ScorersAdapter(
         }
         holder.rank.setTextColor(Color.parseColor(color))
 
-        // 🔥 МАГІЯ ТУТ: Замінено .centerCrop().circleCrop() на нашу трансформацію
-        val photoUrl = p?.optString("photo") ?: ""
         Glide.with(holder.itemView.context)
-            .load(photoUrl.replace("http://", "https://"))
-            .transform(PlayerTopCropTransformation(), CircleCrop()) // Обличчя вгорі + коло
+            .load(pPhoto.replace("http://", "https://"))
+            .transform(PlayerTopCropTransformation(), CircleCrop())
             .placeholder(R.drawable.ic_player_placeholder)
             .into(holder.ivPlayer)
 
-        // Також робимо безпечним логотип команди
-        val logoUrl = t?.optString("logo") ?: ""
         Glide.with(holder.itemView.context)
-            .load(logoUrl.replace("http://", "https://"))
+            .load(tLogo.replace("http://", "https://"))
             .placeholder(R.drawable.ic_player_placeholder)
             .into(holder.ivTeam)
 
+        // 🔥 Передаємо весь набір даних при кліку
         holder.container.setOnClickListener { 
-            onPlayerClick(p?.optString("id") ?: "") 
+            onPlayerClick(pId, pName, pPhoto, tName, tLogo) 
         }
     }
 
