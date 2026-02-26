@@ -6,11 +6,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.JsonParser
 import okhttp3.*
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.IOException
 import ua.lviv.maf.models.Player
 
@@ -34,85 +36,105 @@ class TeamSquadFragment : Fragment() {
         }
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_team_squad, container, false)
         recyclerView = view.findViewById(R.id.recyclerViewSquad)
         progressBar = view.findViewById(R.id.progressBarSquad)
-        recyclerView.layoutManager = LinearLayoutManager(context)
         return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        teamId = arguments?.getString("team_id") ?: ""
+        
+        // 🔥 Бронебійне отримання ID: читає як String, навіть якщо передали як Int
+        teamId = arguments?.get("team_id")?.toString() ?: ""
         teamName = arguments?.getString("team_name") ?: "Команда"
         teamLogo = arguments?.getString("team_logo") ?: ""
 
-        if (teamId.isEmpty()) {
+        recyclerView.layoutManager = LinearLayoutManager(context)
+        
+        if (teamId.isNotEmpty()) {
+            loadPlayers()
+        } else {
             progressBar.visibility = View.GONE
-            Log.e("TEAM", "teamId is empty")
-            return
+            Toast.makeText(context, "Помилка: відсутній ID команди", Toast.LENGTH_SHORT).show()
         }
-
-        loadPlayers()
     }
 
     private fun loadPlayers() {
-
-        // 🔥 Якщо рік не вибраний — ставимо 2025
-        var year = AppConfig.selectedYear
-        if (year <= 0) year = 2025
-
+        val year = AppConfig.selectedYear
         val url = "https://maf.lviv.ua/wp-json/maf/v2/team-players?id=$teamId&year=$year"
-
-        Log.e("API_URL", url)
-
+        
         val request = Request.Builder().url(url).build()
 
         OkHttpClient().newCall(request).enqueue(object : Callback {
-
             override fun onFailure(call: Call, e: IOException) {
-                activity?.runOnUiThread {
+                activity?.runOnUiThread { 
                     progressBar.visibility = View.GONE
-                    Log.e("API_ERROR", e.message ?: "Unknown error")
+                    Toast.makeText(context, "Помилка мережі", Toast.LENGTH_SHORT).show()
                 }
             }
 
             override fun onResponse(call: Call, response: Response) {
-
                 val rawJson = response.body?.string()?.trim() ?: ""
 
                 activity?.runOnUiThread {
-
                     progressBar.visibility = View.GONE
-
                     if (!response.isSuccessful || rawJson.isEmpty()) {
-                        Log.e("API_ERROR", "Response code: ${response.code}")
+                        Toast.makeText(context, "Не вдалося завантажити склад", Toast.LENGTH_SHORT).show()
                         return@runOnUiThread
                     }
 
                     try {
-                        val jsonElement = JsonParser.parseString(rawJson)
-                        val players = ArrayList<Player>()
+                        val rawList = ArrayList<Player>()
 
-                        if (jsonElement.isJsonArray) {
-                            val array = jsonElement.asJsonArray
-                            for (element in array) {
-                                players.add(parsePlayerSafe(element.asJsonObject))
+                        // 🔥 Надійний вбудований парсер org.json (як у тебе в матчах)
+                        if (rawJson.startsWith("[")) {
+                            val jsonArray = JSONArray(rawJson)
+                            for (i in 0 until jsonArray.length()) {
+                                val obj = jsonArray.getJSONObject(i)
+                                rawList.add(Player(
+                                    id = obj.optString("id"),
+                                    name = obj.optString("name"),
+                                    number = obj.optString("number"),
+                                    position = obj.optString("position"),
+                                    photo = obj.optString("photo"),
+                                    birthDate = obj.optString("birth_date"),
+                                    age = obj.optInt("age")
+                                ))
+                            }
+                        } else if (rawJson.startsWith("{")) {
+                            // Резервний варіант, якщо сервер поверне об'єкт замість масиву
+                            val jsonObj = JSONObject(rawJson)
+                            val keys = jsonObj.keys()
+                            while (keys.hasNext()) {
+                                val obj = jsonObj.optJSONObject(keys.next())
+                                if (obj != null) {
+                                    rawList.add(Player(
+                                        id = obj.optString("id"),
+                                        name = obj.optString("name"),
+                                        number = obj.optString("number"),
+                                        position = obj.optString("position"),
+                                        photo = obj.optString("photo"),
+                                        birthDate = obj.optString("birth_date"),
+                                        age = obj.optInt("age")
+                                    ))
+                                }
                             }
                         }
 
-                        if (players.isNotEmpty()) {
-                            val grouped = prepareGroupedList(players)
-                            recyclerView.adapter =
-                                PlayersAdapter(grouped, teamName, teamLogo) { }
+                        if (rawList.isNotEmpty()) {
+                            val groupedItems = prepareGroupedList(rawList)
+                            recyclerView.adapter = PlayersAdapter(groupedItems, teamName, teamLogo) { player ->
+                                // Можна додати клік по гравцю
+                            }
                         } else {
-                            Log.e("API", "Players list empty")
+                            Toast.makeText(context, "Склад команди порожній", Toast.LENGTH_SHORT).show()
                         }
 
-                    } catch (e: Exception) {
-                        Log.e("JSON_ERROR", e.message ?: "Parse error")
+                    } catch (e: Exception) { 
+                        Log.e("Squad", "Помилка парсингу: ${e.message}")
+                        Toast.makeText(context, "Помилка структури даних", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -120,49 +142,30 @@ class TeamSquadFragment : Fragment() {
     }
 
     private fun prepareGroupedList(players: List<Player>): List<Any> {
-        val result = ArrayList<Any>()
-        val grouped = players.groupBy { it.position.trim().lowercase() }
+        val resultList = ArrayList<Any>()
+        val groupedMap = players.groupBy { it.position.trim().lowercase() }
+        val sortedKeys = groupedMap.keys.sortedBy { pos ->
+            when (pos) {
+                "g", "gk", "goalkeeper", "воротар" -> 1
+                "d", "def", "defender", "захисник" -> 2
+                "m", "mid", "midfielder", "півзахисник" -> 3
+                "f", "fwd", "forward", "нападник" -> 4
+                else -> 99
+            }
+        }
 
-        val order = listOf("g", "d", "m", "f")
-
-        for (key in order) {
-            val group = grouped[key] ?: continue
-
-            val title = when (key) {
-                "g" -> "ВОРОТАРІ"
-                "d" -> "ЗАХИСНИКИ"
-                "m" -> "ПІВЗАХИСНИКИ"
-                "f" -> "НАПАДНИКИ"
+        for (key in sortedKeys) {
+            val playersInGroup = groupedMap[key] ?: continue
+            val headerTitle = when (key) {
+                "g", "gk", "goalkeeper", "воротар" -> "ВОРОТАРІ"
+                "d", "def", "defender", "захисник" -> "ЗАХИСНИКИ"
+                "m", "mid", "midfielder", "півзахисник" -> "ПІВЗАХИСНИКИ"
+                "f", "fwd", "forward", "нападник" -> "НАПАДНИКИ"
                 else -> key.uppercase()
             }
-
-            result.add(title)
-            result.addAll(group)
+            resultList.add(headerTitle)
+            resultList.addAll(playersInGroup)
         }
-
-        return result
-    }
-
-    private fun parsePlayerSafe(obj: com.google.gson.JsonObject): Player {
-
-        fun getString(key: String): String {
-            if (!obj.has(key) || obj.get(key).isJsonNull) return ""
-            return obj.get(key).asString
-        }
-
-        fun getInt(key: String): Int {
-            if (!obj.has(key) || obj.get(key).isJsonNull) return 0
-            return try { obj.get(key).asInt } catch (e: Exception) { 0 }
-        }
-
-        return Player(
-            id = getString("id"),
-            name = getString("name"),
-            number = getString("number"),
-            position = getString("position"),
-            photo = getString("photo"),
-            birthDate = getString("birth_date"),
-            age = getInt("age")
-        )
+        return resultList
     }
 }
