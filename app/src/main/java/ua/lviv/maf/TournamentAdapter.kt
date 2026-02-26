@@ -98,6 +98,9 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                     
                     // --- НОВЕ: ПЕРЕДАЄМО YOUTUBE ID ---
                     putExtra("youtube_id", item.youtubeId) 
+                    // 🔥 ОСЬ ЧОГО НЕ ВИСТАЧАЛО! Передаємо ID команд для складу
+                    putExtra("home_team_id", item.home_team_id)
+                    putExtra("away_team_id", item.away_team_id)
                 }
                 context.startActivity(intent)
             }
