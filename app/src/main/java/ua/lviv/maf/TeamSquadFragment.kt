@@ -161,6 +161,3 @@ class TeamSquadFragment : Fragment() {
         )
     }
 }
-
-
-TeamSquadFragment
