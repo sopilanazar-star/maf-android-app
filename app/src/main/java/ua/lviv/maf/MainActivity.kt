@@ -160,13 +160,19 @@ class MainActivity : AppCompatActivity() {
 
         setupNavigation()
 
-        seasonSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+       seasonSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
                 if (AppConfig.selectedYear != seasons[pos]) {
                     AppConfig.selectedYear = seasons[pos]
                     loadFromApi(AppConfig.selectedYear)
                     
+                    // 1. СПОЧАТКУ програма знаходить поточний фрагмент і запам'ятовує його у змінну
                     val currentFragment = supportFragmentManager.findFragmentById(fragmentContainer.id)
+                    
+                    // 2. А ТЕПЕР ми вже можемо його перевіряти:
+                    
+                    // --- НАШ НОВИЙ МЕДІА ФРАГМЕНТ ---
+                    if (currentFragment is MediaFragment) currentFragment.refreshData()
                     
                     // Оновлення Таблиць та More
                     if (currentFragment is StandingFragment) currentFragment.refreshData()
@@ -181,6 +187,8 @@ class MainActivity : AppCompatActivity() {
                     if (currentFragment is PredictionsFragment) currentFragment.refreshData()
                 }
             }
+            override fun onNothingSelected(p: AdapterView<*>?) {}
+        }
             override fun onNothingSelected(p: AdapterView<*>?) {}
         }
 
