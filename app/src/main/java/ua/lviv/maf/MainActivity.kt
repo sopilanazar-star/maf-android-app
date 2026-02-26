@@ -160,35 +160,25 @@ class MainActivity : AppCompatActivity() {
 
         setupNavigation()
 
-       seasonSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+        seasonSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
                 if (AppConfig.selectedYear != seasons[pos]) {
                     AppConfig.selectedYear = seasons[pos]
                     loadFromApi(AppConfig.selectedYear)
                     
-                    // 1. СПОЧАТКУ програма знаходить поточний фрагмент і запам'ятовує його у змінну
                     val currentFragment = supportFragmentManager.findFragmentById(fragmentContainer.id)
                     
-                    // 2. А ТЕПЕР ми вже можемо його перевіряти:
-                    
-                    // --- НАШ НОВИЙ МЕДІА ФРАГМЕНТ ---
                     if (currentFragment is MediaFragment) currentFragment.refreshData()
-                    
-                    // Оновлення Таблиць та More
                     if (currentFragment is StandingFragment) currentFragment.refreshData()
                     if (currentFragment is MoreFragment) currentFragment.refreshData()
                     
-                    // Оновлення Арбітрів та Бомбардирів
                     if (currentFragment is RefereesFragment) currentFragment.updateYear(AppConfig.selectedYear)
                     if (currentFragment is ScorersFragment) currentFragment.updateYear(AppConfig.selectedYear)
                     
-                    // Оновлення Дискваліфікацій та Прогнозів
                     if (currentFragment is DisqualifiedFragment) currentFragment.updateYear()
                     if (currentFragment is PredictionsFragment) currentFragment.refreshData()
                 }
             }
-            override fun onNothingSelected(p: AdapterView<*>?) {}
-        }
             override fun onNothingSelected(p: AdapterView<*>?) {}
         }
 
@@ -271,12 +261,8 @@ class MainActivity : AppCompatActivity() {
                             league = m.optString("league"), 
                             stage = m.optString("stage"),
                             isHeader = false,
-                            home_team_id = m.optString("home_team_id"),
-                            away_team_id = m.optString("away_team_id"),
                             stadium = m.optString("stadium"), 
                             referee = m.optString("referee"),
-                            status = m.optString("status"),
-                            // === ДОДАНО ТІЛЬКИ ЦЕЙ РЯДОК ===
                             youtubeId = m.optString("youtube_id", "")
                         ))
                     }
@@ -287,8 +273,7 @@ class MainActivity : AppCompatActivity() {
                         dateRecyclerView.adapter = DateAdapter(dateList) { filterMatches(it) }
                         if (dateList.isNotEmpty()) {
                             val todayStr = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date())
-                            var selectedDate: DateModel? = null
-                            selectedDate = dateList.find { it.date == todayStr }
+                            var selectedDate = dateList.find { it.date == todayStr }
 
                             if (selectedDate == null) {
                                 val sdf = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
