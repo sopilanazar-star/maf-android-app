@@ -171,7 +171,48 @@
             android:gravity="center"
             android:textColor="#CCCCCC"
             android:textSize="13sp" />
-    </LinearLayout>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardMedia"
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardBackgroundColor="#000000"
+            android:visibility="gone"> 
+
+            <ImageView
+                android:id="@+id/ivVideoThumbnail"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#40000000" />
+
+            <ImageView
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/ic_media_play"
+                app:tint="#E30613" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|start"
+                android:layout_margin="8dp"
+                android:background="#B3000000"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="4dp"
+                android:text="ВІДЕООГЛЯД"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </androidx.cardview.widget.CardView>
+        </LinearLayout>
 
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/detailTabs"
