@@ -1,11 +1,21 @@
-class StandingLeftAdapter(private val items: List<StandingItem>) : 
+package ua.lviv.maf
+
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.TextView
+import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide // Або твоя бібліотека для фото
+
+class StandingLeftAdapter(private val items: List<StandingRow>) : 
     RecyclerView.Adapter<StandingLeftAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val positionMarker: View = view.findViewById(R.id.positionMarker)
         val tvPosition: TextView = view.findViewById(R.id.tvPosition)
         val ivTeamLogo: ImageView = view.findViewById(R.id.ivTeamLogo)
         val tvTeamName: TextView = view.findViewById(R.id.tvTeamName)
+        val positionMarker: View = view.findViewById(R.id.positionMarker)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -16,13 +26,15 @@ class StandingLeftAdapter(private val items: List<StandingItem>) :
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
         holder.tvPosition.text = item.position.toString()
-        holder.tvTeamName.text = item.teamName
-        
-        // Завантаження лого (використовуй свою бібліотеку, наприклад Glide або Coil)
-        // Glide.with(holder.ivTeamLogo).load(item.logoUrl).into(holder.ivTeamLogo)
-        
-        // Колір маркера позиції (якщо у тебе є логіка зон вильоту/єврокубків)
-        // holder.positionMarker.setBackgroundColor(Color.parseColor(item.zoneColor))
+        holder.tvTeamName.text = item.team_name
+
+        // Завантаження лого
+        Glide.with(holder.itemView.context)
+            .load(item.logo)
+            .placeholder(R.drawable.ic_team_placeholder)
+            .into(holder.ivTeamLogo)
+            
+        // Тут можна додати логіку кольору маркера (зелений для 1 місця тощо)
     }
 
     override fun getItemCount() = items.size
