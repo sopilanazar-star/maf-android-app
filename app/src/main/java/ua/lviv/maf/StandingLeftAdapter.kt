@@ -6,7 +6,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide // Або твоя бібліотека для фото
+import com.bumptech.glide.Glide
 
 class StandingLeftAdapter(private val items: List<StandingRow>) : 
     RecyclerView.Adapter<StandingLeftAdapter.ViewHolder>() {
@@ -28,13 +28,15 @@ class StandingLeftAdapter(private val items: List<StandingRow>) :
         holder.tvPosition.text = item.position.toString()
         holder.tvTeamName.text = item.team_name
 
-        // Завантаження лого
+        // Використовуємо стандартну іконку Android як заглушку, щоб не було помилки ic_team_placeholder
         Glide.with(holder.itemView.context)
             .load(item.logo)
-            .placeholder(R.drawable.ic_team_placeholder)
+            .placeholder(android.R.drawable.ic_menu_gallery)
+            .error(android.R.drawable.ic_menu_report_image)
             .into(holder.ivTeamLogo)
             
-        // Тут можна додати логіку кольору маркера (зелений для 1 місця тощо)
+        // За замовчуванням маркер прозорий
+        holder.positionMarker.setBackgroundColor(android.graphics.Color.TRANSPARENT)
     }
 
     override fun getItemCount() = items.size
