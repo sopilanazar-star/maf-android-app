@@ -2,7 +2,6 @@ package ua.lviv.maf
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,6 +17,7 @@ import okhttp3.*
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
+import java.util.Calendar
 
 class RefereesFragment : Fragment() {
 
@@ -27,13 +27,12 @@ class RefereesFragment : Fragment() {
     private lateinit var tvHeaderTitle: TextView
     private val client = OkHttpClient()
 
-    private var selectedYear: String = "2025"
+    private var selectedYear: String = Calendar.getInstance().get(Calendar.YEAR).toString()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val view = inflater.inflate(R.layout.fragment_referees, container, false) 
 
-        // Отримуємо рік
-        selectedYear = arguments?.getString("SELECTED_YEAR") ?: "2025"
+        selectedYear = arguments?.getString("SELECTED_YEAR") ?: Calendar.getInstance().get(Calendar.YEAR).toString()
 
         recyclerView = view.findViewById(R.id.rvReferees)
         progressBar = view.findViewById(R.id.progressBar)
@@ -50,7 +49,6 @@ class RefereesFragment : Fragment() {
         return view
     }
 
-    // 🔥 Функція для оновлення року з глобального спінера
     fun updateYear(year: String) {
         if (selectedYear != year) {
             selectedYear = year
@@ -60,11 +58,11 @@ class RefereesFragment : Fragment() {
     }
 
     private fun fetchReferees() {
+        if (!isAdded) return
         progressBar.visibility = View.VISIBLE
         tvEmptyState.visibility = View.GONE
         recyclerView.visibility = View.GONE
 
-        // Запит іде напряму з year
         val url = "https://maf.lviv.ua/wp-json/maf/v2/referees/full?year=$selectedYear"
 
         client.newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
@@ -85,7 +83,6 @@ class RefereesFragment : Fragment() {
                         
                         if (list.isEmpty()) showEmptyState() else setupList(list)
                     } catch (e: Exception) {
-                        e.printStackTrace()
                         showEmptyState()
                     }
                 }
@@ -97,13 +94,14 @@ class RefereesFragment : Fragment() {
         recyclerView.visibility = View.VISIBLE
         recyclerView.layoutManager = LinearLayoutManager(context)
         
-        recyclerView.adapter = RefereesAdapter(data) { refereeId, name, photo, city, matches, yellow, red ->
+        recyclerView.adapter = RefereesAdapter(data) { refereeId, name, photo, city, main, assistant, yellow, red ->
             val intent = Intent(requireContext(), RefereeProfileActivity::class.java).apply {
                 putExtra("REF_ID", refereeId)
                 putExtra("REF_NAME", name)
                 putExtra("REF_PHOTO", photo)
                 putExtra("REF_CITY", city)
-                putExtra("REF_MATCHES", matches)
+                putExtra("REF_MATCHES", main)       // Головний
+                putExtra("REF_ASSISTANT", assistant) // Асистент
                 putExtra("REF_YELLOW", yellow)
                 putExtra("REF_RED", red)
                 putExtra("YEAR", selectedYear)
@@ -120,10 +118,9 @@ class RefereesFragment : Fragment() {
     }
 }
 
-// 🔥 Оновлений клас Адаптера 🔥
 class RefereesAdapter(
     private val items: List<JSONObject>,
-    private val onRefereeClick: (String, String, String, String, Int, Int, Int) -> Unit
+    private val onRefereeClick: (String, String, String, String, Int, Int, Int, Int) -> Unit
 ) : RecyclerView.Adapter<RefereesAdapter.ViewHolder>() {
 
     class ViewHolder(v: View) : RecyclerView.ViewHolder(v) {
@@ -151,11 +148,10 @@ class RefereesAdapter(
         holder.tvYellowCards.text = stats?.optInt("yellow", 0).toString()
         holder.tvRedCards.text = stats?.optInt("red", 0).toString()
 
-        // 🔥 МАГІЯ ТУТ: Замінено .centerCrop() на .transform(PlayerTopCropTransformation(), CircleCrop())
         val photoUrl = item.optString("photo", "")
         Glide.with(holder.itemView.context)
             .load(photoUrl.replace("http://", "https://"))
-            .transform(PlayerTopCropTransformation(), CircleCrop()) // Фокус на голові + кругла форма
+            .transform(PlayerTopCropTransformation(), CircleCrop())
             .placeholder(R.drawable.ic_player_placeholder)
             .into(holder.ivPhoto)
 
@@ -165,7 +161,8 @@ class RefereesAdapter(
                 item.optString("name", "Арбітр"),
                 photoUrl,
                 item.optString("city", ""),
-                stats?.optInt("total", 0) ?: 0,
+                stats?.optInt("main", 0) ?: 0,
+                stats?.optInt("assistant", 0) ?: 0,
                 stats?.optInt("yellow", 0) ?: 0,
                 stats?.optInt("red", 0) ?: 0
             )
