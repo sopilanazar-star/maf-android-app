@@ -10,19 +10,32 @@ import androidx.recyclerview.widget.RecyclerView
 class GroupAdapter(private var groups: List<GroupTable>) :
     RecyclerView.Adapter<GroupAdapter.GroupViewHolder>() {
 
-    private val viewPool = RecyclerView.RecycledViewPool()
+    // Створюємо два пули для перевикористання в'юшок (для лівої та правої частини)
+    private val leftPool = RecyclerView.RecycledViewPool()
+    private val rightPool = RecyclerView.RecycledViewPool()
 
     inner class GroupViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvGroupTitle: TextView = view.findViewById(R.id.tvGroupTitle)
-        val rvInnerTeams: RecyclerView = view.findViewById(R.id.rvInnerTeams)
+        
+        // Два RecyclerView для фіксованої та скролимої частин
+        val rvStandingLeft: RecyclerView = view.findViewById(R.id.rvStandingLeft)
+        val rvStandingRight: RecyclerView = view.findViewById(R.id.rvStandingRight)
 
         init {
-            rvInnerTeams.layoutManager = LinearLayoutManager(view.context)
-            rvInnerTeams.setRecycledViewPool(viewPool)
+            // Налаштування лівого списку (назви команд)
+            rvStandingLeft.layoutManager = LinearLayoutManager(view.context)
+            rvStandingLeft.setRecycledViewPool(leftPool)
+            rvStandingLeft.isNestedScrollingEnabled = false // Важливо для NestedScrollView
+
+            // Налаштування правого списку (статистика: І, В, Н, П...)
+            rvStandingRight.layoutManager = LinearLayoutManager(view.context)
+            rvStandingRight.setRecycledViewPool(rightPool)
+            rvStandingRight.isNestedScrollingEnabled = false
         }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): GroupViewHolder {
+        // Використовуємо твій файл розмітки картки групи
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_group_card, parent, false)
         return GroupViewHolder(view)
@@ -32,9 +45,15 @@ class GroupAdapter(private var groups: List<GroupTable>) :
         val group = groups[position]
         holder.tvGroupTitle.text = group.groupName
         
-        // Внутрішній адаптер
-        val teamAdapter = TeamAdapter(group.teams)
-        holder.rvInnerTeams.adapter = teamAdapter
+        // 1. Встановлюємо адаптер для лівої (фіксованої) частини
+        // Передаємо список команд поточної групи
+        val leftAdapter = StandingLeftAdapter(group.teams)
+        holder.rvStandingLeft.adapter = leftAdapter
+
+        // 2. Встановлюємо адаптер для правої (скролимої) частини
+        // Саме тут будуть колонки І, В, Н, П, +/-, Оч, Форма
+        val rightAdapter = StandingRightAdapter(group.teams)
+        holder.rvStandingRight.adapter = rightAdapter
     }
 
     override fun getItemCount() = groups.size
