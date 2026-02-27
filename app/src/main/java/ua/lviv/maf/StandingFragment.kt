@@ -28,17 +28,20 @@ class StandingFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        // Використовуємо твій оновлений XML з NestedScrollView
         val view = inflater.inflate(R.layout.fragment_standing, container, false)
 
         tabLayout = view.findViewById(R.id.tabLayoutCompetitions)
         recyclerView = view.findViewById(R.id.rvStanding)
 
         recyclerView.layoutManager = LinearLayoutManager(context)
-        groupAdapter = GroupAdapter(emptyList())
+        
+        // ВАЖЛИВО: Передаємо подію кліку в адаптер
+        groupAdapter = GroupAdapter(emptyList()) { team ->
+            // ЗАМІНИ НА СВІЙ ПЕРЕХІД ДО КОМАНДИ
+            Toast.makeText(context, "Відкриваємо: ${team.team_name}", Toast.LENGTH_SHORT).show()
+        }
         recyclerView.adapter = groupAdapter
         
-        // Твої відступи між блоками груп залишаються
         recyclerView.addItemDecoration(SpacesItemDecoration(dpToPx(16)))
 
         loadCompetitions()
