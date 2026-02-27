@@ -94,14 +94,14 @@ class RefereesFragment : Fragment() {
         recyclerView.visibility = View.VISIBLE
         recyclerView.layoutManager = LinearLayoutManager(context)
         
-        recyclerView.adapter = RefereesAdapter(data) { refereeId, name, photo, city, main, assistant, yellow, red ->
+        recyclerView.adapter = RefereesAdapter(data) { refId, name, photo, city, main, assistant, yellow, red ->
             val intent = Intent(requireContext(), RefereeProfileActivity::class.java).apply {
-                putExtra("REF_ID", refereeId)
+                putExtra("REF_ID", refId)
                 putExtra("REF_NAME", name)
                 putExtra("REF_PHOTO", photo)
                 putExtra("REF_CITY", city)
-                putExtra("REF_MATCHES", main)       // Головний
-                putExtra("REF_ASSISTANT", assistant) // Асистент
+                putExtra("REF_MAIN", main)           // Окремо головні
+                putExtra("REF_ASSISTANT", assistant) // Окремо асистент
                 putExtra("REF_YELLOW", yellow)
                 putExtra("REF_RED", red)
                 putExtra("YEAR", selectedYear)
