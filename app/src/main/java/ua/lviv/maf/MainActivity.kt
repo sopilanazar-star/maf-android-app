@@ -251,21 +251,26 @@ class MainActivity : AppCompatActivity() {
                     for (i in 0 until array.length()) {
                         val m = array.getJSONObject(i)
                         temp.add(TournamentRow(
-                            id = m.optString("id"), 
-                            team1 = m.optString("team1"), 
-                            logo1 = m.optString("logo1"),
-                            team2 = m.optString("team2"), 
-                            logo2 = m.optString("logo2"), 
-                            score = m.optString("score"), 
-                            date = m.optString("date"),   
-                            league = m.optString("league"), 
-                            stage = m.optString("stage"),
-                            isHeader = false,
-                            stadium = m.optString("stadium"), 
-                            referee = m.optString("referee"),
-                            youtubeId = m.optString("youtube_id", "")
-                        ))
-                    }
+            id = m.optString("id"), 
+            
+            // 🔥 ОСЬ ЦЬОГО НЕ ВИСТАЧАЛО:
+            home_team_id = m.optString("home_team_id", "0"),
+            away_team_id = m.optString("away_team_id", "0"),
+            
+            team1 = m.optString("team1"), 
+            logo1 = m.optString("logo1"),
+            team2 = m.optString("team2"), 
+            logo2 = m.optString("logo2"), 
+            score = m.optString("score"), 
+            date = m.optString("date"),   
+            league = m.optString("league"), 
+            stage = m.optString("stage"),
+            isHeader = false,
+            stadium = m.optString("stadium"), 
+            referee = m.optString("referee"),
+            youtubeId = m.optString("youtube_id", "")
+        ))
+    }
                     allMatches = temp
                     runOnUiThread {
                         if (!::dateRecyclerView.isInitialized) return@runOnUiThread
