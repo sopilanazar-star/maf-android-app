@@ -12,9 +12,6 @@ class GroupAdapter(
     private val onTeamClick: (StandingRow) -> Unit
 ) : RecyclerView.Adapter<GroupAdapter.GroupViewHolder>() {
 
-    private val leftPool = RecyclerView.RecycledViewPool()
-    private val rightPool = RecyclerView.RecycledViewPool()
-
     inner class GroupViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvGroupTitle: TextView = view.findViewById(R.id.tvGroupTitle)
         val rvStandingLeft: RecyclerView = view.findViewById(R.id.rvStandingLeft)
@@ -22,12 +19,7 @@ class GroupAdapter(
 
         init {
             rvStandingLeft.layoutManager = LinearLayoutManager(view.context)
-            rvStandingLeft.setRecycledViewPool(leftPool)
-            rvStandingLeft.isNestedScrollingEnabled = false
-
             rvStandingRight.layoutManager = LinearLayoutManager(view.context)
-            rvStandingRight.setRecycledViewPool(rightPool)
-            rvStandingRight.isNestedScrollingEnabled = false
         }
     }
 
@@ -41,7 +33,7 @@ class GroupAdapter(
         holder.tvGroupTitle.text = group.groupName
         
         holder.rvStandingLeft.adapter = StandingLeftAdapter(group.teams, onTeamClick)
-        holder.rvStandingRight.adapter = StandingRightAdapter(group.teams, onTeamClick)
+        holder.rvStandingRight.adapter = StandingRightAdapter(group.teams) // Без кліку
     }
 
     override fun getItemCount() = groups.size
