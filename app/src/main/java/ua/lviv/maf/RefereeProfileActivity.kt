@@ -119,9 +119,9 @@ class RefereeProfileActivity : AppCompatActivity() {
 
     private fun fetchRefereeIdsAndFilter(refId: String, allGlobalMatches: List<TournamentRow>) {
         val seasonId = when(selectedYear) {
-            "2026" -> "23"
+            "2026" -> "29"
             "2025" -> "22"
-            "2024" -> "21"
+            "2024" -> "3"
             else -> "22"
         }
         
