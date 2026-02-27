@@ -1,6 +1,8 @@
 package ua.lviv.maf
 
+import android.content.Context
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -30,20 +32,16 @@ class StandingRightAdapter(private val items: List<StandingRow>) :
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
 
-        // Заповнюємо цифри з твого StandingRow
         holder.tvGames.text = item.games.toString()
         holder.tvWins.text = item.win.toString()
         holder.tvDraws.text = item.draw.toString()
         holder.tvLosses.text = item.loss.toString()
-        
-        // Різниця м'ячів (Забиті - Пропущені)
         holder.tvGoalsDiff.text = "${item.goals_for}-${item.goals_against}"
-        
         holder.tvPoints.text = item.points.toString()
 
-        // Очищуємо і малюємо форму (кружечки)
+        // Виправлено: безпечний виклик ?. для списку форми
         holder.layoutForm.removeAllViews()
-        item.form.forEach { result ->
+        item.form?.forEach { result ->
             val circle = createFormView(holder.itemView.context, result)
             holder.layoutForm.addView(circle)
         }
@@ -51,33 +49,50 @@ class StandingRightAdapter(private val items: List<StandingRow>) :
 
     override fun getItemCount() = items.size
 
-    // Допоміжна функція для створення кружечків форми (W, D, L)
-    private fun createFormView(context: android.content.Context, result: String): View {
+    private fun createFormView(context: Context, result: String): View {
         val tv = TextView(context)
-        val params = LinearLayout.LayoutParams(
-            (20 * context.resources.displayMetrics.density).toInt(),
-            (20 * context.resources.displayMetrics.density).toInt()
-        )
-        params.setMargins(2, 0, 2, 0)
+        val density = context.resources.displayMetrics.density
+        
+        // Розмір кружечка 20dp
+        val size = (20 * density).toInt()
+        val params = LinearLayout.LayoutParams(size, size)
+        params.setMargins((2 * density).toInt(), 0, (2 * density).toInt(), 0)
+        
         tv.layoutParams = params
         tv.gravity = Gravity.CENTER
-        tv.textSize = 10sp
+        tv.textSize = 10f // Виправлено: sp замінено на float
         tv.setTextColor(Color.WHITE)
-        
+        tv.textStyleBold() // Допоміжне розширення нижче
+
+        // Створюємо фон-кружечок програмно, щоб не залежати від xml-файлів
+        val shape = GradientDrawable()
+        shape.shape = GradientDrawable.OVAL
+
         when (result.uppercase()) {
             "W", "В" -> {
                 tv.text = "В"
-                tv.setBackgroundResource(R.drawable.bg_form_win) // Створи такий drawable (зелений)
+                shape.setColor(Color.parseColor("#4CAF50")) // Зелений
             }
             "D", "Н" -> {
                 tv.text = "Н"
-                tv.setBackgroundResource(R.drawable.bg_form_draw) // (сірий)
+                shape.setColor(Color.parseColor("#757575")) // Сірий
             }
             "L", "П" -> {
                 tv.text = "П"
-                tv.setBackgroundResource(R.drawable.bg_form_loss) // (червоний)
+                shape.setColor(Color.parseColor("#F44336")) // Червоний
+            }
+            else -> {
+                tv.text = result
+                shape.setColor(Color.LTGRAY)
             }
         }
+        
+        tv.background = shape
         return tv
+    }
+
+    // Допоміжна функція для жирного тексту
+    private fun TextView.textStyleBold() {
+        this.typeface = android.graphics.Typeface.DEFAULT_BOLD
     }
 }
