@@ -21,6 +21,7 @@ import okhttp3.*
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
+import java.util.Calendar
 
 class RefereeProfileActivity : AppCompatActivity() {
 
@@ -31,7 +32,7 @@ class RefereeProfileActivity : AppCompatActivity() {
     private val client = OkHttpClient()
 
     private var refereeName: String = ""
-    private var selectedYear: String = "2025"
+    private var selectedYear: String = Calendar.getInstance().get(Calendar.YEAR).toString()
     
     // Списки для фрагментів
     var mainMatchesList = ArrayList<TournamentRow>()
@@ -43,7 +44,7 @@ class RefereeProfileActivity : AppCompatActivity() {
 
         val refId = intent.getStringExtra("REF_ID") ?: ""
         refereeName = intent.getStringExtra("REF_NAME") ?: ""
-        selectedYear = intent.getStringExtra("YEAR") ?: "2025"
+        selectedYear = intent.getStringExtra("YEAR") ?: Calendar.getInstance().get(Calendar.YEAR).toString()
         
         progressBar = findViewById(R.id.progressBar)
         viewPager = findViewById(R.id.viewPagerReferee)
@@ -51,7 +52,9 @@ class RefereeProfileActivity : AppCompatActivity() {
         tvEmptyState = findViewById(R.id.tvEmptyState)
 
         setupHeader()
-        loadData(refId)
+        
+        // 🔥 АВТОМАТИЗАЦІЯ: Спочатку шукаємо сезон, потім вантажимо дані
+        findSeasonIdAndLoadData(refId)
     }
 
     private fun setupHeader() {
@@ -62,21 +65,49 @@ class RefereeProfileActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.tvProfileYellow).text = intent.getIntExtra("REF_YELLOW", 0).toString()
         findViewById<TextView>(R.id.tvProfileRed).text = intent.getIntExtra("REF_RED", 0).toString()
 
-        // 🔥 МАГІЯ ТУТ: Замінено .circleCrop() на PlayerTopCropTransformation()
         val photoUrl = intent.getStringExtra("REF_PHOTO") ?: ""
         Glide.with(this)
             .load(photoUrl.replace("http://", "https://"))
-            .transform(PlayerTopCropTransformation()) // Фокус на голові
+            .transform(PlayerTopCropTransformation())
             .placeholder(R.drawable.ic_player_placeholder)
             .into(findViewById<ImageView>(R.id.ivProfilePhoto))
 
         findViewById<View>(R.id.btnBack).setOnClickListener { finish() }
     }
 
-    private fun loadData(refId: String) {
+    // 🚀 КРОК 1: Сам дізнається ID сезону для вибраного року
+    private fun findSeasonIdAndLoadData(refId: String) {
         progressBar.visibility = View.VISIBLE
         tvEmptyState.visibility = View.GONE
-        
+
+        val compsUrl = "https://maf.lviv.ua/wp-json/maf/v2/competitions?year=$selectedYear"
+
+        client.newCall(Request.Builder().url(compsUrl).build()).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                runOnUiThread { finishLoadingWithError() }
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val body = response.body?.string() ?: ""
+                try {
+                    val compsArray = JSONArray(body)
+                    if (compsArray.length() > 0) {
+                        // Беремо ID першого турніру (головний сезон року)
+                        val dynamicSeasonId = compsArray.getJSONObject(0).optString("id")
+                        // Передаємо його в наступний крок
+                        loadGlobalMatches(refId, dynamicSeasonId)
+                    } else {
+                        runOnUiThread { finishLoadingWithError() }
+                    }
+                } catch (e: Exception) {
+                    runOnUiThread { finishLoadingWithError() }
+                }
+            }
+        })
+    }
+
+    // 🚀 КРОК 2: Вантажить глобальні матчі (Твій робочий код)
+    private fun loadGlobalMatches(refId: String, seasonId: String) {
         val globalUrl = "https://maf.lviv.ua/wp-json/maf/v2/matches?year=$selectedYear"
 
         client.newCall(Request.Builder().url(globalUrl).build()).enqueue(object : Callback {
@@ -107,7 +138,8 @@ class RefereeProfileActivity : AppCompatActivity() {
                         ))
                     }
 
-                    fetchRefereeIdsAndFilter(refId, allGlobalMatches)
+                    // Передаємо знайдений seasonId у фінальний метод фільтрації
+                    fetchRefereeIdsAndFilter(refId, seasonId, allGlobalMatches)
 
                 } catch (e: Exception) {
                     Log.e("RefereeProfile", "Global JSON Error: ${e.message}")
@@ -117,14 +149,9 @@ class RefereeProfileActivity : AppCompatActivity() {
         })
     }
 
-    private fun fetchRefereeIdsAndFilter(refId: String, allGlobalMatches: List<TournamentRow>) {
-        val seasonId = when(selectedYear) {
-            "2026" -> "29"
-            "2025" -> "22"
-            "2024" -> "3"
-            else -> "22"
-        }
-        
+    // 🚀 КРОК 3: Фільтрує матчі арбітра за знайденим seasonId (Твій робочий код)
+    private fun fetchRefereeIdsAndFilter(refId: String, seasonId: String, allGlobalMatches: List<TournamentRow>) {
+        // Тепер season_id підставляється автоматично!
         val url = "https://maf.lviv.ua/wp-json/maf/v2/referee/$refId/matches?year=$selectedYear&season_id=$seasonId"
 
         client.newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
