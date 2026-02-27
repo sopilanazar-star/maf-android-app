@@ -7,9 +7,9 @@ import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
+// 1. ПРИБРАЛИ onTeamClick З КОНСТРУКТОРА
 class GroupAdapter(
-    private var groups: List<GroupTable>,
-    private val onTeamClick: (StandingRow) -> Unit
+    private var groups: List<GroupTable>
 ) : RecyclerView.Adapter<GroupAdapter.GroupViewHolder>() {
 
     inner class GroupViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -32,8 +32,9 @@ class GroupAdapter(
         val group = groups[position]
         holder.tvGroupTitle.text = group.groupName
         
-        holder.rvStandingLeft.adapter = StandingLeftAdapter(group.teams, onTeamClick)
-        holder.rvStandingRight.adapter = StandingRightAdapter(group.teams) // Без кліку
+        // 2. ПРОСТО ПЕРЕДАЄМО ДАНІ, БЕЗ ЛЯМБД ТА КЛІКІВ
+        holder.rvStandingLeft.adapter = StandingLeftAdapter(group.teams)
+        holder.rvStandingRight.adapter = StandingRightAdapter(group.teams) 
     }
 
     override fun getItemCount() = groups.size
