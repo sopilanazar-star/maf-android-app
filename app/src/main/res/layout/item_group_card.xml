@@ -19,7 +19,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="16dp"
-            android:text="Назва групи"
             android:textColor="#FFFFFF"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -30,7 +29,7 @@
             android:orientation="horizontal">
 
             <LinearLayout
-                android:layout_width="200dp"
+                android:layout_width="160dp"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
@@ -51,8 +50,7 @@
                     android:id="@+id/rvStandingLeft"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:nestedScrollingEnabled="false"
-                    android:overScrollMode="never" />
+                    android:nestedScrollingEnabled="false" />
             </LinearLayout>
 
             <HorizontalScrollView
@@ -70,7 +68,6 @@
                         android:layout_height="40dp"
                         android:orientation="horizontal"
                         android:gravity="center_vertical">
-
                         <TextView android:layout_width="35dp" android:layout_height="wrap_content" android:gravity="center" android:text="І" android:textColor="#9E9E9E" android:textSize="12sp" />
                         <TextView android:layout_width="35dp" android:layout_height="wrap_content" android:gravity="center" android:text="В" android:textColor="#9E9E9E" android:textSize="12sp" />
                         <TextView android:layout_width="35dp" android:layout_height="wrap_content" android:gravity="center" android:text="Н" android:textColor="#9E9E9E" android:textSize="12sp" />
@@ -84,8 +81,7 @@
                         android:id="@+id/rvStandingRight"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:nestedScrollingEnabled="false"
-                        android:overScrollMode="never" />
+                        android:nestedScrollingEnabled="false" />
                 </LinearLayout>
             </HorizontalScrollView>
         </LinearLayout>
