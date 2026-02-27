@@ -1,5 +1,6 @@
 package ua.lviv.maf
 
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,8 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 
 class StandingLeftAdapter(
-    private val items: List<StandingRow>,
-    private val onItemClick: (StandingRow) -> Unit
+    private val items: List<StandingRow>
 ) : RecyclerView.Adapter<StandingLeftAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -35,9 +35,15 @@ class StandingLeftAdapter(
             .placeholder(android.R.drawable.ic_menu_gallery)
             .into(holder.ivTeamLogo)
 
-        // ВІДНОВЛЮЄМО КЛІК
+        // ТВІЙ ОРИГІНАЛЬНИЙ РОБОЧИЙ ПЕРЕХІД
         holder.itemView.setOnClickListener {
-            onItemClick(item)
+            if (item.team_id.isNotEmpty() && item.team_id != "0") {
+                val intent = Intent(it.context, TeamPlayersActivity::class.java)
+                intent.putExtra("team_id", item.team_id)
+                intent.putExtra("team_name", item.team_name)
+                intent.putExtra("team_logo", item.logo)
+                it.context.startActivity(intent)
+            }
         }
     }
 
