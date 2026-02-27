@@ -35,11 +35,9 @@ class StandingFragment : Fragment() {
 
         recyclerView.layoutManager = LinearLayoutManager(context)
         
-        // ВАЖЛИВО: Передаємо подію кліку в адаптер
-        groupAdapter = GroupAdapter(emptyList()) { team ->
-            // ЗАМІНИ НА СВІЙ ПЕРЕХІД ДО КОМАНДИ
-            Toast.makeText(context, "Відкриваємо: ${team.team_name}", Toast.LENGTH_SHORT).show()
-        }
+        // ВАЖЛИВО: Створюємо адаптер без фігурних дужок і лямбд.
+        // Клік тепер працює напряму з лівого блоку (StandingLeftAdapter).
+        groupAdapter = GroupAdapter(emptyList()) 
         recyclerView.adapter = groupAdapter
         
         recyclerView.addItemDecoration(SpacesItemDecoration(dpToPx(16)))
