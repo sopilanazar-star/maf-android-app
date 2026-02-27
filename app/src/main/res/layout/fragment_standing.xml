@@ -11,15 +11,20 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:tabMode="scrollable"
+        app:tabGravity="fill"
         app:tabTextColor="#BCBCBC"
         app:tabSelectedTextColor="#E30613"
         app:tabIndicatorColor="#E30613"
+        app:tabRippleColor="@android:color/transparent"
         android:background="#1A1D23" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvStanding"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:paddingLeft="4dp"
+        android:paddingRight="4dp"
+        android:paddingTop="4dp"
         android:paddingBottom="88dp"
         android:clipToPadding="false" />
 
