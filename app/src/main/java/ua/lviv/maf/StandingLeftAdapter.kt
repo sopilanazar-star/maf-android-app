@@ -8,8 +8,10 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 
-class StandingLeftAdapter(private val items: List<StandingRow>) : 
-    RecyclerView.Adapter<StandingLeftAdapter.ViewHolder>() {
+class StandingLeftAdapter(
+    private val items: List<StandingRow>,
+    private val onItemClick: (StandingRow) -> Unit
+) : RecyclerView.Adapter<StandingLeftAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvPosition: TextView = view.findViewById(R.id.tvPosition)
@@ -28,15 +30,16 @@ class StandingLeftAdapter(private val items: List<StandingRow>) :
         holder.tvPosition.text = item.position.toString()
         holder.tvTeamName.text = item.team_name
 
-        // Використовуємо стандартну іконку Android як заглушку, щоб не було помилки ic_team_placeholder
         Glide.with(holder.itemView.context)
             .load(item.logo)
             .placeholder(android.R.drawable.ic_menu_gallery)
             .error(android.R.drawable.ic_menu_report_image)
             .into(holder.ivTeamLogo)
-            
-        // За замовчуванням маркер прозорий
+
         holder.positionMarker.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+        
+        // Обробка кліку
+        holder.itemView.setOnClickListener { onItemClick(item) }
     }
 
     override fun getItemCount() = items.size
