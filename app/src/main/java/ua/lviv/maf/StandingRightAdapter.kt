@@ -11,8 +11,10 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-class StandingRightAdapter(private val items: List<StandingRow>) : 
-    RecyclerView.Adapter<StandingRightAdapter.ViewHolder>() {
+class StandingRightAdapter(
+    private val items: List<StandingRow>,
+    private val onItemClick: (StandingRow) -> Unit
+) : RecyclerView.Adapter<StandingRightAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvGames: TextView = view.findViewById(R.id.tvGames)
@@ -39,12 +41,14 @@ class StandingRightAdapter(private val items: List<StandingRow>) :
         holder.tvGoalsDiff.text = "${item.goals_for}-${item.goals_against}"
         holder.tvPoints.text = item.points.toString()
 
-        // Виправлено: безпечний виклик ?. для списку форми
         holder.layoutForm.removeAllViews()
         item.form?.forEach { result ->
             val circle = createFormView(holder.itemView.context, result)
             holder.layoutForm.addView(circle)
         }
+
+        // Обробка кліку
+        holder.itemView.setOnClickListener { onItemClick(item) }
     }
 
     override fun getItemCount() = items.size
@@ -52,34 +56,31 @@ class StandingRightAdapter(private val items: List<StandingRow>) :
     private fun createFormView(context: Context, result: String): View {
         val tv = TextView(context)
         val density = context.resources.displayMetrics.density
-        
-        // Розмір кружечка 20dp
         val size = (20 * density).toInt()
         val params = LinearLayout.LayoutParams(size, size)
         params.setMargins((2 * density).toInt(), 0, (2 * density).toInt(), 0)
         
         tv.layoutParams = params
         tv.gravity = Gravity.CENTER
-        tv.textSize = 10f // Виправлено: sp замінено на float
+        tv.textSize = 10f
         tv.setTextColor(Color.WHITE)
-        tv.textStyleBold() // Допоміжне розширення нижче
+        tv.typeface = android.graphics.Typeface.DEFAULT_BOLD
 
-        // Створюємо фон-кружечок програмно, щоб не залежати від xml-файлів
         val shape = GradientDrawable()
         shape.shape = GradientDrawable.OVAL
 
         when (result.uppercase()) {
             "W", "В" -> {
                 tv.text = "В"
-                shape.setColor(Color.parseColor("#4CAF50")) // Зелений
+                shape.setColor(Color.parseColor("#4CAF50"))
             }
             "D", "Н" -> {
                 tv.text = "Н"
-                shape.setColor(Color.parseColor("#757575")) // Сірий
+                shape.setColor(Color.parseColor("#757575"))
             }
             "L", "П" -> {
                 tv.text = "П"
-                shape.setColor(Color.parseColor("#F44336")) // Червоний
+                shape.setColor(Color.parseColor("#F44336"))
             }
             else -> {
                 tv.text = result
@@ -89,10 +90,5 @@ class StandingRightAdapter(private val items: List<StandingRow>) :
         
         tv.background = shape
         return tv
-    }
-
-    // Допоміжна функція для жирного тексту
-    private fun TextView.textStyleBold() {
-        this.typeface = android.graphics.Typeface.DEFAULT_BOLD
     }
 }
