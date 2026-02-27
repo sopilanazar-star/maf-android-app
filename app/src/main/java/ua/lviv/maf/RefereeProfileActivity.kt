@@ -21,6 +21,7 @@ import okhttp3.*
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
+import java.util.Calendar
 
 class RefereeProfileActivity : AppCompatActivity() {
 
@@ -31,9 +32,9 @@ class RefereeProfileActivity : AppCompatActivity() {
     private val client = OkHttpClient()
 
     private var refereeName: String = ""
-    private var selectedYear: String = "2025"
+    // Беремо поточний рік як базу, якщо раптом нічого не прийде
+    private var selectedYear: String = Calendar.getInstance().get(Calendar.YEAR).toString()
     
-    // Списки для фрагментів
     var mainMatchesList = ArrayList<TournamentRow>()
     var assistantMatchesList = ArrayList<TournamentRow>()
 
@@ -41,9 +42,10 @@ class RefereeProfileActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_referee_profile)
 
+        // Отримуємо дані з Intent (як ти і робив у фрагменті з arguments)
         val refId = intent.getStringExtra("REF_ID") ?: ""
         refereeName = intent.getStringExtra("REF_NAME") ?: ""
-        selectedYear = intent.getStringExtra("YEAR") ?: "2025"
+        selectedYear = intent.getStringExtra("YEAR") ?: Calendar.getInstance().get(Calendar.YEAR).toString()
         
         progressBar = findViewById(R.id.progressBar)
         viewPager = findViewById(R.id.viewPagerReferee)
@@ -51,7 +53,8 @@ class RefereeProfileActivity : AppCompatActivity() {
         tvEmptyState = findViewById(R.id.tvEmptyState)
 
         setupHeader()
-        loadData(refId)
+        // Автоматично шукаємо сезон і вантажимо матчі
+        fetchAutoSeasonAndLoad(refId)
     }
 
     private fun setupHeader() {
@@ -62,24 +65,24 @@ class RefereeProfileActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.tvProfileYellow).text = intent.getIntExtra("REF_YELLOW", 0).toString()
         findViewById<TextView>(R.id.tvProfileRed).text = intent.getIntExtra("REF_RED", 0).toString()
 
-        // 🔥 МАГІЯ ТУТ: Замінено .circleCrop() на PlayerTopCropTransformation()
         val photoUrl = intent.getStringExtra("REF_PHOTO") ?: ""
         Glide.with(this)
             .load(photoUrl.replace("http://", "https://"))
-            .transform(PlayerTopCropTransformation()) // Фокус на голові
+            .transform(PlayerTopCropTransformation())
             .placeholder(R.drawable.ic_player_placeholder)
-            .into(findViewById<ImageView>(R.id.ivProfilePhoto))
+            .into(findViewById(R.id.ivProfilePhoto))
 
         findViewById<View>(R.id.btnBack).setOnClickListener { finish() }
     }
 
-    private fun loadData(refId: String) {
+    // Робимо як у фрагменті: тягнемо дані динамічно за вибраним роком
+    private fun fetchAutoSeasonAndLoad(refId: String) {
         progressBar.visibility = View.VISIBLE
-        tvEmptyState.visibility = View.GONE
         
-        val globalUrl = "https://maf.lviv.ua/wp-json/maf/v2/matches?year=$selectedYear"
+        // Крок 1: Отримуємо список турнірів для цього року, щоб витягнути ID сезону
+        val urlComps = "https://maf.lviv.ua/wp-json/maf/v2/competitions?year=$selectedYear"
 
-        client.newCall(Request.Builder().url(globalUrl).build()).enqueue(object : Callback {
+        client.newCall(Request.Builder().url(urlComps).build()).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 runOnUiThread { finishLoadingWithError() }
             }
@@ -87,12 +90,38 @@ class RefereeProfileActivity : AppCompatActivity() {
             override fun onResponse(call: Call, response: Response) {
                 val body = response.body?.string() ?: ""
                 try {
-                    val globalArray = JSONArray(body)
-                    val allGlobalMatches = mutableListOf<TournamentRow>()
+                    val comps = JSONArray(body)
+                    if (comps.length() > 0) {
+                        // Автоматично беремо ID першого турніру сезону
+                        val seasonId = comps.getJSONObject(0).optString("id")
+                        loadMatchesData(refId, seasonId)
+                    } else {
+                        runOnUiThread { finishLoadingWithError() }
+                    }
+                } catch (e: Exception) {
+                    runOnUiThread { finishLoadingWithError() }
+                }
+            }
+        })
+    }
 
-                    for (i in 0 until globalArray.length()) {
-                        val m = globalArray.getJSONObject(i)
-                        allGlobalMatches.add(TournamentRow(
+    private fun loadMatchesData(refId: String, seasonId: String) {
+        // Крок 2: Вантажимо всі матчі року для фільтрації
+        val urlAllMatches = "https://maf.lviv.ua/wp-json/maf/v2/matches?year=$selectedYear"
+
+        client.newCall(Request.Builder().url(urlAllMatches).build()).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                runOnUiThread { finishLoadingWithError() }
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val body = response.body?.string() ?: ""
+                try {
+                    val array = JSONArray(body)
+                    val allMatches = mutableListOf<TournamentRow>()
+                    for (i in 0 until array.length()) {
+                        val m = array.getJSONObject(i)
+                        allMatches.add(TournamentRow(
                             id = m.optString("id"),
                             team1 = m.optString("team1"),
                             logo1 = m.optString("logo1"),
@@ -106,25 +135,16 @@ class RefereeProfileActivity : AppCompatActivity() {
                             isHeader = false
                         ))
                     }
-
-                    fetchRefereeIdsAndFilter(refId, allGlobalMatches)
-
+                    // Крок 3: Отримуємо матчі конкретного арбітра за знайденим seasonId
+                    fetchRefereeMatches(refId, seasonId, allMatches)
                 } catch (e: Exception) {
-                    Log.e("RefereeProfile", "Global JSON Error: ${e.message}")
                     runOnUiThread { finishLoadingWithError() }
                 }
             }
         })
     }
 
-    private fun fetchRefereeIdsAndFilter(refId: String, allGlobalMatches: List<TournamentRow>) {
-        val seasonId = when(selectedYear) {
-            "2026" -> "23"
-            "2025" -> "22"
-            "2024" -> "21"
-            else -> "22"
-        }
-        
+    private fun fetchRefereeMatches(refId: String, seasonId: String, allMatches: List<TournamentRow>) {
         val url = "https://maf.lviv.ua/wp-json/maf/v2/referee/$refId/matches?year=$selectedYear&season_id=$seasonId"
 
         client.newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
@@ -136,56 +156,38 @@ class RefereeProfileActivity : AppCompatActivity() {
                 val body = response.body?.string() ?: ""
                 try {
                     val json = JSONObject(body)
-                    val stats = json.optJSONObject("stats")
-
-                    val mainArray = json.optJSONArray("main_matches") ?: json.optJSONArray("matches")
-                    val assArray = json.optJSONArray("assistant_matches")
-
-                    val mainIds = extractMatchIds(mainArray)
-                    val assIds = extractMatchIds(assArray)
+                    val mainIds = extractIds(json.optJSONArray("main_matches") ?: json.optJSONArray("matches"))
+                    val assIds = extractIds(json.optJSONArray("assistant_matches"))
 
                     mainMatchesList.clear()
                     assistantMatchesList.clear()
-
-                    mainMatchesList.addAll(allGlobalMatches.filter { mainIds.contains(it.id) })
-                    assistantMatchesList.addAll(allGlobalMatches.filter { assIds.contains(it.id) })
+                    mainMatchesList.addAll(allMatches.filter { mainIds.contains(it.id) })
+                    assistantMatchesList.addAll(allMatches.filter { assIds.contains(it.id) })
 
                     runOnUiThread {
                         progressBar.visibility = View.GONE
-                        if (stats != null) {
-                            findViewById<TextView>(R.id.tvProfileMatches).text = stats.optString("total", "0")
-                            findViewById<TextView>(R.id.tvProfileYellow).text = stats.optString("yellow", "0")
-                            findViewById<TextView>(R.id.tvProfileRed).text = stats.optString("red", "0")
-                        }
-                        
                         setupViewPager()
-                        
                         if (mainMatchesList.isEmpty() && assistantMatchesList.isEmpty()) {
                             tvEmptyState.visibility = View.VISIBLE
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e("RefereeProfile", "Ref JSON Error: ${e.message}")
                     runOnUiThread { finishLoadingWithError() }
                 }
             }
         })
     }
 
-    private fun extractMatchIds(array: JSONArray?): List<String> {
-        val ids = mutableListOf<String>()
-        if (array == null) return ids
-        for (i in 0 until array.length()) {
-            val obj = array.getJSONObject(i)
-            ids.add(obj.optString("match_id"))
-        }
-        return ids
+    private fun extractIds(array: JSONArray?): List<String> {
+        val list = mutableListOf<String>()
+        if (array == null) return list
+        for (i in 0 until array.length()) list.add(array.getJSONObject(i).optString("match_id"))
+        return list
     }
 
     private fun finishLoadingWithError() {
         progressBar.visibility = View.GONE
         setupViewPager()
-        tvEmptyState.text = "Матчів не знайдено"
         tvEmptyState.visibility = View.VISIBLE
     }
 
@@ -194,35 +196,29 @@ class RefereeProfileActivity : AppCompatActivity() {
             override fun getItemCount() = 2
             override fun createFragment(position: Int) = RefereeMatchesListFragment.newInstance(position)
         }
-
         TabLayoutMediator(tabLayout, viewPager) { tab, position ->
             tab.text = if (position == 0) "ГОЛОВНИЙ" else "АСИСТЕНТ"
         }.attach()
     }
 }
 
+// Фрагмент списку матчів
 class RefereeMatchesListFragment : Fragment() {
-    private var tabPosition: Int = 0
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        tabPosition = arguments?.getInt("TAB_POS") ?: 0
-    }
-
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val rv = RecyclerView(requireContext()).apply {
             layoutParams = ViewGroup.LayoutParams(-1, -1)
+            layoutManager = LinearLayoutManager(context)
             setPadding(0, 20, 0, 100)
             clipToPadding = false
-            layoutManager = LinearLayoutManager(context)
         }
         
+        val pos = arguments?.getInt("TAB_POS") ?: 0
         val activity = requireActivity() as? RefereeProfileActivity
-        val currentMatches = if (tabPosition == 0) activity?.mainMatchesList else activity?.assistantMatchesList
+        val matches = if (pos == 0) activity?.mainMatchesList else activity?.assistantMatchesList
 
-        if (currentMatches != null && currentMatches.isNotEmpty()) {
+        if (matches != null && matches.isNotEmpty()) {
             val grouped = mutableListOf<TournamentRow>()
-            currentMatches.groupBy { "${it.league}|${it.stage}" }.forEach { (key, list) ->
+            matches.groupBy { "${it.league}|${it.stage}" }.forEach { (key, list) ->
                 val parts = key.split("|")
                 grouped.add(TournamentRow(league = parts[0], stage = parts.getOrElse(1){""}, isHeader = true))
                 grouped.addAll(list)
