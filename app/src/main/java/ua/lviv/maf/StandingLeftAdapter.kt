@@ -1,5 +1,6 @@
 package ua.lviv.maf
 
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -30,15 +31,29 @@ class StandingLeftAdapter(
         holder.tvPosition.text = item.position.toString()
         holder.tvTeamName.text = item.team_name
 
+        // Повертаємо твою логіку кольорів
+        val isFirst = position == 0
+        val isLast = position == items.size - 1
+        when {
+            isFirst -> {
+                holder.positionMarker.setBackgroundColor(Color.parseColor("#4CAF50"))
+                holder.tvPosition.setTextColor(Color.WHITE)
+            }
+            isLast && items.size > 1 -> {
+                holder.positionMarker.setBackgroundColor(Color.parseColor("#F44336"))
+                holder.tvPosition.setTextColor(Color.WHITE)
+            }
+            else -> {
+                holder.positionMarker.setBackgroundColor(Color.TRANSPARENT)
+                holder.tvPosition.setTextColor(Color.parseColor("#BCBCBC"))
+            }
+        }
+
         Glide.with(holder.itemView.context)
             .load(item.logo)
             .placeholder(android.R.drawable.ic_menu_gallery)
-            .error(android.R.drawable.ic_menu_report_image)
             .into(holder.ivTeamLogo)
 
-        holder.positionMarker.setBackgroundColor(android.graphics.Color.TRANSPARENT)
-        
-        // Обробка кліку
         holder.itemView.setOnClickListener { onItemClick(item) }
     }
 
