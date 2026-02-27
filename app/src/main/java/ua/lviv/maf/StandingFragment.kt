@@ -28,6 +28,7 @@ class StandingFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+        // Використовуємо твій оновлений XML з NestedScrollView
         val view = inflater.inflate(R.layout.fragment_standing, container, false)
 
         tabLayout = view.findViewById(R.id.tabLayoutCompetitions)
@@ -37,7 +38,7 @@ class StandingFragment : Fragment() {
         groupAdapter = GroupAdapter(emptyList())
         recyclerView.adapter = groupAdapter
         
-        // Відступи між блоками груп
+        // Твої відступи між блоками груп залишаються
         recyclerView.addItemDecoration(SpacesItemDecoration(dpToPx(16)))
 
         loadCompetitions()
