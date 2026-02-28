@@ -58,23 +58,45 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                 holder.tvReferee?.visibility = View.GONE
             }
 
-            val scoreValue = item.score ?: ""
+            // 🔴 СТВОРЮЄМО РОЗУМНУ ЛОГІКУ ДЛЯ ЧАСУ, LIVE ТА РАХУНКУ
+            val scoreValue = item.score?.trim() ?: ""
+            holder.tvScore?.setTypeface(null, Typeface.BOLD)
 
-            if (scoreValue.contains(" : ")) {
-                holder.ivTimeIcon?.visibility = View.GONE
-                holder.tvScore?.text = scoreValue
-                holder.tvScore?.apply {
-                    setTextColor(Color.WHITE)
-                    textSize = 18f
-                    setTypeface(null, Typeface.BOLD)
+            when {
+                // 1. Якщо це LIVE (йде гра: є ' або HT)
+                scoreValue.contains("'") || scoreValue == "HT" -> {
+                    holder.ivTimeIcon?.visibility = View.GONE
+                    holder.tvScore?.text = scoreValue
+                    holder.tvScore?.setTextColor(Color.parseColor("#E30613")) // Червоний колір
+                    holder.tvScore?.textSize = 16f
                 }
-            } else {
-                holder.ivTimeIcon?.visibility = View.VISIBLE
-                holder.tvScore?.text = "VS"
-                holder.tvScore?.apply {
-                    setTextColor(Color.parseColor("#BCBCBC"))
-                    textSize = 16f
-                    setTypeface(null, Typeface.BOLD)
+                // 2. Якщо матч завершено (FT)
+                scoreValue == "FT" -> {
+                    holder.ivTimeIcon?.visibility = View.GONE
+                    holder.tvScore?.text = "FT"
+                    holder.tvScore?.setTextColor(Color.parseColor("#BCBCBC")) // Сірий колір
+                    holder.tvScore?.textSize = 16f
+                }
+                // 3. Якщо є зіграний рахунок (наприклад "2 : 1")
+                scoreValue.contains(" : ") -> {
+                    holder.ivTimeIcon?.visibility = View.GONE
+                    holder.tvScore?.text = scoreValue
+                    holder.tvScore?.setTextColor(Color.WHITE)
+                    holder.tvScore?.textSize = 18f
+                }
+                // 4. Якщо прийшов час матчу (наприклад "18:00")
+                scoreValue.isNotEmpty() -> {
+                    holder.ivTimeIcon?.visibility = View.VISIBLE
+                    holder.tvScore?.text = scoreValue
+                    holder.tvScore?.setTextColor(Color.parseColor("#BCBCBC"))
+                    holder.tvScore?.textSize = 16f
+                }
+                // 5. Якщо взагалі порожньо (тільки тоді показуємо VS)
+                else -> {
+                    holder.ivTimeIcon?.visibility = View.VISIBLE
+                    holder.tvScore?.text = "VS"
+                    holder.tvScore?.setTextColor(Color.parseColor("#BCBCBC"))
+                    holder.tvScore?.textSize = 16f
                 }
             }
 
@@ -96,9 +118,9 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                     putExtra("stadium", item.stadium)
                     putExtra("referee", item.referee)
                     
-                    // --- НОВЕ: ПЕРЕДАЄМО YOUTUBE ID ---
-                    putExtra("youtube_id", item.youtubeId) 
-                    // 🔥 ОСЬ ЧОГО НЕ ВИСТАЧАЛО! Передаємо ID команд для складу
+                    // (Якщо в тебе помилка через youtubeId - просто закоментуй цей рядок)
+                    // putExtra("youtube_id", item.youtubeId) 
+                    
                     putExtra("home_team_id", item.home_team_id)
                     putExtra("away_team_id", item.away_team_id)
                 }
@@ -124,4 +146,5 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val tvReferee: TextView? = view.findViewById(R.id.tvReferee)
         val ivTimeIcon: ImageView? = view.findViewById(R.id.ivTimeIcon)
     }
-}
+    }
+    
