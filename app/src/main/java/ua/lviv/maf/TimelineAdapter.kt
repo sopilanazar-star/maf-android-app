@@ -84,7 +84,9 @@ class TimelineAdapter(
         when (event.type) {
             "goal" -> imageView.setImageResource(R.drawable.ic_ball)
             "goal_pen" -> imageView.setImageResource(R.drawable.ic_penalty_goal)
-            "penalty_missed" -> 
+            "penalty_shootout" ->
+        imageView.setImageResource(R.drawable.ic_penalty_goal)
+            "missed_penalty" -> 
         imageView.setImageResource(R.drawable.ic_penalty_missed)
             "goal_og" -> {
                 imageView.setImageResource(R.drawable.ic_ball)
