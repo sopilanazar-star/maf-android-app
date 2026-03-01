@@ -32,7 +32,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Є пропозиції або фото для адміна?"
+                android:text="Хочеш додати,чи змінити інформацію?"
                 android:textColor="#FFFFFF"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -41,7 +41,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Напишіть нашому Telegram-боту для покращення додатку."
+                android:text="Тисни на кнопку та вибери відповідну функцію в чаті."
                 android:textColor="#BCBCBC"
                 android:textSize="13sp" />
 
