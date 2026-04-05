@@ -32,8 +32,8 @@ jobs:
 
       - name: Build Release APK
         run: |
-                    chmod +x gradlew
-          ./gradlew assembleRelease --stacktrace
+          chmod +x gradlew
+            ./gradlew assembleRelease --stacktrace
         env:
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
