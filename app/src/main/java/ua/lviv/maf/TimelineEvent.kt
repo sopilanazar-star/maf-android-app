@@ -3,6 +3,7 @@ package ua.lviv.maf
 import com.google.gson.annotations.SerializedName
 
 data class TimelineEvent(
+
     @SerializedName("minute")
     val minute: String,
 
@@ -18,6 +19,17 @@ data class TimelineEvent(
     @SerializedName("side")
     val side: String,
 
-    @SerializedName("team_id") // Нове поле
-    val team_id: Int           // ID команди, яка створила подію
+    @SerializedName("team_id")
+    val team_id: Int,
+
+    @SerializedName("scored")
+    val scored: String?,
+
+    // --- ДОДАНІ ПОЛЯ ДЛЯ КЛІКУ ---
+    @SerializedName("player_id")
+    val player_id: String? = "",
+
+    @SerializedName("player_out_id")
+    val player_out_id: String? = ""
+    // -----------------------------
 )

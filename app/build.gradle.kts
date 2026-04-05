@@ -6,33 +6,32 @@ plugins {
 
 android {
     namespace = "ua.lviv.maf"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "ua.lviv.maf"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 36
 
-        // Залишаємо версію 22 для тестів
-        versionCode = 22        
-        versionName = "2.2"     
+        // Оновлено для версії 2.4
+        versionCode = 24
+        versionName = "2.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    signingConfigs {
-        create("release") {
-            storeFile = file("maf-release.jks") 
-            storePassword = System.getenv("SIGNING_STORE_PASSWORD")
-            keyAlias = System.getenv("SIGNING_KEY_ALIAS")
-            keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
-        }
-    }
-
+    // signingConfigs {
+//     create("release") {
+//         storeFile = file("maf-release.jks")
+//         storePassword = ...
+//         keyAlias = ...
+//         keyPassword = ...
+//     }
+// }
     buildTypes {
         release {
             isMinifyEnabled = true // Це важливо! Потребує ProGuard правил
-            signingConfig = signingConfigs.getByName("release") 
+            // signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -40,7 +39,7 @@ android {
         }
         debug {
             isDebuggable = true
-            signingConfig = signingConfigs.getByName("release")
+            // signingConfig = signingConfigs.getByName("release")
         }
     }
 
@@ -70,10 +69,13 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-config-ktx")
-    
-    implementation("com.google.android.gms:play-services-ads:23.0.0")
+    // 🔥 ОСЬ ВАШ НОВИЙ РЯДОК ДЛЯ СПОВІЩЕНЬ:
+    implementation("com.google.firebase:firebase-messaging-ktx")
 
-    implementation("androidx.core:core-ktx:1.13.1")
+    // Відключаємо бібліотеку реклами Гугл
+    // implementation("com.google.android.gms:play-services-ads:23.0.0")
+
+    implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.constraintlayout:constraintlayout:2.2.0")
@@ -87,4 +89,6 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation("androidx.activity:activity:1.12.4")
+
 }

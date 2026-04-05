@@ -12,6 +12,8 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import java.util.Locale
+// Імпорт перехоплювача закоментовано для версії 2.3
+// import ua.lviv.maf.AdInterceptor
 
 class TeamAdapter(private val items: List<StandingRow>) :
     RecyclerView.Adapter<TeamAdapter.TeamViewHolder>() {
@@ -24,7 +26,7 @@ class TeamAdapter(private val items: List<StandingRow>) :
         val tvGames: TextView = view.findViewById(R.id.tvGames)
         val tvGoalsDiff: TextView = view.findViewById(R.id.tvGoalsDiff)
         val tvPoints: TextView = view.findViewById(R.id.tvPoints)
-        
+
         val layoutForm: LinearLayout = view.findViewById(R.id.layoutForm)
         val layoutFormContainer: LinearLayout = view.findViewById(R.id.layoutFormContainer)
         val ivExpand: TextView = view.findViewById(R.id.ivExpand)
@@ -84,15 +86,18 @@ class TeamAdapter(private val items: List<StandingRow>) :
 
         drawExpandedMatches(holder.expandableLayout, item.form)
 
-        // Клік по всій команді
+        // Клік по всій команді — рекламу відключено
         holder.itemView.setOnClickListener {
+            val context = it.context
+            // AdInterceptor.execute(context) {
             if (item.team_id.isNotEmpty() && item.team_id != "0") {
-                val intent = Intent(it.context, TeamPlayersActivity::class.java)
+                val intent = Intent(context, TeamPlayersActivity::class.java)
                 intent.putExtra("team_id", item.team_id)
                 intent.putExtra("team_name", item.team_name)
                 intent.putExtra("team_logo", item.logo)
-                it.context.startActivity(intent)
+                context.startActivity(intent)
             }
+            // }
         }
     }
 

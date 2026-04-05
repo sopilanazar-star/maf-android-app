@@ -74,6 +74,19 @@ class TimelineFragment : Fragment() {
     private fun parseAndShowTimeline(json: String, container: LinearLayout) {
         try {
             val root = JSONObject(json)
+
+            // --- ВСТАВЛЯЙ ЦЕЙ БЛОК ---
+            val penScore = root.optString("pen_score", "")
+            if (penScore.isNotEmpty()) {
+                (activity as? MatchDetailActivity)?.runOnUiThread {
+                    activity?.findViewById<TextView>(R.id.tvAdditionalScore)?.apply {
+                        text = "(пен. $penScore)"
+                        visibility = View.VISIBLE
+                    }
+                }
+            }
+            // --- КІНЕЦЬ БЛОКУ ---
+
             val timeline = root.optJSONArray("timeline") ?: return
             
             // Надійна перевірка ID господаря з самого JSON
@@ -83,6 +96,7 @@ class TimelineFragment : Fragment() {
             }
 
             container.removeAllViews()
+            var penaltyHeaderAdded = false
 
             if (timeline.length() == 0) {
                 val emptyTv = TextView(context).apply {
@@ -103,10 +117,25 @@ class TimelineFragment : Fragment() {
                 val type = event.optString("type")
                 val eventTeamId = event.optString("team_id")
                 val eventSide = event.optString("side")
+                // ДОДАНО: Витягуємо ID гравця
+                val playerId = event.optString("player_id")
 
                 // Визначаємо сторону: або за збігом ID, або якщо сервер прямо каже "left"
                 val isHomeTeam = (eventTeamId == homeTeamId && homeTeamId != "0") || eventSide == "left"
-
+// --- ДОДАТИ ЦЕЙ БЛОК ---
+                if ((type == "penalty_goal" || type == "penalty_miss") && container.findViewWithTag<View>("pen_header") == null) {
+                    val tvHeader = TextView(context).apply {
+                        tag = "pen_header"
+                        text = "ПІСЛЯМАТЧЕВІ ПЕНАЛЬТІ"
+                        setTextColor(Color.parseColor("#E30613"))
+                        textSize = 18f
+                        typeface = Typeface.DEFAULT_BOLD
+                        gravity = Gravity.CENTER
+                        setPadding(0, 40, 0, 20)
+                    }
+                    container.addView(tvHeader)
+                }
+                // -----------------------
                 val rowLayout = LinearLayout(context).apply {
                     orientation = LinearLayout.HORIZONTAL
                     layoutParams = LinearLayout.LayoutParams(-1, -2)
@@ -165,31 +194,56 @@ class TimelineFragment : Fragment() {
                 }
 
                 when (type) {
+
                     "goal" -> {
                         ivIcon.setImageResource(R.drawable.ic_ball)
                         ivIcon.clearColorFilter()
                     }
-                    "goal_pen" -> ivIcon.setImageResource(R.drawable.ic_penalty_goal)
+
+                    // забитий пенальті в матчі
+                    "goal_pen" -> {
+                        ivIcon.setImageResource(R.drawable.ic_penalty_goal)
+                        ivIcon.clearColorFilter()
+                    }
+
+                    // забитий у післяматчевій серії
+                    "penalty_goal" -> {
+                        ivIcon.setImageResource(R.drawable.ic_penalty_goal)
+                        ivIcon.setColorFilter(Color.parseColor("#00E676"))
+                    }
+
+                    // промах у матчі
+                    "missed_penalty" -> {
+                        ivIcon.setImageResource(R.drawable.ic_penalty_missed)
+                        ivIcon.clearColorFilter()
+                    }
+
+                    // промах у післяматчевій серії
+                    "penalty_miss" -> {
+                        ivIcon.setImageResource(R.drawable.ic_penalty_missed)
+                        ivIcon.setColorFilter(Color.RED)
+                    }
+
                     "goal_og" -> {
                         ivIcon.setImageResource(R.drawable.ic_ball)
                         ivIcon.setColorFilter(Color.RED)
                     }
+
                     "yellow_card" -> {
                         ivIcon.setImageResource(R.drawable.ic_card)
                         ivIcon.setColorFilter(Color.parseColor("#FFEB3B"))
                     }
+
                     "red_card" -> {
                         ivIcon.setImageResource(R.drawable.ic_card)
                         ivIcon.setColorFilter(Color.RED)
                     }
+
                     "yellow_red" -> ivIcon.setImageResource(R.drawable.ic_second_yellow)
+
                     "substitution", "sub" -> {
                         ivIcon.setImageResource(R.drawable.ic_substitution)
                         ivIcon.clearColorFilter()
-                    }
-                    else -> {
-                        ivIcon.setImageResource(android.R.drawable.ic_menu_info_details)
-                        ivIcon.setColorFilter(Color.GRAY)
                     }
                 }
 
@@ -204,7 +258,27 @@ class TimelineFragment : Fragment() {
                     rowLayout.addView(ivIcon)
                     rowLayout.addView(infoLayout)
                 }
+// --- ДОДАНИЙ БЛОК: Клік по події таймлайну ---
+                rowLayout.setOnClickListener { view ->
+                    if (playerId.isNotEmpty() && playerId != "0") {
+                        val intent = android.content.Intent(view.context, PlayerProfileActivity::class.java)
 
+                        intent.putExtra("PLAYER_ID", playerId)
+                        intent.putExtra("PLAYER_NAME", playerName)
+
+                        // Передаємо пусті значення, щоб екран не крашнувся
+                        intent.putExtra("PLAYER_PHOTO", "")
+                        intent.putExtra("PLAYER_NUMBER", "")
+                        intent.putExtra("PLAYER_POSITION", "")
+                        intent.putExtra("PLAYER_BIRTHDATE", "")
+                        intent.putExtra("PLAYER_AGE", 0)
+                        intent.putExtra("TEAM_NAME", "")
+                        intent.putExtra("TEAM_LOGO", "")
+
+                        view.context.startActivity(intent)
+                    }
+                }
+                // --- КІНЕЦЬ ДОДАНОГО БЛОКУ ---
                 container.addView(rowLayout)
             }
         } catch (e: Exception) { e.printStackTrace() }

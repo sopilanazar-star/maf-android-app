@@ -52,27 +52,31 @@ class MatchDetailActivity : AppCompatActivity() {
         val stadium = intent.getStringExtra("stadium") ?: ""
         val referee = intent.getStringExtra("referee") ?: ""
         val fullDate = intent.getStringExtra("date") ?: ""
-
+// --- ДОДАНО: Технічні дані ---
+        val isTechnical = intent.getBooleanExtra("is_technical", false)
+        val technicalReason = intent.getStringExtra("technical_reason") ?: ""
         // --- 2. ПРИВ'ЯЗКА VIEW ---
         val tvLeague: TextView = findViewById(R.id.tvDetailLeague)
         val tvStage: TextView = findViewById(R.id.tvStageName)
         val tvStadium: TextView = findViewById(R.id.tvDetailStadium)
         val tvDateTime: TextView = findViewById(R.id.tvDetailDateTime)
         val tvReferee: TextView = findViewById(R.id.tvDetailReferee)
-        
+
         val tvTeam1: TextView = findViewById(R.id.tvDetailTeam1)
         val ivLogo1: ImageView = findViewById(R.id.ivDetailLogo1)
         val tvTeam2: TextView = findViewById(R.id.tvDetailTeam2)
         val ivLogo2: ImageView = findViewById(R.id.ivDetailLogo2)
-        
+
         val tvScore: TextView = findViewById(R.id.tvDetailScore)
         val tvScorers: TextView = findViewById(R.id.tvScorers)
+        val tvReason: TextView = findViewById(R.id.tvDetailReason)
+        val tvAdditionalScore: TextView = findViewById(R.id.tvAdditionalScore)
 
         // --- 3. ЗАПОВНЕННЯ ДАНИМИ ---
         tvTeam1.text = team1Name
         tvTeam2.text = team2Name
         tvLeague.text = league.uppercase()
-        
+
         if (stage.isNotEmpty()) {
             tvStage.text = stage
             tvStage.visibility = View.VISIBLE
@@ -92,11 +96,38 @@ class MatchDetailActivity : AppCompatActivity() {
         if (score.contains(" : ") || score.contains("-")) {
             tvScore.text = score
             tvScore.textSize = 38f
-            tvScore.setTextColor(Color.WHITE)
+
+            // --- ДОДАЙ ЦЕЙ БЛОК ДЛЯ ПЕНАЛЬТІ ---
+            val penScore = intent.getStringExtra("pen_score") ?: ""
+            if (penScore.isNotEmpty()) {
+                tvAdditionalScore.text = "($penScore)"
+                tvAdditionalScore.visibility = View.VISIBLE
+            } else {
+                tvAdditionalScore.visibility = View.GONE
+            }
+            // ----------------------------------
+
+            // --- ДОДАНО: Логіка кольору та причини ---
+            if (isTechnical) {
+                tvScore.setTextColor(Color.parseColor("#E30613")) // Червоний
+
+                if (technicalReason.isNotEmpty()) {
+                    tvReason.visibility = View.VISIBLE
+                    tvReason.text = technicalReason
+                } else {
+                    tvReason.visibility = View.GONE
+                }
+            } else {
+                tvScore.setTextColor(Color.WHITE) // Звичайний білий
+                tvReason.visibility = View.GONE
+            }
+            // ------------------------------------------
+
         } else {
             tvScore.text = "VS"
             tvScore.textSize = 32f
             tvScore.setTextColor(Color.parseColor("#BCBCBC"))
+            tvReason.visibility = View.GONE
         }
 
         if (referee.isNotEmpty()) {
@@ -112,14 +143,15 @@ class MatchDetailActivity : AppCompatActivity() {
         Glide.with(this).load(logo2?.replace("http://", "https://")).into(ivLogo2)
 
         // --- 4. НАВІГАЦІЯ (Виправлено: передаємо String-ID) ---
-        fun openTeamDetails(id: String, name: String) {
+        fun openTeamDetails(id: String, name: String, logo: String?) {
             // Перевіряємо рядок на порожнечу або "0"
             if (id != "0" && id.isNotEmpty()) {
                 try {
                     val intent = Intent(this, TeamPlayersActivity::class.java)
                     // ПЕРЕДАЄМО ЯК ТЕКСТ (String), як це робить турнірна таблиця
-                    intent.putExtra("team_id", id) 
+                    intent.putExtra("team_id", id)
                     intent.putExtra("team_name", name)
+                    intent.putExtra("team_logo", logo)
                     startActivity(intent)
                 } catch (e: Exception) {
                     android.widget.Toast.makeText(this, "Помилка: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
@@ -130,11 +162,15 @@ class MatchDetailActivity : AppCompatActivity() {
         }
 
         // Викликаємо функцію, передаючи String-змінні
-        val homeClickListener = View.OnClickListener { openTeamDetails(homeTeamIdStr, team1Name) }
+        val homeClickListener = View.OnClickListener {
+            openTeamDetails(homeTeamIdStr, team1Name, logo1)
+        }
         tvTeam1.setOnClickListener(homeClickListener)
         ivLogo1.setOnClickListener(homeClickListener)
 
-        val awayClickListener = View.OnClickListener { openTeamDetails(awayTeamIdStr, team2Name) }
+        val awayClickListener = View.OnClickListener {
+            openTeamDetails(awayTeamIdStr, team2Name, logo2)
+        }
         tvTeam2.setOnClickListener(awayClickListener)
         ivLogo2.setOnClickListener(awayClickListener)
 

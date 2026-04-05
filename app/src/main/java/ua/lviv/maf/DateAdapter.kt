@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+// import ua.lviv.maf.AdInterceptor
 
 class DateAdapter(
     private val dates: List<DateModel>,
@@ -28,25 +29,35 @@ class DateAdapter(
     override fun onBindViewHolder(holder: DateViewHolder, position: Int) {
         val item = dates[position]
         holder.tvDayName.text = item.dayName
-        holder.tvDayNum.text = item.dayNumber
-        holder.tvMonth.text = item.month
+
+
+        holder.tvMonth.visibility = View.GONE
 
         if (item.isSelected) {
             holder.container.setBackgroundResource(R.drawable.bg_date_selected)
+
+            holder.tvDayName.setTextColor(Color.WHITE)
             holder.tvDayNum.setTextColor(Color.WHITE)
             holder.tvMonth.setTextColor(Color.WHITE)
+
         } else {
             holder.container.setBackgroundColor(Color.TRANSPARENT)
-            holder.tvDayName.setTextColor(Color.GRAY)
-            holder.tvDayNum.setTextColor(Color.parseColor("#CCCCCC"))
-            holder.tvMonth.setTextColor(Color.GRAY)
+
+            val gray = Color.parseColor("#B0B0B0")
+
+            holder.tvDayName.setTextColor(gray)
+            holder.tvDayNum.setTextColor(gray)
+            holder.tvMonth.setTextColor(gray)
         }
 
         holder.itemView.setOnClickListener {
+            // Тимчасово відключаємо перехоплювач реклами, виконуємо лише логіку вибору
+            // AdInterceptor.execute(holder.itemView.context) {
             dates.forEach { it.isSelected = false }
             item.isSelected = true
             notifyDataSetChanged()
             onDateSelected(item.date)
+            // }
         }
     }
 

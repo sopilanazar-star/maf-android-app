@@ -12,13 +12,23 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+// Відключаємо імпорти реклами
+// import com.google.android.gms.ads.AdRequest
+// import com.google.android.gms.ads.FullScreenContentCallback
+// import com.google.android.gms.ads.LoadAdError
+// import com.google.android.gms.ads.interstitial.InterstitialAd
+// import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import android.content.Context
 
 data class MenuItem(val id: Int, val title: String)
 
 class MoreFragment : Fragment() {
 
-    // Твій лінк на бота для зворотного зв'язку
     private val TELEGRAM_BOT_URL = "https://t.me/MafFeedback_bot"
+
+    // Реклама та лічильник
+    //private var mInterstitialAd: InterstitialAd? = null
+    // Тепер ми не задаємо 0 тут, а будемо брати значення з пам'яті
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -29,20 +39,23 @@ class MoreFragment : Fragment() {
         val rvMoreMenu = view.findViewById<RecyclerView>(R.id.rvMoreMenu)
         val btnTelegram = view.findViewById<Button>(R.id.btnTelegram)
 
+        // Завантажуємо рекламу відразу
+        //loadAd()
+
         btnTelegram.setOnClickListener {
             openTelegramBot()
         }
 
         // --- ДОДАЛИ НОВИЙ ПУНКТ (8) ---
         val menuItems = listOf(
-            MenuItem(1, "Прогноз на матчі"),
+            // MenuItem(1, "Прогноз на матчі"), // Тимчасово приховано
             MenuItem(2, "Дискваліфіковані гравці"),
             MenuItem(3, "Бомбардири (І ліга)"),
             MenuItem(4, "Бомбардири (ІІ ліга)"),
             MenuItem(5, "Бомбардири U-19 (І ліга)"),
             MenuItem(6, "Бомбардири U-19 (ІІ ліга)"),
             MenuItem(7, "Арбітри"),
-            MenuItem(8, "📺 Відеоогляди матчів") // <--- ОСЬ ВІН!
+            MenuItem(8, "📺 Відеоогляди матчів")
         )
 
         rvMoreMenu.layoutManager = LinearLayoutManager(context)
@@ -65,7 +78,20 @@ class MoreFragment : Fragment() {
             Toast.makeText(context, "Рік змінено на ${AppConfig.selectedYear}", Toast.LENGTH_SHORT).show()
         }
     }
-
+    /* Функція loadAd тимчасово відключена
+    private fun loadAd() {
+        val adRequest = AdRequest.Builder().build()
+        InterstitialAd.load(requireContext(), getString(R.string.ad_unit_id_interstitial), adRequest,
+            object : InterstitialAdLoadCallback() {
+                override fun onAdLoaded(interstitialAd: InterstitialAd) {
+                    mInterstitialAd = interstitialAd
+                }
+                override fun onAdFailedToLoad(adError: LoadAdError) {
+                    mInterstitialAd = null
+                }
+            })
+    }
+    */
     private fun openTelegramBot() {
         try {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(TELEGRAM_BOT_URL))
@@ -76,46 +102,59 @@ class MoreFragment : Fragment() {
     }
 
     private fun handleMenuClick(item: MenuItem) {
-        val containerId = (requireView().parent as View).id
-        
-        when (item.id) {
-            1 -> { 
-                val predictionsFragment = PredictionsFragment()
-                parentFragmentManager.beginTransaction()
-                    .replace(containerId, predictionsFragment) 
-                    .addToBackStack(null)
-                    .commit()
+        // Залишаємо логіку лічильника для стабільності
+        val prefs = requireContext().getSharedPreferences("MAF_ADS_PREFS", Context.MODE_PRIVATE)
+        var currentCount = prefs.getInt("global_click_counter", 0)
+        currentCount++
+        prefs.edit().putInt("global_click_counter", currentCount).apply()
+
+        // Рекламу відключено: відразу викликаємо перехід
+        executeNavigation(item)
+
+        /* Стара логіка з показом реклами закоментована
+        if (currentCount % 10 == 1 && mInterstitialAd != null) {
+            mInterstitialAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
+                override fun onAdDismissedFullScreenContent() {
+                    mInterstitialAd = null
+                    // loadAd()
+                    executeNavigation(item)
+                }
+                override fun onAdFailedToShowFullScreenContent(adError: com.google.android.gms.ads.AdError) {
+                    mInterstitialAd = null
+                    executeNavigation(item)
+                }
             }
-            2 -> { 
+            mInterstitialAd?.show(requireActivity())
+        }
+        */
+    }
+
+    // Твоя стара логіка переходу, просто перейменована
+    private fun executeNavigation(item: MenuItem) {
+        val containerId = (requireView().parent as View).id
+        when (item.id) {
+            1 -> {
+                val predictionsFragment = PredictionsFragment()
+                parentFragmentManager.beginTransaction().replace(containerId, predictionsFragment).addToBackStack(null).commit()
+            }
+            2 -> {
                 val disqualifiedFragment = DisqualifiedFragment()
-                parentFragmentManager.beginTransaction()
-                    .replace(containerId, disqualifiedFragment) 
-                    .addToBackStack(null)
-                    .commit()
+                parentFragmentManager.beginTransaction().replace(containerId, disqualifiedFragment).addToBackStack(null).commit()
             }
             3 -> openScorersFragment("І ліга", containerId)
             4 -> openScorersFragment("ІІ ліга", containerId)
             5 -> openScorersFragment("U-19 (І ліга)", containerId)
             6 -> openScorersFragment("U-19 (ІІ ліга)", containerId)
-            7 -> { 
+            7 -> {
                 val refereesFragment = RefereesFragment()
                 val bundle = Bundle()
                 bundle.putString("SELECTED_YEAR", AppConfig.selectedYear.toString())
                 refereesFragment.arguments = bundle
-
-                parentFragmentManager.beginTransaction()
-                    .replace(containerId, refereesFragment)
-                    .addToBackStack(null)
-                    .commit()
+                parentFragmentManager.beginTransaction().replace(containerId, refereesFragment).addToBackStack(null).commit()
             }
-            // --- НОВА ДІЯ ДЛЯ ВІДЕООГЛЯДІВ ---
             8 -> {
-                // Тимчасова заглушка. Пізніше замінимо на відкриття MediaFragment
-                val mediaFragment = MediaFragment() // Ми його зараз створимо
-                parentFragmentManager.beginTransaction()
-                    .replace(containerId, mediaFragment)
-                    .addToBackStack(null)
-                    .commit()
+                val mediaFragment = MediaFragment()
+                parentFragmentManager.beginTransaction().replace(containerId, mediaFragment).addToBackStack(null).commit()
             }
         }
     }

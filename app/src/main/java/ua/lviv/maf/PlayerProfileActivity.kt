@@ -22,6 +22,8 @@ class PlayerProfileActivity : AppCompatActivity() {
     private lateinit var ivPlayerPhoto: ImageView
     private lateinit var tvName: TextView
     private lateinit var tvTeam: TextView
+
+    private lateinit var ivTeamLogo: ImageView
     private lateinit var tvPosition: TextView
     private lateinit var tvDob: TextView
 
@@ -34,25 +36,50 @@ class PlayerProfileActivity : AppCompatActivity() {
         ivPlayerPhoto = findViewById(R.id.ivPlayerPhoto)
         tvName = findViewById(R.id.tvPlayerName)
         tvTeam = findViewById(R.id.tvTeamName)
+        ivTeamLogo = findViewById(R.id.ivTeamLogoSmall)
         tvPosition = findViewById(R.id.tvPosition)
         tvDob = findViewById(R.id.tvDob)
 
         val ivWatermark: ImageView = findViewById(R.id.ivWatermark)
-        Glide.with(this).load(R.drawable.maf_logo).into(ivWatermark)
 
         // intent дані
         val playerId = intent.getStringExtra("PLAYER_ID") ?: ""
         val playerName = intent.getStringExtra("PLAYER_NAME") ?: ""
         val teamName = intent.getStringExtra("TEAM_NAME") ?: "Команда"
+        val teamLogo = intent.getStringExtra("TEAM_LOGO")
         val positionCode = intent.getStringExtra("PLAYER_POSITION") ?: ""
         val playerNumber = intent.getStringExtra("PLAYER_NUMBER") ?: ""
-        val birthDate = intent.getStringExtra("PLAYER_BIRTHDATE") ?: ""
+        val birthDate =
+            intent.getStringExtra("PLAYER_BIRTHDATE")
+                ?: intent.getStringExtra("PLAYER_BIRTH_DATE")
+                ?: ""
         val age = intent.getIntExtra("PLAYER_AGE", 0)
         val photoUrl = intent.getStringExtra("PLAYER_PHOTO")
 
         // placeholder дані
         tvName.text = playerName
         tvTeam.text = teamName
+        if (!teamLogo.isNullOrEmpty()) {
+
+            Glide.with(this)
+                .load(teamLogo)
+                .into(ivTeamLogo)
+
+            Glide.with(this)
+                .load(teamLogo)
+                .centerInside()
+                .dontAnimate()
+                .into(ivWatermark)
+
+        } else {
+
+            Glide.with(this)
+                .load(R.drawable.maf_logo)
+                .centerInside()
+                .dontAnimate()
+                .into(ivWatermark)
+
+        }
 
         val fullPositionName = when (positionCode.lowercase()) {
             "g", "gk" -> "Воротар"
@@ -68,7 +95,7 @@ class PlayerProfileActivity : AppCompatActivity() {
             else fullPositionName
 
         tvDob.text = when {
-            birthDate.isNotEmpty() && age > 0 -> "$birthDate ($age років)"
+            birthDate.isNotEmpty() && age > 0 -> "$birthDate (${formatAge(age)})"
             birthDate.isNotEmpty() -> birthDate
             else -> "Дата народження невідома"
         }
@@ -92,58 +119,106 @@ class PlayerProfileActivity : AppCompatActivity() {
     private fun loadFullPlayer(playerId: String) {
         RetrofitClient.instance.getPlayerProfile(playerId)
             .enqueue(object : Callback<Player> {
-
                 override fun onResponse(call: Call<Player>, response: Response<Player>) {
-                    if (!response.isSuccessful) return
-                    val p = response.body() ?: return
+                    // ЛОГ 1: Перевіряємо статус відповіді (має бути 200)
+                    android.util.Log.d("MAF_DEBUG", "Запит успішний? ${response.isSuccessful}. Код: ${response.code()}")
+
+                    if (!response.isSuccessful) {
+                        android.util.Log.e("MAF_DEBUG", "Помилка сервера: ${response.errorBody()?.string()}")
+                        return
+                    }
+
+                    val p = response.body()
+                    if (p == null) {
+                        android.util.Log.e("MAF_DEBUG", "Тіло відповіді NULL")
+                        return
+                    }
+
+                    // ЛОГ 2: Виводимо ВСЕ, що Gson зміг прочитати з JSON
+                    android.util.Log.d("MAF_DEBUG", "--- ДАНІ ГРАВЦЯ З СЕРВЕРА ---")
+                    android.util.Log.d("MAF_DEBUG", "ID: ${p.id}")
+                    android.util.Log.d("MAF_DEBUG", "Ім'я: ${p.name}")
+                    android.util.Log.d("MAF_DEBUG", "Команда (team_name): ${p.team_name}")
+                    android.util.Log.d("MAF_DEBUG", "Лого (team_logo): ${p.team_logo}")
+                    android.util.Log.d("MAF_DEBUG", "Дата (birthDate): ${p.birthDate}")
+                    android.util.Log.d("MAF_DEBUG", "Фото (photo): ${p.photo}")
+                    android.util.Log.d("MAF_DEBUG", "----------------------------")
 
                     runOnUiThread {
 
-                        // ім'я
-                        if (p.name.isNotEmpty()) {
-                            tvName.text = p.name
-                        }
+                        if (!p.name.isNullOrEmpty()) tvName.text = p.name
 
-                        // дата народження
-                        if (!p.birthDate.isNullOrEmpty()) {
-                            val ageText =
-                                if ((p.age ?: 0) > 0) " (${p.age} років)" else ""
-                            tvDob.text = "${p.birthDate}$ageText"
-                        }
+                        // позиція + номер
+                        val posCode = p.position ?: ""
+                        val num = p.number ?: ""
 
-                        // позиція
-                        val remotePos = when (p.position.lowercase()) {
+                        val posName = when (posCode.lowercase()) {
                             "g", "gk" -> "Воротар"
                             "d", "df" -> "Захисник"
                             "m", "mf" -> "Півзахисник"
                             "f", "fw" -> "Нападник"
-                            else -> p.position
+                            else -> posCode
                         }
 
-                        if (remotePos.isNotEmpty()) {
-                            tvPosition.text =
-                                if (p.number.isNotEmpty())
-                                    "$remotePos • #${p.number}"
-                                else remotePos
+                        tvPosition.text =
+                            if (num.isNotEmpty())
+                                "$posName • #$num"
+                            else posName
+
+                        // дата
+                        val bDate = p.birthDate ?: ""
+                        if (bDate.isNotEmpty()) {
+                            val ageVal = p.age ?: 0
+                            val ageStr = if (ageVal > 0) " (${formatAge(ageVal)})" else ""
+                            tvDob.text = "$bDate$ageStr"
+                        }
+
+                        // команда
+                        if (!p.team_name.isNullOrEmpty()) {
+                            tvTeam.text = p.team_name
                         }
 
                         // фото
-                        if (p.photo.isNotEmpty()) {
+                        if (!p.photo.isNullOrEmpty()) {
                             Glide.with(this@PlayerProfileActivity)
-                                .load(p.photo)
+                                .load(p.photo?.replace("http://", "https://"))
                                 .transform(PlayerTopCropTransformation())
-                                .placeholder(android.R.drawable.ic_menu_camera)
                                 .into(ivPlayerPhoto)
+                        }
+
+                        // логотип
+                        if (!p.team_logo.isNullOrEmpty()) {
+
+                            val logoUrl = p.team_logo.replace("http://", "https://")
+
+                            Glide.with(this@PlayerProfileActivity)
+                                .load(logoUrl)
+                                .into(ivTeamLogo)
+
+                            Glide.with(this@PlayerProfileActivity)
+                                .load(logoUrl)
+                                .centerInside()
+                                .into(findViewById(R.id.ivWatermark))
                         }
                     }
                 }
 
                 override fun onFailure(call: Call<Player>, t: Throwable) {
-                    t.printStackTrace()
+                    android.util.Log.e("MAF_DEBUG", "Помилка запиту: ${t.message}")
                 }
             })
     }
+    private fun formatAge(age: Int): String {
+        val mod100 = age % 100
+        val mod10 = age % 10
 
+        return when {
+            mod100 in 11..14 -> "$age років"
+            mod10 == 1 -> "$age рік"
+            mod10 in 2..4 -> "$age роки"
+            else -> "$age років"
+        }
+    }
     private fun setupTabs(playerId: String) {
         val viewPager: ViewPager2 = findViewById(R.id.viewPager)
         val tabLayout: TabLayout = findViewById(R.id.tabLayout)

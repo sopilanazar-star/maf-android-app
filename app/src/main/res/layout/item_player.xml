@@ -32,9 +32,7 @@
         android:layout_marginStart="6dp"
         android:layout_marginEnd="12dp"
         android:scaleType="centerCrop"
-        android:src="@drawable/ic_player_placeholder"
-        app:strokeColor="#2E3440"
-        app:strokeWidth="1dp" />
+        android:src="@drawable/ic_player_placeholder" />
 
     <!-- ІМʼЯ -->
     <LinearLayout

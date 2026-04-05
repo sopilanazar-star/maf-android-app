@@ -10,27 +10,71 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+// Рекламні імпорти закоментовано для версії 2.3
+// import com.google.android.gms.ads.AdRequest
+// import com.google.android.gms.ads.AdView
 
 class TournamentAdapter(private val items: List<TournamentRow>) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    override fun getItemViewType(position: Int): Int = if (items[position].isHeader) 0 else 1
+    private val itemsWithAds: List<Any> = mutableListOf<Any>().apply {
+        // У цій версії ми додаємо лише реальні матчі, без вставки "AD_SLOT"
+        items.forEach { item ->
+            add(item)
+        }
 
+        /* Стара логіка реклами закоментована для збереження структури:
+        val AD_INTERVAL = 5
+        var count = 0
+        items.forEach { item ->
+            add(item)
+            count++
+            if (count % AD_INTERVAL == 0) add("AD_SLOT")
+        }
+        if (!contains("AD_SLOT") && items.isNotEmpty()) add("AD_SLOT")
+        */
+    }
+
+    private val TYPE_HEADER = 0
+    private val TYPE_MATCH = 1
+    private val TYPE_AD = 2
+
+    // ВИПРАВЛЕНО: тепер використовуємо itemsWithAds для визначення типу
+    override fun getItemViewType(position: Int): Int {
+        val item = itemsWithAds[position]
+        return when {
+            item is String -> TYPE_AD
+            (item as TournamentRow).isHeader -> TYPE_HEADER
+            else -> TYPE_MATCH
+        }
+    }
+
+    // ВИПРАВЛЕНО: додано створення AdViewHolder
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
-        return if (viewType == 0) {
-            LeagueHeaderViewHolder(inflater.inflate(R.layout.item_league_header, parent, false))
-        } else {
-            MatchViewHolder(inflater.inflate(R.layout.item_match, parent, false))
+        return when (viewType) {
+            TYPE_HEADER -> LeagueHeaderViewHolder(inflater.inflate(R.layout.item_league_header, parent, false))
+            TYPE_AD -> AdViewHolder(inflater.inflate(R.layout.item_native_ad, parent, false))
+            else -> MatchViewHolder(inflater.inflate(R.layout.item_match, parent, false))
         }
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        val item = items[position]
+        val itemOrAd = itemsWithAds[position]
+
+        // 1. ЛОГІКА ДЛЯ РЕКЛАМИ (Вимкнено)
+        if (holder is AdViewHolder) {
+            // Оскільки "AD_SLOT" більше не додається, цей блок не має викликатися.
+            // Ми просто повертаємо керування, щоб не було помилок.
+            return
+        }
+
+        // Перетворюємо Any назад у TournamentRow для подальшої роботи
+        val item = itemOrAd as TournamentRow
 
         if (holder is LeagueHeaderViewHolder) {
             holder.tvLeagueName.text = item.league.uppercase()
-            
+
             if (item.stage.isNotEmpty()) {
                 holder.tvStageName.visibility = View.VISIBLE
                 holder.tvStageName.text = item.stage
@@ -43,7 +87,7 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         } else if (holder is MatchViewHolder) {
             holder.tvTeam1.text = item.team1
             holder.tvTeam2.text = item.team2
-            
+
             if (item.stadium.isNotEmpty()) {
                 holder.tvStadium?.visibility = View.VISIBLE
                 holder.tvStadium?.text = item.stadium
@@ -58,40 +102,42 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                 holder.tvReferee?.visibility = View.GONE
             }
 
-            // 🔴 СТВОРЮЄМО РОЗУМНУ ЛОГІКУ ДЛЯ ЧАСУ, LIVE ТА РАХУНКУ
             val scoreValue = item.score?.trim() ?: ""
             holder.tvScore?.setTypeface(null, Typeface.BOLD)
 
             when {
-                // 1. Якщо це LIVE (йде гра: є ' або HT)
-                scoreValue.contains("'") || scoreValue == "HT" -> {
+                // --- ДОДАНО: Перевірка на технічний результат (має найвищий пріоритет) ---
+                item.is_technical -> {
                     holder.ivTimeIcon?.visibility = View.GONE
                     holder.tvScore?.text = scoreValue
                     holder.tvScore?.setTextColor(Color.parseColor("#E30613")) // Червоний колір
+                    holder.tvScore?.textSize = 18f
+                }
+                // --------------------------------------------------------------------------
+                scoreValue.contains("'") || scoreValue == "HT" -> {
+                    holder.ivTimeIcon?.visibility = View.GONE
+                    holder.tvScore?.text = scoreValue
+                    holder.tvScore?.setTextColor(Color.parseColor("#E30613"))
                     holder.tvScore?.textSize = 16f
                 }
-                // 2. Якщо матч завершено (FT)
                 scoreValue == "FT" -> {
                     holder.ivTimeIcon?.visibility = View.GONE
                     holder.tvScore?.text = "FT"
-                    holder.tvScore?.setTextColor(Color.parseColor("#BCBCBC")) // Сірий колір
+                    holder.tvScore?.setTextColor(Color.parseColor("#BCBCBC"))
                     holder.tvScore?.textSize = 16f
                 }
-                // 3. Якщо є зіграний рахунок (наприклад "2 : 1")
                 scoreValue.contains(" : ") -> {
                     holder.ivTimeIcon?.visibility = View.GONE
                     holder.tvScore?.text = scoreValue
                     holder.tvScore?.setTextColor(Color.WHITE)
                     holder.tvScore?.textSize = 18f
                 }
-                // 4. Якщо прийшов час матчу (наприклад "18:00")
                 scoreValue.isNotEmpty() -> {
                     holder.ivTimeIcon?.visibility = View.VISIBLE
                     holder.tvScore?.text = scoreValue
                     holder.tvScore?.setTextColor(Color.parseColor("#BCBCBC"))
                     holder.tvScore?.textSize = 16f
                 }
-                // 5. Якщо взагалі порожньо (тільки тоді показуємо VS)
                 else -> {
                     holder.ivTimeIcon?.visibility = View.VISIBLE
                     holder.tvScore?.text = "VS"
@@ -112,15 +158,17 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
                     putExtra("logo1", item.logo1)
                     putExtra("logo2", item.logo2)
                     putExtra("score", item.score)
+
+                    // --- ДОДАНО ПЕРЕДАЧУ ТЕХНІЧНИХ ДАНИХ У КАРТКУ МАТЧУ ---
+                    putExtra("is_technical", item.is_technical)
+                    putExtra("technical_reason", item.technical_reason)
+                    // ------------------------------------------------------
+
                     putExtra("league", item.league)
                     putExtra("stage", item.stage)
                     putExtra("date", item.date)
                     putExtra("stadium", item.stadium)
                     putExtra("referee", item.referee)
-                    
-                    // (Якщо в тебе помилка через youtubeId - просто закоментуй цей рядок)
-                    // putExtra("youtube_id", item.youtubeId) 
-                    
                     putExtra("home_team_id", item.home_team_id)
                     putExtra("away_team_id", item.away_team_id)
                 }
@@ -129,7 +177,8 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         }
     }
 
-    override fun getItemCount() = items.size
+    // ВИПРАВЛЕНО: тепер рахуємо загальну кількість разом з рекламою
+    override fun getItemCount() = itemsWithAds.size
 
     class LeagueHeaderViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvLeagueName: TextView = view.findViewById(R.id.tvLeagueName)
@@ -146,5 +195,14 @@ class TournamentAdapter(private val items: List<TournamentRow>) :
         val tvReferee: TextView? = view.findViewById(R.id.tvReferee)
         val ivTimeIcon: ImageView? = view.findViewById(R.id.ivTimeIcon)
     }
+
+    // Клас для утримання рекламного банера (заглушка)
+    class AdViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        // Закоментовано через відсутність класів Google Ads
+        // val adView: com.google.android.gms.ads.nativead.NativeAdView = view as com.google.android.gms.ads.nativead.NativeAdView
+        val headline: TextView = view.findViewById(R.id.ad_headline)
+        val body: TextView = view.findViewById(R.id.ad_body)
+        val icon: ImageView = view.findViewById(R.id.ad_app_icon)
+        val callToAction: android.widget.Button = view.findViewById(R.id.ad_call_to_action)
     }
-    
+}

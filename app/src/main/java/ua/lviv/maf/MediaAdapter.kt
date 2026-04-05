@@ -9,6 +9,8 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+// Додаємо імпорт нашого перехоплювача реклами
+// import ua.lviv.maf.AdInterceptor
 
 class MediaAdapter(private val videos: List<TournamentRow>) :
     RecyclerView.Adapter<MediaAdapter.MediaViewHolder>() {
@@ -37,10 +39,14 @@ class MediaAdapter(private val videos: List<TournamentRow>) :
             .load(thumbnailUrl)
             .into(holder.ivThumbnail)
 
-        // Клік по картці -> відкриваємо YouTube
+        // Клік: рекламу відключено, відкриваємо YouTube напряму
         holder.itemView.setOnClickListener {
+            val context = holder.itemView.context
+            // AdInterceptor.execute(context) {
+            // Тепер відео відкривається відразу без рекламної паузи
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=${match.youtubeId}"))
-            holder.itemView.context.startActivity(intent)
+            context.startActivity(intent)
+            // }
         }
     }
 

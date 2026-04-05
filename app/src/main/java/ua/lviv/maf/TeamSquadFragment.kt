@@ -131,7 +131,7 @@ class TeamSquadFragment : Fragment() {
 
     private fun prepareGroupedList(players: List<Player>): List<Any> {
         val resultList = ArrayList<Any>()
-        val groupedMap = players.groupBy { it.position.trim().lowercase() }
+        val groupedMap = players.groupBy { it.position?.trim()?.lowercase() ?: "" }
         val sortedKeys = groupedMap.keys.sortedBy { pos ->
             when (pos) {
                 "g", "gk", "goalkeeper", "воротар" -> 1

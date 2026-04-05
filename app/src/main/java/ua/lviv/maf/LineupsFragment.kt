@@ -107,6 +107,14 @@ class LineupsFragment : Fragment(R.layout.fragment_lineups) {
             val name = p.optString("name")
             val number = p.optString("number")
             val posRaw = p.optString("position")
+            // ДОДАНІ РЯДКИ: витягуємо дані для екрану статистики
+            val playerId = p.optString("player_id", p.optString("id", ""))
+            val photo = p.optString("photo", "")
+            val birthDate = p.optString("birth_date", "")
+            val age = p.optInt("age", 0)
+// Якщо API матчу повертає лого та назву команди всередині гравця, беремо їх:
+            val teamName = p.optString("team_name", "")
+            val teamLogo = p.optString("team_logo", "")
 
             val pos = when (posRaw) {
                 "g" -> "Г"
@@ -145,6 +153,28 @@ class LineupsFragment : Fragment(R.layout.fragment_lineups) {
             row.addView(nameTv)
 
             container?.addView(row)
+            // ДОДАНИЙ БЛОК: обробка кліку по рядку гравця
+            row.isClickable = true // Про всяк випадок явно дозволяємо клік
+            row.setOnClickListener { view ->
+                if (playerId.isNotEmpty()) {
+                    val intent = android.content.Intent(view.context, PlayerProfileActivity::class.java)
+
+                    intent.putExtra("PLAYER_ID", playerId)
+                    intent.putExtra("PLAYER_NAME", name)
+                    intent.putExtra("PLAYER_PHOTO", photo.replace("http://", "https://"))
+                    intent.putExtra("PLAYER_NUMBER", number)
+                    intent.putExtra("PLAYER_POSITION", posRaw)
+                    intent.putExtra("PLAYER_BIRTHDATE", birthDate)
+                    intent.putExtra("PLAYER_AGE", age)
+                    intent.putExtra("TEAM_NAME", teamName)
+                    intent.putExtra("TEAM_LOGO", teamLogo.replace("http://", "https://"))
+
+                    view.context.startActivity(intent)
+                } else {
+                    // Якщо клік працює, але ID немає — вилізе цей Toast:
+                    android.widget.Toast.makeText(view.context, "ID відсутнє для гравця: $name", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
 
             val line = View(context).apply {
                 layoutParams = LinearLayout.LayoutParams(

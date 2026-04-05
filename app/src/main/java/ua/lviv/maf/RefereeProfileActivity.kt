@@ -31,7 +31,7 @@ class RefereeProfileActivity : AppCompatActivity() {
     private val client = OkHttpClient()
 
     private var refereeName: String = ""
-    private var selectedYear: String = "2025"
+    private var selectedYear: String = AppConfig.selectedYear
     
     // Списки для фрагментів
     var mainMatchesList = ArrayList<TournamentRow>()
@@ -43,7 +43,7 @@ class RefereeProfileActivity : AppCompatActivity() {
 
         val refId = intent.getStringExtra("REF_ID") ?: ""
         refereeName = intent.getStringExtra("REF_NAME") ?: ""
-        selectedYear = intent.getStringExtra("YEAR") ?: "2025"
+
         
         progressBar = findViewById(R.id.progressBar)
         viewPager = findViewById(R.id.viewPagerReferee)
@@ -57,8 +57,11 @@ class RefereeProfileActivity : AppCompatActivity() {
     private fun setupHeader() {
         findViewById<TextView>(R.id.tvHeaderTitle).text = "Сезон $selectedYear"
         findViewById<TextView>(R.id.tvProfileName).text = refereeName
-        
-        findViewById<TextView>(R.id.tvProfileMatches).text = intent.getIntExtra("REF_MATCHES", 0).toString()
+
+        val startMatches = intent.getIntExtra("REF_MATCHES", 0)
+        findViewById<TextView>(R.id.tvProfileMatches).text = startMatches.toString()
+// Оновлюємо слово під цифрою
+        findViewById<TextView>(R.id.tvProfileMatchesLabel).text = getMatchesWord(startMatches)
         findViewById<TextView>(R.id.tvProfileYellow).text = intent.getIntExtra("REF_YELLOW", 0).toString()
         findViewById<TextView>(R.id.tvProfileRed).text = intent.getIntExtra("REF_RED", 0).toString()
 
@@ -98,6 +101,8 @@ class RefereeProfileActivity : AppCompatActivity() {
                             logo1 = m.optString("logo1"),
                             team2 = m.optString("team2"),
                             logo2 = m.optString("logo2"),
+                            home_team_id = m.optString("home_team_id"),   // 🔥 ДОДАТИ
+                            away_team_id = m.optString("away_team_id"),   // 🔥 ДОДАТИ
                             score = m.optString("score", "v"),
                             date = m.optString("date"),
                             league = m.optString("league"),
@@ -118,14 +123,9 @@ class RefereeProfileActivity : AppCompatActivity() {
     }
 
     private fun fetchRefereeIdsAndFilter(refId: String, allGlobalMatches: List<TournamentRow>) {
-        val seasonId = when(selectedYear) {
-            "2026" -> "29"
-            "2025" -> "22"
-            "2024" -> "3"
-            else -> "22"
-        }
-        
-        val url = "https://maf.lviv.ua/wp-json/maf/v2/referee/$refId/matches?year=$selectedYear&season_id=$seasonId"
+
+
+        val url = "https://maf.lviv.ua/wp-json/maf/v2/referee/$refId/matches?year=$selectedYear"
 
         client.newCall(Request.Builder().url(url).build()).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
@@ -153,7 +153,11 @@ class RefereeProfileActivity : AppCompatActivity() {
                     runOnUiThread {
                         progressBar.visibility = View.GONE
                         if (stats != null) {
-                            findViewById<TextView>(R.id.tvProfileMatches).text = stats.optString("total", "0")
+                            val total = stats.optInt("total", 0)
+                            findViewById<TextView>(R.id.tvProfileMatches).text = total.toString()
+                            // Оновлюємо слово "МАТЧІВ"
+                            findViewById<TextView>(R.id.tvProfileMatchesLabel).text = getMatchesWord(total)
+
                             findViewById<TextView>(R.id.tvProfileYellow).text = stats.optString("yellow", "0")
                             findViewById<TextView>(R.id.tvProfileRed).text = stats.optString("red", "0")
                         }
@@ -200,7 +204,18 @@ class RefereeProfileActivity : AppCompatActivity() {
         }.attach()
     }
 }
+// Додай це в кінець RefereeProfileActivity.kt
+fun getMatchesWord(count: Int): String {
+    val lastDigit = count % 10
+    val lastTwoDigits = count % 100
 
+    return when {
+        lastTwoDigits in 11..19 -> "МАТЧІВ"
+        lastDigit == 1 -> "МАТЧ"
+        lastDigit in 2..4 -> "МАТЧІ"
+        else -> "МАТЧІВ"
+    }
+}
 class RefereeMatchesListFragment : Fragment() {
     private var tabPosition: Int = 0
 
@@ -237,4 +252,5 @@ class RefereeMatchesListFragment : Fragment() {
             arguments = Bundle().apply { putInt("TAB_POS", position) }
         }
     }
+
 }

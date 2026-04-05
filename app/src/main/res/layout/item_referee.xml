@@ -70,11 +70,12 @@
                     android:textColor="#FFFFFF"
                     android:textSize="16sp"
                     android:textStyle="bold" />
-                    
+
                 <TextView
+                    android:id="@+id/tvMatchesLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="ІГРИ"
+                    android:text="МАТЧІВ"
                     android:textColor="#808080"
                     android:textSize="8sp"
                     android:textStyle="bold" />

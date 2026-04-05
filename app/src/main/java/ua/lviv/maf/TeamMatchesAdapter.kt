@@ -11,6 +11,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import org.json.JSONObject
+//import ua.lviv.maf.AdInterceptor
 
 class TeamMatchesAdapter(
     private val matches: List<JSONObject>,
@@ -126,34 +127,30 @@ val logo2Url = getValue(
         loadLogo(logo1Url, holder.ivLogo1)
         loadLogo(logo2Url, holder.ivLogo2)
 
-        // 3. 🔥 ГОЛОВНЕ: КЛІК ПО МАТЧУ (ПЕРЕДАЄМО ДАНІ В ШАПКУ)
+        // 3. КЛІК ПО МАТЧУ: Рекламу відключено для версії 2.3
         holder.itemView.setOnClickListener {
             val context = holder.itemView.context
+
+            // Виклик перехоплювача закоментовано, дія виконується напряму
+            // AdInterceptor.execute(context) {
             val intent = Intent(context, MatchDetailActivity::class.java).apply {
-                // Передаємо ключі ТОЧНО ТАК, як їх чекає Activity
+                // Твій оригінальний код передачі даних без жодних змін
                 putExtra("id", id)
-                
-                // Назви команд
-                putExtra("team1", team1Name) // Activity чекає "team1"
-                putExtra("team2", team2Name) // Activity чекає "team2"
-                
-                // Логотипи
-                putExtra("logo1", logo1Url)  // Activity чекає "logo1"
-                putExtra("logo2", logo2Url)  // Activity чекає "logo2"
-                
-                // Інше
+                putExtra("team1", team1Name)
+                putExtra("team2", team2Name)
+                putExtra("logo1", logo1Url)
+                putExtra("logo2", logo2Url)
                 putExtra("score", score)
                 putExtra("league", tournament)
                 putExtra("stage", stage)
                 putExtra("date", dateFull)
                 putExtra("stadium", stadium)
                 putExtra("referee", referee)
-                
-                // ID для таймлайну
                 putExtra("home_team_id", homeTeamId)
                 putExtra("away_team_id", awayTeamId)
             }
             context.startActivity(intent)
+            // }
         }
     }
 

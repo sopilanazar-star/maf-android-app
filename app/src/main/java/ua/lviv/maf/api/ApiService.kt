@@ -15,8 +15,8 @@ interface ApiService {
     ): Call<List<DisqualifiedPlayer>>
 
     // 🔥 НОВЕ: Отримання повної анкети гравця за його ID
-    @GET("wp-json/maf/v1/player/{id}")
+    @GET("wp-json/maf/v2/player-profile")
     fun getPlayerProfile(
-        @Path("id") id: String
+        @Query("id") id: String
     ): Call<Player>
 }

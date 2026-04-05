@@ -19,6 +19,7 @@ import okhttp3.*
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
+//import ua.lviv.maf.AdInterceptor
 
 class ScorersFragment : Fragment() {
 
@@ -150,28 +151,44 @@ class ScorersFragment : Fragment() {
         recyclerView.visibility = View.VISIBLE
         recyclerView.layoutManager = LinearLayoutManager(context)
         // 🔥 Оновлено: тепер адаптер повертає всі дані для профілю
-        recyclerView.adapter = ScorersAdapter(data) { id, name, photo, teamName, teamLogo ->
-            openPlayerProfile(id, name, photo, teamName, teamLogo)
+        recyclerView.adapter = ScorersAdapter(data) { id, name, photo, teamName, teamLogo, position, birthDate, age ->
+            openPlayerProfile(id, name, photo, teamName, teamLogo, position, birthDate, age)
         }
     }
 
     // 🔥 ПАКЕТНА ПЕРЕДАЧА ДАНИХ 🔥
-    private fun openPlayerProfile(id: String, name: String, photo: String, teamName: String, teamLogo: String) {
+    private fun openPlayerProfile(
+        id: String,
+        name: String,
+        photo: String,
+        teamName: String,
+        teamLogo: String,
+        position: String,
+        birthDate: String,
+        age: Int
+    ) {
         if (id.isEmpty()) return
+
+        // Рекламу відключено: виконуємо перехід без перехоплювача
+        // AdInterceptor.execute(requireContext()) {
         try {
             val intent = Intent(requireContext(), PlayerProfileActivity::class.java)
-            
-            // Передаємо "повний пакет" як у Squad
-            intent.putExtra("PLAYER_ID", id) // Передаємо як String для універсальності
+
+            // Твій оригінальний код передачі даних без жодних змін
+            intent.putExtra("PLAYER_ID", id)
             intent.putExtra("PLAYER_NAME", name)
             intent.putExtra("PLAYER_PHOTO", photo.replace("http://", "https://"))
             intent.putExtra("TEAM_NAME", teamName)
             intent.putExtra("TEAM_LOGO", teamLogo.replace("http://", "https://"))
-            
+            intent.putExtra("PLAYER_POSITION", position)
+            intent.putExtra("PLAYER_BIRTHDATE", birthDate)
+            intent.putExtra("PLAYER_AGE", age)
+
             startActivity(intent)
         } catch (e: Exception) {
             Log.e("Scorers", "Error opening profile: ${e.message}")
         }
+        // }
     }
 
     private fun showEmptyState() {
@@ -184,8 +201,7 @@ class ScorersFragment : Fragment() {
 
 class ScorersAdapter(
     private val items: List<JSONObject>,
-    // 🔥 Оновлений колбек: повертаємо ID, Name, Photo, TeamName, TeamLogo
-    private val onPlayerClick: (String, String, String, String, String) -> Unit
+    private val onPlayerClick: (String, String, String, String, String, String, String, Int) -> Unit
 ) : RecyclerView.Adapter<ScorersAdapter.ViewHolder>() {
 
     class ViewHolder(v: View) : RecyclerView.ViewHolder(v) {
@@ -210,6 +226,11 @@ class ScorersAdapter(
         val pId = p?.optString("id") ?: ""
         val pName = p?.optString("name") ?: "Гравець"
         val pPhoto = p?.optString("photo") ?: ""
+
+        val pPosition = p?.optString("position") ?: ""
+        val pBirthDate = p?.optString("birth_date") ?: ""
+        val pAge = p?.optInt("age", 0) ?: 0
+
         val tName = t?.optString("name") ?: "Без команди"
         val tLogo = t?.optString("logo") ?: ""
 
@@ -239,8 +260,17 @@ class ScorersAdapter(
             .into(holder.ivTeam)
 
         // 🔥 Передаємо весь набір даних при кліку
-        holder.container.setOnClickListener { 
-            onPlayerClick(pId, pName, pPhoto, tName, tLogo) 
+        holder.container.setOnClickListener {
+            onPlayerClick(
+                pId,
+                pName,
+                pPhoto,
+                tName,
+                tLogo,
+                pPosition,
+                pBirthDate,
+                pAge
+            )
         }
     }
 

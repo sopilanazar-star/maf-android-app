@@ -8,6 +8,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+//import ua.lviv.maf.AdInterceptor
 
 class StandingLeftAdapter(
     private val items: List<StandingRow>
@@ -35,17 +36,19 @@ class StandingLeftAdapter(
             .placeholder(android.R.drawable.ic_menu_gallery)
             .into(holder.ivTeamLogo)
 
-        // ТВІЙ ОРИГІНАЛЬНИЙ РОБОЧИЙ ПЕРЕХІД
+        // Клік: рекламу відключено для версії 2.3
         holder.itemView.setOnClickListener {
+            val context = it.context
+            // AdInterceptor.execute(context) {
             if (item.team_id.isNotEmpty() && item.team_id != "0") {
-                val intent = Intent(it.context, TeamPlayersActivity::class.java)
+                val intent = Intent(context, TeamPlayersActivity::class.java)
                 intent.putExtra("team_id", item.team_id)
                 intent.putExtra("team_name", item.team_name)
                 intent.putExtra("team_logo", item.logo)
-                it.context.startActivity(intent)
+                context.startActivity(intent)
             }
+            // }
         }
     }
-
     override fun getItemCount() = items.size
 }

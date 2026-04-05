@@ -18,6 +18,7 @@ import okhttp3.*
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
+//import ua.lviv.maf.AdInterceptor
 
 class RefereesFragment : Fragment() {
 
@@ -40,7 +41,7 @@ class RefereesFragment : Fragment() {
         tvEmptyState = view.findViewById(R.id.tvEmptyState)
         tvHeaderTitle = view.findViewById(R.id.tvHeaderTitle)
 
-        tvHeaderTitle.text = "Арбітри ($selectedYear)"
+        tvHeaderTitle.text = "Арбітри"
 
         view.findViewById<View>(R.id.btnBackText)?.setOnClickListener {
             parentFragmentManager.popBackStack()
@@ -54,7 +55,7 @@ class RefereesFragment : Fragment() {
     fun updateYear(year: String) {
         if (selectedYear != year) {
             selectedYear = year
-            tvHeaderTitle.text = "Арбітри ($selectedYear)"
+            tvHeaderTitle.text = "Арбітри"
             fetchReferees()
         }
     }
@@ -96,9 +97,12 @@ class RefereesFragment : Fragment() {
     private fun setupList(data: List<JSONObject>) {
         recyclerView.visibility = View.VISIBLE
         recyclerView.layoutManager = LinearLayoutManager(context)
-        
+
         recyclerView.adapter = RefereesAdapter(data) { refereeId, name, photo, city, matches, yellow, red ->
+            // Тимчасово відключаємо рекламу, перехід виконується напряму
+            // AdInterceptor.execute(requireContext()) {
             val intent = Intent(requireContext(), RefereeProfileActivity::class.java).apply {
+                // Твій оригінальний код без змін
                 putExtra("REF_ID", refereeId)
                 putExtra("REF_NAME", name)
                 putExtra("REF_PHOTO", photo)
@@ -109,6 +113,7 @@ class RefereesFragment : Fragment() {
                 putExtra("YEAR", selectedYear)
             }
             startActivity(intent)
+            // }
         }
     }
 
@@ -147,7 +152,11 @@ class RefereesAdapter(
         val city = item.optString("city", "")
         holder.tvRole.text = if (city.isNotEmpty()) "м. $city" else "Арбітр МАФ"
 
-        holder.tvMatches.text = stats?.optInt("total", 0).toString()
+        val totalMatches = stats?.optInt("total", 0) ?: 0
+        holder.tvMatches.text = totalMatches.toString()
+
+// Знаходимо напис під цифрою і міняємо його через нашу функцію
+        holder.itemView.findViewById<TextView>(R.id.tvMatchesLabel)?.text = getMatchesWord(totalMatches)
         holder.tvYellowCards.text = stats?.optInt("yellow", 0).toString()
         holder.tvRedCards.text = stats?.optInt("red", 0).toString()
 
@@ -171,6 +180,17 @@ class RefereesAdapter(
             )
         }
     }
+    // Ця функція сама вибирає правильне слово залежно від цифри
+    fun getMatchesWord(count: Int): String {
+        val lastDigit = count % 10
+        val lastTwoDigits = count % 100
 
+        return when {
+            lastTwoDigits in 11..19 -> "МАТЧІВ"
+            lastDigit == 1 -> "МАТЧ"
+            lastDigit in 2..4 -> "МАТЧІ"
+            else -> "МАТЧІВ"
+        }
+    }
     override fun getItemCount() = items.size
 }

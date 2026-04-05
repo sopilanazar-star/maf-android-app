@@ -19,6 +19,9 @@ import ua.lviv.maf.api.RetrofitClient
 import ua.lviv.maf.models.DisqualifiedPlayer
 import java.text.SimpleDateFormat
 import java.util.*
+import android.widget.ImageView
+import com.bumptech.glide.Glide
+// import ua.lviv.maf.AdInterceptor
 
 class DisqualifiedFragment : Fragment() {
 
@@ -38,14 +41,14 @@ class DisqualifiedFragment : Fragment() {
             val btnBack: View? = view.findViewById(R.id.btnBackText)
             rvPlayers = view.findViewById(R.id.rvDisqualifiedPlayers)
             tvHeaderYear = view.findViewById(R.id.tvHeaderYear)
-            progressBar = view.findViewById(R.id.progressBar) // Перевір ID у своєму XML
+            progressBar = null // Перевір ID у своєму XML
 
             btnBack?.setOnClickListener {
                 parentFragmentManager.popBackStack()
             }
 
-            // Встановлюємо початковий рік
-            tvHeaderYear?.text = AppConfig.selectedYear.toString()
+            // Встановлюємо заголовок без року
+            tvHeaderYear?.text = "Дискваліфіковані гравці"
 
             context?.let {
                 rvPlayers?.layoutManager = LinearLayoutManager(it)
@@ -62,9 +65,9 @@ class DisqualifiedFragment : Fragment() {
     // 🔥 ПРАВКА: Ця функція тепер публічна і викликається зовні при зміні року 🔥
     fun updateYear() {
         if (!isAdded) return // Перевірка, чи фрагмент ще "живий"
-        
+
         activity?.runOnUiThread {
-            tvHeaderYear?.text = AppConfig.selectedYear.toString()
+            tvHeaderYear?.text = "Дискваліфіковані гравці"
             // Очищаємо список перед новим завантаженням, щоб юзер бачив, що дані міняються
             adapter = DisqualifiedAdapter(emptyList())
             rvPlayers?.adapter = adapter
@@ -130,6 +133,17 @@ class DisqualifiedFragment : Fragment() {
                 holder.name?.text = player.name ?: "Невідомо"
                 holder.team?.text = player.teamName ?: "Без команди"
 
+                holder.position?.visibility = View.GONE
+                holder.birthDate?.visibility = View.GONE
+                holder.age?.visibility = View.GONE
+
+                val logoUrl = player.teamLogo ?: ""
+
+                if (!logoUrl.isNullOrEmpty() && holder.teamLogo != null) {
+                    Glide.with(holder.itemView.context)
+                        .load(logoUrl.replace("http://", "https://"))
+                        .into(holder.teamLogo)
+                }
                 val rawDate = player.expiryDate ?: ""
                 var formattedDate = rawDate
                 if (rawDate.isNotEmpty()) {
@@ -155,22 +169,29 @@ class DisqualifiedFragment : Fragment() {
                     holder.indicator?.setBackgroundColor(Color.GREEN)
                 }
 
-                // Клік з повним пакетом даних
+                // Клік: рекламу відключено, переходимо одразу до профілю
                 holder.itemView.setOnClickListener {
+                    val context = holder.itemView.context
+
+                    // AdInterceptor.execute(context) {
                     val playerId = player.playerId
                     if (!playerId.isNullOrEmpty()) {
-                        val intent = Intent(holder.itemView.context, PlayerProfileActivity::class.java)
+                        val intent = Intent(context, PlayerProfileActivity::class.java)
                         intent.putExtra("PLAYER_ID", playerId)
                         intent.putExtra("PLAYER_NAME", player.name ?: "Гравець")
                         intent.putExtra("TEAM_NAME", player.teamName ?: "Команда")
-                        
+                        intent.putExtra("PLAYER_POSITION", player.position ?: "")
+                        intent.putExtra("PLAYER_BIRTH_DATE", player.birthDate ?: "")
+                        intent.putExtra("PLAYER_AGE", player.age ?: 0)
+
                         val photoUrl = player.photo ?: ""
                         val logoUrl = player.teamLogo ?: ""
                         intent.putExtra("PLAYER_PHOTO", photoUrl.replace("http://", "https://"))
                         intent.putExtra("TEAM_LOGO", logoUrl.replace("http://", "https://"))
-                        
-                        holder.itemView.context.startActivity(intent)
+
+                        context.startActivity(intent)
                     }
+                    // }
                 }
 
             } catch (e: Exception) {
@@ -183,6 +204,13 @@ class DisqualifiedFragment : Fragment() {
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val name: TextView? = view.findViewById(R.id.tvPlayerName)
             val team: TextView? = view.findViewById(R.id.tvTeamName)
+
+            val teamLogo: ImageView? = view.findViewById(R.id.ivTeamLogo)
+
+            val position: TextView? = view.findViewById(R.id.tvPosition)
+            val birthDate: TextView? = view.findViewById(R.id.tvBirthDate)
+            val age: TextView? = view.findViewById(R.id.tvAge)
+
             val status: TextView? = view.findViewById(R.id.tvStatus)
             val indicator: View? = view.findViewById(R.id.statusIndicator)
         }

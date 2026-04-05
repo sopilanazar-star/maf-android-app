@@ -1,11 +1,15 @@
 package ua.lviv.maf
 
-import android.os.Build
 import android.os.Bundle
 import android.text.Html
-import android.widget.ImageButton
-import android.widget.TextView
+import android.view.LayoutInflater
+import android.view.View
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+// Імпорти реклами відключено для версії 2.3
+// import com.google.android.gms.ads.AdLoader
+// import com.google.android.gms.ads.AdRequest
+// import com.google.android.gms.ads.nativead.NativeAdView
 
 class NewsDetailActivity : AppCompatActivity() {
 
@@ -19,18 +23,52 @@ class NewsDetailActivity : AppCompatActivity() {
 
         btnBack.setOnClickListener { finish() }
 
-        // ПЕРЕВІР: Ключі "NEWS_TITLE" та "NEWS_CONTENT" мають бути такими ж в адаптері!
+        // Отримуємо дані
         val title = intent.getStringExtra("NEWS_TITLE") ?: "Новина"
         val content = intent.getStringExtra("NEWS_CONTENT") ?: ""
-        
+
         tvHeader.text = title
 
-        // Використовуємо FromHtml, щоб \n\n або залишки тегів <b> відображалися красиво
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            tvContent.text = Html.fromHtml(content, Html.FROM_HTML_MODE_COMPACT)
-        } else {
-            @Suppress("DEPRECATION")
-            tvContent.text = Html.fromHtml(content)
-        }
+        // Відображаємо текст (спрощено без зайвих if)
+        tvContent.text = Html.fromHtml(content, Html.FROM_HTML_MODE_COMPACT)
+
+        // Завантаження реклами відключено
+        // loadNativeAd()
+    }
+
+    private fun loadNativeAd() {
+        /* Логіку завантаження нативної реклами закоментовано, щоб не було помилок
+        val adContainer = findViewById<FrameLayout>(R.id.ad_container)
+
+        val adLoader = AdLoader.Builder(this, getString(R.string.ad_unit_id_native))
+            .forNativeAd { nativeAd ->
+                // Інфлейтимо макет правильно (без null)
+                val adView = LayoutInflater.from(this)
+                    .inflate(R.layout.item_native_ad, adContainer, false) as NativeAdView
+
+                adView.findViewById<TextView>(R.id.ad_headline).text = nativeAd.headline
+                adView.findViewById<TextView>(R.id.ad_body).text = nativeAd.body
+                adView.findViewById<Button>(R.id.ad_call_to_action).text = nativeAd.callToAction
+
+                val iconView = adView.findViewById<ImageView>(R.id.ad_app_icon)
+                if (nativeAd.icon != null) {
+                    iconView.setImageDrawable(nativeAd.icon?.drawable)
+                } else {
+                    iconView.visibility = View.GONE
+                }
+
+                adView.headlineView = adView.findViewById(R.id.ad_headline)
+                adView.bodyView = adView.findViewById(R.id.ad_body)
+                adView.iconView = iconView
+                adView.callToActionView = adView.findViewById(R.id.ad_call_to_action)
+
+                adView.setNativeAd(nativeAd)
+                adContainer.removeAllViews()
+                adContainer.addView(adView)
+            }
+            .build()
+
+        adLoader.loadAd(AdRequest.Builder().build())
+        */
     }
 }

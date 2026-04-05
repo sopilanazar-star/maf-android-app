@@ -25,27 +25,41 @@ import org.json.JSONArray
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
+import android.widget.Toast
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import android.Manifest
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.LinearSmoothScroller
+import android.view.GestureDetector
+import android.view.MotionEvent
+import com.google.firebase.messaging.FirebaseMessaging
+// import com.google.android.gms.ads.MobileAds
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var recyclerView: RecyclerView
+    private lateinit var viewPager: androidx.viewpager2.widget.ViewPager2
     private lateinit var dateRecyclerView: RecyclerView
     private lateinit var newsRecyclerView: RecyclerView
     private lateinit var titleHeader: TextView
     private lateinit var contentLayout: LinearLayout
     private lateinit var seasonSpinner: Spinner
-    private lateinit var fragmentContainer: FrameLayout
+    lateinit var fragmentContainer: FrameLayout
     private lateinit var bottomNav: BottomNavigationView
 
     private val MAF_API_URL = "https://maf.lviv.ua/wp-json/maf/v2/matches"
     private val MAF_NEWS_URL = "https://maf.lviv.ua/wp-json/maf/v2/news"
 
     private var allMatches = mutableListOf<TournamentRow>()
-
+    private var doubleBackToExitPressedOnce = false
+    private val tabHistory = java.util.Stack<Int>() // Зберігає історію вкладок
+    private var isNavigatingBack = false // Запобігає зацикленню
+    private var selectedDateIndex = 0
+    private var dateListGlobal: List<DateModel> = emptyList()
     private val handler = Handler(Looper.getMainLooper())
     private val refreshRunnable = object : Runnable {
         override fun run() {
-            if (::recyclerView.isInitialized) loadFromApi(AppConfig.selectedYear)
+            if (::viewPager.isInitialized) loadFromApi(AppConfig.selectedYear)
             handler.postDelayed(this, 60000L)
         }
     }
@@ -62,8 +76,17 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
-        super.onCreate(savedInstanceState)
+        // Відключаємо ініціалізацію реклами Гугл та перехоплювача
+        // MobileAds.initialize(this) {}
+        // AdInterceptor.load(this)
 
+        super.onCreate(savedInstanceState)
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                android.util.Log.d("FCM_TOKEN", task.result)
+            }
+        }
+        FirebaseMessaging.getInstance().subscribeToTopic("matches")
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = Color.TRANSPARENT
         window.navigationBarColor = Color.TRANSPARENT
@@ -91,15 +114,30 @@ class MainActivity : AppCompatActivity() {
         }
 
         seasonSpinner = Spinner(this).apply {
-            val spinnerAdapter = object : ArrayAdapter<String>(this@MainActivity, android.R.layout.simple_spinner_item, seasons) {
-                override fun getView(position: Int, v: View?, p: ViewGroup): View = (super.getView(position, v, p) as TextView).apply { setTextColor(Color.WHITE); textSize = 16f; typeface = Typeface.DEFAULT_BOLD }
-                override fun getDropDownView(position: Int, v: View?, p: ViewGroup): View = (super.getDropDownView(position, v, p) as TextView).apply { setTextColor(Color.WHITE); setBackgroundColor(Color.parseColor("#252932")); setPadding(30, 30, 30, 30) }
+            background = ContextCompat.getDrawable(this@MainActivity, R.drawable.bg_custom_spinner)
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dpToPx(40))
+            setPadding(dpToPx(16), 0, dpToPx(40), 0)
+            setPopupBackgroundDrawable(ContextCompat.getDrawable(this@MainActivity, R.drawable.bg_spinner_popup))
+            val spinnerAdapter = object : ArrayAdapter<String>(
+                this@MainActivity,
+                R.layout.item_spinner_selected, // <-- Ось тут ми підключили новий дизайн!
+                seasons
+            ) {
+                override fun getView(position: Int, v: View?, p: ViewGroup): View = (super.getView(position, v, p) as TextView).apply {
+                    setTextColor(Color.WHITE)
+                    textSize = 16f
+                    typeface = Typeface.DEFAULT_BOLD
+                }
+                override fun getDropDownView(position: Int, v: View?, p: ViewGroup): View = (super.getDropDownView(position, v, p) as TextView).apply {
+                    setTextColor(Color.WHITE)
+                    setBackgroundColor(Color.TRANSPARENT) // Зробив колір випадаючого списку таким же, як і сам спінер
+                    setPadding(40, 30, 40, 30)
+                }
             }
             adapter = spinnerAdapter
             val selectedIndex = seasons.indexOf(AppConfig.selectedYear)
             setSelection(if (selectedIndex != -1) selectedIndex else 0)
         }
-
         headerLayout.addView(titleHeader)
         headerLayout.addView(seasonSpinner)
 
@@ -116,12 +154,59 @@ class MainActivity : AppCompatActivity() {
             clipToPadding = false
         }
 
-        recyclerView = RecyclerView(this).apply {
-            layoutManager = LinearLayoutManager(this@MainActivity)
+
+        viewPager = androidx.viewpager2.widget.ViewPager2(this).apply {
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
-            setPadding(0, 0, 0, dpToPx(90))
-            clipToPadding = false
         }
+        /* Закоментовано: ViewPager2 тепер сам обробляє свайпи
+        val swipeCallback = object : ItemTouchHelper.SimpleCallback(
+            0,
+            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
+        ) {
+
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean {
+                return false
+            }
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+
+                viewHolder.itemView.translationX = 0f
+
+                if (dateListGlobal.isEmpty()) return
+
+                if (direction == ItemTouchHelper.LEFT) {
+                    if (selectedDateIndex < dateListGlobal.size - 1) selectedDateIndex++
+                } else {
+                    if (selectedDateIndex > 0) selectedDateIndex--
+                }
+
+                val newDate = dateListGlobal[selectedDateIndex].date
+
+                dateListGlobal.forEach { it.isSelected = false }
+                dateListGlobal[selectedDateIndex].isSelected = true
+
+                filterMatches(newDate)
+
+                val smoothScroller = object : LinearSmoothScroller(this@MainActivity) {
+                    override fun getHorizontalSnapPreference(): Int {
+                        return SNAP_TO_START
+                    }
+                }
+
+                smoothScroller.targetPosition = selectedDateIndex
+                dateRecyclerView.layoutManager?.startSmoothScroll(smoothScroller)
+
+                dateRecyclerView.adapter?.notifyDataSetChanged()
+                recyclerView.adapter?.notifyDataSetChanged()
+            }
+        }
+        */
+
+        // ItemTouchHelper(swipeCallback).attachToRecyclerView(recyclerView)
 
         newsRecyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
@@ -132,7 +217,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         contentLayout.addView(dateRecyclerView)
-        contentLayout.addView(recyclerView)
+        contentLayout.addView(viewPager)
         contentLayout.addView(newsRecyclerView)
 
         fragmentContainer = FrameLayout(this).apply {
@@ -158,7 +243,15 @@ class MainActivity : AppCompatActivity() {
         rootFrame.addView(bottomNav)
         setContentView(rootFrame)
 
+        /* Закоментовано: ViewPager2 сам обробляє свайпи
+        setupSwipeGesture()
+        */
+
         setupNavigation()
+        // Встав ці два рядки сюди:
+        requestNotificationPermission()
+        com.google.firebase.messaging.FirebaseMessaging.getInstance().subscribeToTopic("matches")
+        requestNotificationPermission()
 
         seasonSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
@@ -188,18 +281,147 @@ class MainActivity : AppCompatActivity() {
         }
 
         bottomNav.selectedItemId = R.id.nav_news
-        loadFromApi(AppConfig.selectedYear) 
+        loadFromApi(AppConfig.selectedYear)
+        // Сучасна обробка кнопки "Назад"
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (tabHistory.size > 1) {
+                    tabHistory.pop()
+                    val previousTab = tabHistory.peek()
+                    isNavigatingBack = true
+                    bottomNav.selectedItemId = previousTab
+                    return
+                }
+
+                if (doubleBackToExitPressedOnce) {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                    return
+                }
+
+                doubleBackToExitPressedOnce = true
+                Toast.makeText(this@MainActivity, "Натисніть ще раз, щоб вийти", Toast.LENGTH_SHORT).show()
+                Handler(Looper.getMainLooper()).postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
+            }
+        })
+    }
+    /* Закоментовано: стара логіка ручних свайпів. Тепер цим керує ViewPager2
+    private fun setupSwipeGesture() {
+
+        val gestureDetector = GestureDetector(this,
+            object : GestureDetector.SimpleOnGestureListener() {
+
+                private val SWIPE_THRESHOLD = 100
+                private val SWIPE_VELOCITY_THRESHOLD = 100
+
+                override fun onFling(
+                    e1: MotionEvent?,
+                    e2: MotionEvent,
+                    velocityX: Float,
+                    velocityY: Float
+                ): Boolean {
+
+                    val diffX = e2.x - (e1?.x ?: 0f)
+
+                    if (Math.abs(diffX) > SWIPE_THRESHOLD &&
+                        Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD
+                    ) {
+
+                        if (diffX < 0) {
+                            swipeNextDate()
+                        } else {
+                            swipePreviousDate()
+                        }
+
+                        return true
+                    }
+
+                    return false
+                }
+            })
+
+        recyclerView.setOnTouchListener { _, event ->
+            gestureDetector.onTouchEvent(event)
+            false
+        }
+    }
+    private fun swipeNextDate() {
+
+        if (selectedDateIndex < dateListGlobal.size - 1) {
+            selectedDateIndex++
+
+            val newDate = dateListGlobal[selectedDateIndex].date
+
+            dateListGlobal.forEach { it.isSelected = false }
+            dateListGlobal[selectedDateIndex].isSelected = true
+
+            filterMatches(newDate)
+
+            val layoutManager = dateRecyclerView.layoutManager as LinearLayoutManager
+
+            val smoothScroller = object : LinearSmoothScroller(this) {
+                override fun getHorizontalSnapPreference(): Int {
+                    return SNAP_TO_ANY
+                }
+            }
+
+            smoothScroller.targetPosition = selectedDateIndex
+            layoutManager.startSmoothScroll(smoothScroller)
+            dateRecyclerView.adapter?.notifyDataSetChanged()
+        }
+    }
+
+    private fun swipePreviousDate() {
+
+        if (selectedDateIndex > 0) {
+            selectedDateIndex--
+
+            val newDate = dateListGlobal[selectedDateIndex].date
+
+            dateListGlobal.forEach { it.isSelected = false }
+            dateListGlobal[selectedDateIndex].isSelected = true
+
+            filterMatches(newDate)
+
+            dateRecyclerView.smoothScrollToPosition(selectedDateIndex)
+            dateRecyclerView.adapter?.notifyDataSetChanged()
+        }
+    }
+    */
+
+    private fun swipePreviousDate() {
+
+        if (selectedDateIndex > 0) {
+            selectedDateIndex--
+
+            val newDate = dateListGlobal[selectedDateIndex].date
+
+            dateListGlobal.forEach { it.isSelected = false }
+            dateListGlobal[selectedDateIndex].isSelected = true
+
+            // filterMatches(newDate)
+
+            dateRecyclerView.smoothScrollToPosition(selectedDateIndex)
+            dateRecyclerView.adapter?.notifyDataSetChanged()
+        }
     }
 
     private fun setupNavigation() {
         bottomNav.setOnItemSelectedListener { item ->
             titleHeader.text = item.title
             handler.removeCallbacks(refreshRunnable)
+            // Записуємо історію кроків
+            if (!isNavigatingBack) {
+                if (tabHistory.isEmpty() || tabHistory.peek() != item.itemId) {
+                    tabHistory.push(item.itemId)
+                }
+            }
+            isNavigatingBack = false
             when (item.itemId) {
                 R.id.nav_matches -> {
                     fragmentContainer.visibility = View.GONE
                     contentLayout.visibility = View.VISIBLE
-                    recyclerView.visibility = View.VISIBLE
+                    viewPager.visibility = View.VISIBLE
                     dateRecyclerView.visibility = View.VISIBLE
                     newsRecyclerView.visibility = View.GONE
                     seasonSpinner.visibility = View.VISIBLE
@@ -208,7 +430,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.nav_news -> {
                     fragmentContainer.visibility = View.GONE
                     contentLayout.visibility = View.VISIBLE
-                    recyclerView.visibility = View.GONE
+                    viewPager.visibility = View.GONE
                     dateRecyclerView.visibility = View.GONE
                     newsRecyclerView.visibility = View.VISIBLE
                     seasonSpinner.visibility = View.GONE
@@ -261,7 +483,11 @@ class MainActivity : AppCompatActivity() {
             logo1 = m.optString("logo1"),
             team2 = m.optString("team2"), 
             logo2 = m.optString("logo2"), 
-            score = m.optString("score"), 
+            score = m.optString("score"),
+                            // --- ДОДАНО ЗЧИТУВАННЯ ТЕХНІЧНОГО РЕЗУЛЬТАТУ ---
+                            is_technical = m.optBoolean("is_technical", false),
+                            technical_reason = m.optString("technical_reason", ""),
+                            // ------------------------------------------------
             date = m.optString("date"),   
             league = m.optString("league"), 
             stage = m.optString("stage"),
@@ -275,7 +501,34 @@ class MainActivity : AppCompatActivity() {
                     runOnUiThread {
                         if (!::dateRecyclerView.isInitialized) return@runOnUiThread
                         val dateList = createDateList(allMatches)
-                        dateRecyclerView.adapter = DateAdapter(dateList) { filterMatches(it) }
+                        dateListGlobal = dateList
+
+                        // 1. Призначаємо новий адаптер для свайпів
+                        viewPager.adapter = MatchesPagerAdapter(dateListGlobal, allMatches)
+
+                        // 2. Налаштовуємо кліки по верхніх датах
+                        dateRecyclerView.adapter = DateAdapter(dateList) { date ->
+                            val index = dateList.indexOfFirst { it.date == date }
+                            if (index != -1) {
+                                viewPager.currentItem = index // Це автоматично плавно перегорне сторінку!
+                            }
+                        }
+
+                        // 3. Зв'язуємо фізичний свайп пальцем із верхнім меню дат
+                        viewPager.registerOnPageChangeCallback(object : androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback() {
+                            override fun onPageSelected(position: Int) {
+                                super.onPageSelected(position)
+                                selectedDateIndex = position
+                                dateListGlobal.forEach { it.isSelected = false }
+                                if (dateListGlobal.isNotEmpty() && position < dateListGlobal.size) {
+                                    dateListGlobal[position].isSelected = true
+                                }
+                                dateRecyclerView.adapter?.notifyDataSetChanged()
+                                dateRecyclerView.smoothScrollToPosition(position)
+                            }
+                        })
+
+                        // 4. Шукаємо сьогоднішню або найближчу дату при запуску
                         if (dateList.isNotEmpty()) {
                             val todayStr = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date())
                             var selectedDate = dateList.find { it.date == todayStr }
@@ -290,11 +543,13 @@ class MainActivity : AppCompatActivity() {
                             }
 
                             if (selectedDate == null) selectedDate = dateList.last()
-                            selectedDate.isSelected = true
-                            filterMatches(selectedDate.date)
-                        } else {
-                            if (::recyclerView.isInitialized) recyclerView.adapter = TournamentAdapter(emptyList())
+
+                            val startIndex = dateList.indexOf(selectedDate)
+                            if (startIndex != -1) {
+                                viewPager.setCurrentItem(startIndex, false) // false = без анімації при старті
+                            }
                         }
+
                         checkAutoRefresh()
                     }
                 } catch (e: Exception) {}
@@ -302,6 +557,7 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    /* Закоментовано: логіка фільтрації перенесена у MatchesPagerAdapter
     private fun filterMatches(date: String) {
         if (!::recyclerView.isInitialized) return
         val filtered = allMatches.filter { it.date == date }
@@ -312,8 +568,24 @@ class MainActivity : AppCompatActivity() {
             grouped.add(TournamentRow(league = parts[0], stage = parts.getOrElse(1) { "" }, isHeader = true))
             grouped.addAll(matches)
         }
-        recyclerView.adapter = TournamentAdapter(grouped)
+        recyclerView.animate()
+            .translationX(50f)
+            .alpha(0f)
+            .setDuration(120)
+            .withEndAction {
+
+                recyclerView.translationX = -50f
+                recyclerView.adapter = TournamentAdapter(grouped)
+
+                recyclerView.animate()
+                    .translationX(0f)
+                    .alpha(1f)
+                    .setDuration(120)
+                    .start()
+            }
+            .start()
     }
+    */
 
     private fun loadNewsFromApi() {
         val client = OkHttpClient()
@@ -338,13 +610,81 @@ class MainActivity : AppCompatActivity() {
     private fun createDateList(matches: List<TournamentRow>): List<DateModel> {
         val format = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
         val uniqueDates = matches.map { it.date }.distinct().sortedByDescending { try { format.parse(it) } catch (e: Exception) { null } }
-        val dayNameFormat = SimpleDateFormat("EEE", Locale("uk"))
-        val dayNumFormat = SimpleDateFormat("dd", Locale.getDefault())
-        val monthFormat = SimpleDateFormat("MMM", Locale("uk"))
+        val dateFormat = SimpleDateFormat("EEE d MMM", Locale("uk"))
 
         return uniqueDates.mapNotNull { dateStr ->
             val date = try { format.parse(dateStr) } catch (e: Exception) { null } ?: return@mapNotNull null
-            DateModel(dateStr, dayNameFormat.format(date).uppercase(), dayNumFormat.format(date), monthFormat.format(date))
+            DateModel(
+                dateStr,
+                dateFormat.format(date),
+                "",
+                ""
+            )
+        }
+    }
+
+    private fun requestNotificationPermission() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                androidx.core.app.ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
+            }
+        }
+    }
+
+    /* Закоментовано: Перенесено в OnBackPressedDispatcher для сумісності з новим Android
+    override fun onBackPressed() {
+        if (tabHistory.size > 1) {
+            tabHistory.pop()
+            val previousTab = tabHistory.peek()
+            isNavigatingBack = true
+            bottomNav.selectedItemId = previousTab
+            return
+        }
+
+        if (doubleBackToExitPressedOnce) {
+            super.onBackPressed()
+            return
+        }
+
+        this.doubleBackToExitPressedOnce = true
+        Toast.makeText(this, "Натисніть ще раз, щоб вийти", Toast.LENGTH_SHORT).show()
+        Handler(Looper.getMainLooper()).postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
+    }
+    */
+    inner class MatchesPagerAdapter(
+        private val dates: List<DateModel>,
+        private val matches: List<TournamentRow>
+    ) : RecyclerView.Adapter<MatchesPagerAdapter.PageViewHolder>() {
+
+        inner class PageViewHolder(val rv: RecyclerView) : RecyclerView.ViewHolder(rv)
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageViewHolder {
+            // Створюємо список для конкретної сторінки (дати)
+            val rv = RecyclerView(parent.context).apply {
+                layoutManager = LinearLayoutManager(parent.context)
+                layoutParams = ViewGroup.LayoutParams(-1, -1)
+                setPadding(0, 0, 0, dpToPx(90))
+                clipToPadding = false
+            }
+            return PageViewHolder(rv)
+        }
+
+        override fun getItemCount(): Int = dates.size
+
+        override fun onBindViewHolder(holder: PageViewHolder, position: Int) {
+            val date = dates[position].date
+
+            // Твоя збережена логіка фільтрації та групування
+            val filtered = matches.filter { it.date == date }
+            val grouped = mutableListOf<TournamentRow>()
+            val groupedByLeague = filtered.groupBy { "${it.league}|${it.stage}" }
+            for ((key, leagueMatches) in groupedByLeague) {
+                val parts = key.split("|")
+                grouped.add(TournamentRow(league = parts[0], stage = parts.getOrElse(1) { "" }, isHeader = true))
+                grouped.addAll(leagueMatches)
+            }
+
+            holder.rv.adapter = TournamentAdapter(grouped)
         }
     }
 }

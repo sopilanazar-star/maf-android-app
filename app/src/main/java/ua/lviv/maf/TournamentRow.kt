@@ -9,6 +9,12 @@ data class TournamentRow(
     val team2: String = "",
     val logo2: String = "",
     val score: String = "", // Сюди потрапить рахунок з API
+
+    // --- ДОДАНО ПОЛЯ ДЛЯ ТЕХНІЧНОГО РЕЗУЛЬТАТУ ---
+    val is_technical: Boolean = false,
+    val technical_reason: String = "",
+    // ----------------------------------------------
+
     val date: String = "",  // Сюди потрапить "24.02.2026"
     val league: String = "",
     val stage: String = "",
