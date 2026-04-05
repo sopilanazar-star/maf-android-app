@@ -32,8 +32,7 @@ jobs:
 
       - name: Build Release APK
         run: |
-          gradle wrapper --gradle-version 8.6
-          chmod +x gradlew
+                    chmod +x gradlew
           ./gradlew assembleRelease --stacktrace
         env:
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
