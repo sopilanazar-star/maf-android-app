@@ -49,7 +49,8 @@ class MainActivity : AppCompatActivity() {
 
     private val MAF_API_URL = "https://maf.lviv.ua/wp-json/maf/v2/matches"
     private val MAF_NEWS_URL = "https://maf.lviv.ua/wp-json/maf/v2/news"
-
+    // Додаємо наше посилання на GitHub
+    private val UPDATE_JSON_URL = "https://raw.githubusercontent.com/sopilanazar-star/maf-android-app/main/version.json"
     private var allMatches = mutableListOf<TournamentRow>()
     private var doubleBackToExitPressedOnce = false
     private val tabHistory = java.util.Stack<Int>() // Зберігає історію вкладок
@@ -282,6 +283,8 @@ class MainActivity : AppCompatActivity() {
 
         bottomNav.selectedItemId = R.id.nav_news
         loadFromApi(AppConfig.selectedYear)
+        // Викликаємо функцію перевірки оновлень
+        checkForUpdates()
         // Сучасна обробка кнопки "Назад"
         onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -686,5 +689,56 @@ class MainActivity : AppCompatActivity() {
 
             holder.rv.adapter = TournamentAdapter(grouped)
         }
+    }
+    private fun checkForUpdates() {
+        val client = OkHttpClient()
+        val request = Request.Builder().url(UPDATE_JSON_URL).build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                // Якщо немає інтернету, нічого не робимо, додаток працює далі
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val jsonData = response.body?.string() ?: return
+                try {
+                    val jsonObject = org.json.JSONObject(jsonData)
+                    val newVersionCode = jsonObject.optInt("new_version_code", 0)
+                    val downloadUrl = jsonObject.optString("download_url", "")
+
+                    // Отримуємо версію поточного встановленого додатка
+                    val packageInfo = packageManager.getPackageInfo(packageName, 0)
+                    val currentVersionCode = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                        packageInfo.longVersionCode.toInt()
+                    } else {
+                        packageInfo.versionCode
+                    }
+
+                    // Порівнюємо: якщо на GitHub версія вища, показуємо вікно
+                    if (newVersionCode > currentVersionCode && downloadUrl.isNotEmpty()) {
+                        runOnUiThread {
+                            showUpdateDialog(downloadUrl)
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Якщо помилка в JSON, просто ігноруємо
+                }
+            }
+        })
+    }
+
+    private fun showUpdateDialog(downloadUrl: String) {
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Доступне оновлення")
+            .setMessage("Вийшла нова версія додатка з покращеним дизайном та виправленням помилок. Будь ласка, оновіться для стабільної роботи!")
+            .setPositiveButton("Оновити") { _, _ ->
+                // Відкриваємо посилання на скачування в браузері
+                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW)
+                intent.data = android.net.Uri.parse(downloadUrl)
+                startActivity(intent)
+            }
+            .setNegativeButton("Пізніше", null) // Кнопка, щоб закрити вікно
+            .setCancelable(false) // Користувач не зможе закрити вікно, просто клікнувши повз нього
+            .show()
     }
 }
